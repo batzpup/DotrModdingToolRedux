@@ -21,7 +21,7 @@ This should be cross platform but requires .NET 8
 
 ## License
 
-This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/main/LICENSE)
+This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/master/LICENSE)
 
 For more information and updates, visit the [DotrModdingToolRedux GitHub Repository](https://github.com/batzpup/DotrModdingToolRedux).
 
