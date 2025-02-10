@@ -40,7 +40,7 @@ This project is licensed under [GNU General Public License v3.0](https://github.
 Wouldnt be possible without:
 [Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
 [Generic Mad Scientist](https://github.com/GenericMadScientist)  
-[HippoChan](https://github.com/rjoken)  
+[hippochan](https://github.com/rjoken)  
 [Clovis](https://www.youtube.com/@ClovissenpaiDotR)
 
 Special thanks for testing early prototypes  
