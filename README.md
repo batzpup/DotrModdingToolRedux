@@ -43,6 +43,6 @@ Wouldnt be possible without:
 [Clovis](https://www.youtube.com/@ClovissenpaiDotR)
 
 Special thanks for testing early prototypes
-[DMWScorp](https://www.youtube.com/@DMWScorpian)
+[DMWScorp](https://www.youtube.com/@DMWScorpian)  
 Hazel
    
