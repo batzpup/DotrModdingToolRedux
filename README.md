@@ -14,7 +14,7 @@ This should be cross platform but requires .NET 8
 
 2. **Run the Application**:
    - After downloading, extract the contents of the ZIP file.
-   - Navigate to the extracted folder and run `DotrModdingToolRedux.exe`.
+   - Navigate to the extracted folder and run `DotrModdingTool2IMGUI.exe`.
 
 ## New Features
 ### In built map and hidden card editor
