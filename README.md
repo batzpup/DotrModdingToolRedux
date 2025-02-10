@@ -21,7 +21,7 @@ This should be cross platform but requires .NET 8
 Can save maps to local file to use throughout different mods
 ![image](https://github.com/user-attachments/assets/18061633-f291-4129-8e96-7bcf1a0ca14a)
 ### New and improved card editor, 
-Edit all the card data in one spot now including effects
+Edit all the card data in one spot now including effects  
 you can even see the cards text in the tool!
 ![image](https://github.com/user-attachments/assets/11e94345-4aa5-4a45-a95f-3056887793c7)
 ### Customise battle music
