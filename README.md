@@ -18,7 +18,7 @@ This should be cross platform but requires .NET 8
 
 ## New Features
 ### In built map and hidden card editor
-Can save maps to local file to use throughout different mods
+Can save maps to local file to use throughout different mods  
 Right click on the map to move the hidden card!
 ![image](https://github.com/user-attachments/assets/18061633-f291-4129-8e96-7bcf1a0ca14a)
 ### New and improved card editor, 
