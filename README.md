@@ -42,7 +42,7 @@ Wouldnt be possible without:
 [HippoChan](https://github.com/rjoken)  
 [Clovis](https://www.youtube.com/@ClovissenpaiDotR)
 
-Special thanks for testing early prototypes
+Special thanks for testing early prototypes  
 [DMWScorp](https://www.youtube.com/@DMWScorpian)  
 Hazel
    
