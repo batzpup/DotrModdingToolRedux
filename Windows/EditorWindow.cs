@@ -71,6 +71,13 @@ public class EditorWindow
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
+        _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+    }
+
+    void ViewCardInEditor(int index)
+    {
+        currentMode = EditorContentMode.CardEditor;
+        _cardEditorWindow.SetCurrentCardIndex(index);
     }
 
     public Dictionary<EditorContentMode, string> ButtonModeTable = new Dictionary<EditorContentMode, string>() {
@@ -203,7 +210,7 @@ public class EditorWindow
                     OpenUrl("https://www.youtube.com/@ClovissenpaiDotR");
                 }
 
-                if (ImGui.Selectable("Hippochan: Original Map Editor and Starter Deck Image Fixes", false, ImGuiSelectableFlags.AllowDoubleClick))
+                if (ImGui.Selectable("hippochan: Original Map Editor and Starter Deck Image Fixes", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
@@ -318,9 +325,14 @@ public class EditorWindow
         }
     }
 
+    public void ChangeMode(EditorContentMode mode)
+    {
+        currentMode = mode;
+    }
     void SaveChanges()
     {
         _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
+        
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();

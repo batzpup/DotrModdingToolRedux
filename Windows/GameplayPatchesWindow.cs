@@ -243,6 +243,9 @@ class GameplayPatchesWindow : IImGuiWindow
         {
             ImGui.SetTooltip("Requires Fast Intro");
         }
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
+        ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, new GuiColour(Color.DimGray).value);
         if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
                                                             ImGuiTableFlags.Sortable |
                                                             ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
@@ -251,8 +254,8 @@ class GameplayPatchesWindow : IImGuiWindow
                                                             ImGuiTableFlags.ScrollY |
                                                             ImGuiTableFlags.BordersInnerH))
         {
-            
-            ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed,ImGui.CalcTextSize("IDX").X +10);
+
+            ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("IDX").X + 10);
             ImGui.TableSetupColumn("Three in a row", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Reward", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableHeadersRow();
@@ -328,6 +331,7 @@ class GameplayPatchesWindow : IImGuiWindow
                 }
             }
             ImGui.EndTable();
+            ImGui.PopStyleColor(3);
         }
     }
 

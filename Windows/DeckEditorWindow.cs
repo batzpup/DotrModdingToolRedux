@@ -25,6 +25,7 @@ public class DeckEditorWindow : IImGuiWindow
     string trunkSearchFilter = "";
     bool useColour = true;
 
+    public Action<int> ViewCardInEditor;
 
     public DeckEditorWindow(ImFontPtr fontPtr)
     {
@@ -219,13 +220,13 @@ public class DeckEditorWindow : IImGuiWindow
                 ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags.None;
                 ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 10);
                 ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth);
-                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth+20);
-                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth+20);
+                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
+                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
                 ImGui.TableSetupColumn("LVL", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 20);
                 ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 10);
                 ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthFixed, typeWidth + 20);
                 ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 20);
-                ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthFixed, actionWidth+20);
+                ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthFixed, actionWidth + 20);
                 ImGui.TableHeadersRow();
 
 
@@ -331,7 +332,7 @@ public class DeckEditorWindow : IImGuiWindow
             sortedTrunkList = new List<CardConstant>(CardConstant.List);
         }
         ImGui.TextColored(new GuiColour(System.Drawing.Color.SkyBlue).value,
-            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection, Shift + left click to add everything between your last clicked card and the this card\nCtrl+Alt+Click = remove from selection, Ctrl + right click to clear all");
+            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection, Shift + left click to add everything between your last clicked card and the this card\nCtrl+Alt+Click = remove from selection, Ctrl + Right click to clear all\n Shift + Right click = view hovered card in editor");
         ImGui.Text("Search Bar");
         ImGui.SameLine();
         ImGui.InputText("##SearchBar", ref trunkSearchFilter, 32);
@@ -401,12 +402,18 @@ public class DeckEditorWindow : IImGuiWindow
             {
                 CardConstant cardConstant = filteredList[index];
                 var colour = CardConstantRowColor(cardConstant).value;
+                if (cardConstant.Index == 671)
+                {
+                    continue;
+                }
                 ImGui.TableNextRow();
+
 
                 uint rowColor = (uint)((int)(colour.W * 255) << 24 | (int)(colour.Z * 255) << 16 | (int)(colour.Y * 255) << 8 |
                                        (int)(colour.X * 255));
 
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, rowColor);
+
 
 
                 ImGui.PushID(cardConstant.Index.ToString());
@@ -469,6 +476,7 @@ public class DeckEditorWindow : IImGuiWindow
 
                 }
                 ImGui.TableSetColumnIndex(0);
+
                 if (ImGui.GetIO().KeyCtrl && ImGui.GetIO().MouseClicked[1])
                 {
                     trunkSelection.Clear();
@@ -476,6 +484,7 @@ public class DeckEditorWindow : IImGuiWindow
 
                 if (ImGui.Selectable("##Selectable", item_is_selected, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, 0)))
                 {
+
 
                     if (item_is_selected && ImGui.GetIO().KeyAlt && ImGui.GetIO().KeyCtrl)
                     {
@@ -508,6 +517,10 @@ public class DeckEditorWindow : IImGuiWindow
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(cardConstant.Name);
+                    if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
+                    {
+                        ViewCardInEditor?.Invoke(cardConstant.Index);
+                    }
 
                 }
                 ImGui.PopID();
@@ -553,5 +566,6 @@ public class DeckEditorWindow : IImGuiWindow
         {
             DataAccess.Instance.SaveDeck(deck.Index, deck.Bytes);
         }
+        UpdateStartingDeck.CreateNewStartingDeckData(deckLists);
     }
 }

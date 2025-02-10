@@ -89,7 +89,8 @@ Reduction depends on the leader’s kind and level as follows:
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.OpenCard] = new string[] {
             "Open Opponent's Card",
-            "Flips up enemy cards within the deck leader's support range."
+            "Flips up enemy cards within the deck leader's support range.\nTheir flip effects do not trigger"
+            
         };
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.WeakenSpecificEnemyType] = new string[] {

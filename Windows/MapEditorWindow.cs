@@ -170,10 +170,10 @@ public class MapEditorWindow : IImGuiWindow
 
 
         Vector2 textSize = ImGui.CalcTextSize($"Current tile:\n{currentPaletteTerrain}");
-        float textX = (availableWidth - textSize.X) * 0.5f + ImGui.GetStyle().CellPadding.X*3; 
+        float textX = (availableWidth - textSize.X) * 0.5f + ImGui.GetStyle().CellPadding.X * 3;
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + textX);
         ImGui.Text($"Current tile:\n{currentPaletteTerrain}");
-        
+
         ImGui.BeginTable("MapImageGrid", 5, ImGuiTableFlags.SizingStretchSame);
 
         ImGui.TableNextColumn();
@@ -374,7 +374,10 @@ public class MapEditorWindow : IImGuiWindow
     void DrawMap()
     {
         currentMap = dataAccess.maps[currentMapIndex];
+
         ImGui.BeginChild("MapDisplay");
+        ImGui.Text("Left click and/or drag to paint with the current tile.");
+        ImGui.Text("Right click to move the hidden card.");
         Vector2 availableSpace = ImGui.GetContentRegionAvail();
         Vector2 spacing = ImGui.GetStyle().ItemSpacing;
         float maxCellWidth = availableSpace.X - (spacing.X * 6) / 7;

@@ -38,7 +38,7 @@ public class CardConstant
     public CardColourType CardColor => _cardColourType;
 
     const int maxAttackDefense = 8191;
-    byte[] bytes;
+    
     byte kind;
     CardKind _cardKind;
     byte kindOfs;
@@ -61,56 +61,52 @@ public class CardConstant
 
     public CardConstant(ushort cardIndex, byte[] bytes)
     {
-        this.Index = cardIndex;
-        this.Name = Card.GetNameByIndex(cardIndex);
-        this.bytes = bytes;
-        this.kind = bytes[0];
-        this._cardKind = new CardKind(this.kind);
-        this.kindOfs = bytes[1];
-        this.levelAttribute = new BitArray(new byte[] { bytes[2] });
-        this.level = bytes[2].splitByte()[1];
-        this.attribute = new CardAttribute(bytes[2].splitByte()[0]);
-        this.DeckCost = bytes[3];
-        this.effectId = BitConverter.ToUInt16(new byte[] { bytes[4], bytes[5] }, 0);
-        this.xaxId = BitConverter.ToUInt16(new byte[] { bytes[6], bytes[7] }, 0);
-
-        this.apWithFlags = new BitArray(new byte[] { bytes[8], bytes[9] });
-        this.attack = CardConstant.GetAttackOrDefense(new byte[] { bytes[8], bytes[9] });
-        this.hasImage = apWithFlags[apWithFlags.Length - 3];
-        this.passwordWorks = apWithFlags[apWithFlags.Length - 2];
-        this.appearsInReincarnation = apWithFlags[apWithFlags.Length - 1];
-
-        this.dpWithFlags = new BitArray(new byte[] { bytes[10], bytes[11] });
-        this.defense = CardConstant.GetAttackOrDefense(new byte[] { bytes[10], bytes[11] });
-        this.appearsInSlotReels = dpWithFlags[dpWithFlags.Length - 3];
-        this.isSlotRare = dpWithFlags[dpWithFlags.Length - 2];
-
-        this.hasAlternateArt = dpWithFlags[dpWithFlags.Length - 1];
-        this.passwordArray = new byte[] { bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19] };
-        this.setCardColor();
+        Index = cardIndex;
+        Name = Card.GetNameByIndex(cardIndex);
+        kind = bytes[0];
+        _cardKind = new CardKind(this.kind);
+        kindOfs = bytes[1];
+        levelAttribute = new BitArray(new byte[] { bytes[2] });
+        level = bytes[2].splitByte()[1];
+        attribute = new CardAttribute(bytes[2].splitByte()[0]);
+        DeckCost = bytes[3];
+        effectId = BitConverter.ToUInt16(new byte[] { bytes[4], bytes[5] }, 0);
+        xaxId = BitConverter.ToUInt16(new byte[] { bytes[6], bytes[7] }, 0);
+        apWithFlags = new BitArray(new byte[] { bytes[8], bytes[9] });
+        attack = CardConstant.GetAttackOrDefense(new byte[] { bytes[8], bytes[9] });
+        hasImage = apWithFlags[apWithFlags.Length - 3];
+        passwordWorks = apWithFlags[apWithFlags.Length - 2];
+        appearsInReincarnation = apWithFlags[apWithFlags.Length - 1];
+        dpWithFlags = new BitArray(new byte[] { bytes[10], bytes[11] });
+        defense = CardConstant.GetAttackOrDefense(new byte[] { bytes[10], bytes[11] });
+        appearsInSlotReels = dpWithFlags[dpWithFlags.Length - 3];
+        isSlotRare = dpWithFlags[dpWithFlags.Length - 2];
+        hasAlternateArt = dpWithFlags[dpWithFlags.Length - 1];
+        passwordArray = new byte[] { bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19] };
+        setCardColor();
     }
 
     public void setCardColor()
     {
-        if (this.EffectId == 65535)
+        if (EffectId == 65535)
         {
-            this._cardColourType = CardColourType.NormalMonster;
+            _cardColourType = CardColourType.NormalMonster;
         }
-        else if (this.CardKind.Id < 32)
+        else if (CardKind.Id < 32)
         {
-            this._cardColourType = CardColourType.EffectMonster;
+            _cardColourType = CardColourType.EffectMonster;
         }
-        else if (this.CardKind.Id == 96 || this.CardKind.Id == 128)
+        else if (CardKind.Id == 96 || this.CardKind.Id == 128)
         {
-            this._cardColourType = CardColourType.Trap;
+            _cardColourType = CardColourType.Trap;
         }
-        else if (this.CardKind.Id == 160)
+        else if (CardKind.Id == 160)
         {
-            this._cardColourType = CardColourType.Ritual;
+            _cardColourType = CardColourType.Ritual;
         }
         else
         {
-            this._cardColourType = CardColourType.Magic;
+            _cardColourType = CardColourType.Magic;
         }
     }
 

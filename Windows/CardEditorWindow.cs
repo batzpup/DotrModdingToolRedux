@@ -65,6 +65,11 @@ class CardEditorWindow : IImGuiWindow
         EditorWindow.OnIsoLoaded += onCardChanged;
     }
 
+    public void SetCurrentCardIndex(int index)
+    {
+
+        currentCardIndex = index;
+    }
 
     void onCardChanged()
     {
@@ -289,19 +294,14 @@ class CardEditorWindow : IImGuiWindow
 
         for (int i = 0; i < 50; i++)
         {
-            if (i == 47 || i == 48)
+            if (i == 47 || i == 48 || i == 49)
             {
                 //Dont show Insect Imitation and Metalmorph due to hard coded equip logic
+                //Dont show strong on toon as its in properties
                 continue;
             }
-            if (i == 49)
-            {
-                    ImGui.Text($"Strong on toon terrain");
-            }
-            else
-            {
-                ImGui.Text($"{MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].GetEquipName(i)}");
-            }
+            
+            ImGui.Text($"{MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].GetEquipName(i)}");
             ImGui.SameLine();
             if (ImGui.RadioButton($"##equip{i}", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[i]))
             {
@@ -695,6 +695,12 @@ class CardEditorWindow : IImGuiWindow
         if (ImGui.RadioButton("In slots", currentCardConst.AppearsInSlotReels))
         {
             currentCardConst.AppearsInSlotReels = !currentCardConst.AppearsInSlotReels;
+        }
+        ImGui.SameLine();
+        if (ImGui.RadioButton($"Strong on toon terrain", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49]))
+        {
+            MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49] =
+                !MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49];
         }
         ImGui.Separator();
 
