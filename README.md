@@ -27,8 +27,9 @@ For more information and updates, visit the [DotrModdingToolRedux GitHub Reposit
 
 ## Credits
 Wouldnt be possible without:
-[Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)
-[Generic Mad Scientist](https://github.com/GenericMadScientist)
-[HippoChan](https://github.com/rjoken)
+[Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
+[Generic Mad Scientist](https://github.com/GenericMadScientist)  
+[HippoChan](https://github.com/rjoken)  
 [Clovis](https://www.youtube.com/@ClovissenpaiDotR)
+
    
