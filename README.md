@@ -16,10 +16,21 @@ This should be cross platform but requires .NET 8
    - After downloading, extract the contents of the ZIP file.
    - Navigate to the extracted folder and run `DotrModdingToolRedux.exe`.
 
-## Features
+## New Features
+### In built map and hidden card editor
+Can save maps to local file to use throughout different mods
+![image](https://github.com/user-attachments/assets/18061633-f291-4129-8e96-7bcf1a0ca14a)
+### New and improved card editor, edit all the card data in one spot
+Edit Effects, See the cards text in the tool
+![image](https://github.com/user-attachments/assets/11e94345-4aa5-4a45-a95f-3056887793c7)
+### Customise battle music
+![image](https://github.com/user-attachments/assets/48535751-de6a-46b9-a359-25dc172f6c56)
+### Custom mods and AI bug fixes
+![image](https://github.com/user-attachments/assets/76f3c0da-62b0-496e-80ee-26cc1575471d)
 
 
 ## License
+
 
 This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/master/LICENSE)
 
