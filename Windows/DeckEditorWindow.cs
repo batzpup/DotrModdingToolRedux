@@ -24,12 +24,14 @@ public class DeckEditorWindow : IImGuiWindow
     ImGuiErrorPopup errorPopup = new ImGuiErrorPopup();
     string trunkSearchFilter = "";
     bool useColour = true;
+    Vector4 highlightColour = new GuiColour(8,153,154,155).value;
 
     public Action<int> ViewCardInEditor;
 
     public DeckEditorWindow(ImFontPtr fontPtr)
     {
         fontToUse = fontPtr;
+   
     }
 
     public void Render()
@@ -341,6 +343,8 @@ public class DeckEditorWindow : IImGuiWindow
         {
             useColour = !useColour;
         }
+        ImGui.SameLine();
+        ImGui.ColorEdit4("Highlight colour", ref highlightColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
         if (ImGui.BeginTable("Trunk", 9, tableFlags))
         {
             float idWidth = ImGui.CalcTextSize("999").X;
@@ -393,10 +397,7 @@ public class DeckEditorWindow : IImGuiWindow
                 sortedTrunkList.Where(card => card.Name.Contains(trunkSearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
             if (useColour)
             {
-                GuiColour guiColour = new GuiColour(new GuiColour(System.Drawing.Color.DarkBlue).value);
-                guiColour.value.W /= 2f;
-
-                ImGui.PushStyleColor(ImGuiCol.Header, guiColour.value);
+                ImGui.PushStyleColor(ImGuiCol.Header, highlightColour);
             }
             for (var index = 0; index < filteredList.Count; index++)
             {

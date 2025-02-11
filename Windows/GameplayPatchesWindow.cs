@@ -83,6 +83,8 @@ class GameplayPatchesWindow : IImGuiWindow
     #region CustomSlots
 
     bool bSaveCustomSlotRewards;
+    Vector4 tableBgColour = ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg];
+    Vector4 searchColour = new GuiColour(Color.DimGray).value;
 
     #endregion
 
@@ -243,9 +245,14 @@ class GameplayPatchesWindow : IImGuiWindow
         {
             ImGui.SetTooltip("Requires Fast Intro");
         }
-        ImGui.PushStyleColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
-        ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
-        ImGui.PushStyleColor(ImGuiCol.PopupBg, new GuiColour(Color.DimGray).value);
+        ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.SameLine();
+        ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
         if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
                                                             ImGuiTableFlags.Sortable |
                                                             ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
@@ -272,7 +279,9 @@ class GameplayPatchesWindow : IImGuiWindow
                 if (ImGui.BeginCombo($"##ThreeInARow{i}", Card.cardNameList[SpecialThreeInARows[i]], ImGuiComboFlags.HeightLarge))
                 {
                     ImGui.PushItemWidth(-1);
+                    ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
                     ImGui.InputText($"##ThreeInARowSearch{i}", ref filteredStringThreeInARow, 32);
+                    ImGui.PopStyleColor();
                     foreach (var cardName in filteredListThree)
                     {
                         int index = Array.IndexOf(Card.cardNameList, cardName);
@@ -293,9 +302,8 @@ class GameplayPatchesWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.BeginTooltip();
-                    ImGui.Image(GlobalImages.Instance.Cards[Card.cardNameList[SpecialThreeInARows[i]]], new Vector2(128, 128));
-                    ImGui.EndTooltip();
+                    GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialThreeInARows[i]]);
+
                 }
                 ImGui.TableSetColumnIndex(2);
                 ImGui.PushItemWidth(-1);
@@ -331,8 +339,8 @@ class GameplayPatchesWindow : IImGuiWindow
                 }
             }
             ImGui.EndTable();
-            ImGui.PopStyleColor(3);
         }
+        ImGui.PopStyleColor(5);
     }
 
 

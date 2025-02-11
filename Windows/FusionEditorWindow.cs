@@ -13,6 +13,9 @@ class FusionEditorWindow : IImGuiWindow
     bool lowerFocusInput = true;
     bool higherFocusInput = true;
     bool resultFocusInput = true;
+    
+    Vector4 tableBgColour = ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg];
+    Vector4 searchColour = new GuiColour(Color.DimGray).value;
 
     public FusionEditorWindow()
     {
@@ -44,10 +47,18 @@ class FusionEditorWindow : IImGuiWindow
             ImGui.PopFont();
             return;
         }
-        
+
         int totalRows = 26540;
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         float columnWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X + 100;
+        ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.SameLine();
+        ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
         if (ImGui.BeginTable("##FusionTable", 4,
                 ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.RowBg |
                 ImGuiTableFlags.Sortable))
@@ -93,9 +104,7 @@ class FusionEditorWindow : IImGuiWindow
             }
 
 
-            ImGui.PushStyleColor(ImGuiCol.FrameBg, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
-            ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
-            ImGui.PushStyleColor(ImGuiCol.PopupBg, new GuiColour(Color.DimGray).value);
+
             clipper.Begin(26540);
             while (clipper.Step())
             {
@@ -122,7 +131,9 @@ class FusionEditorWindow : IImGuiWindow
                             ImGui.SetKeyboardFocusHere();
                             lowerFocusInput = false;
                         }
+                        ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
                         ImGui.InputText($"##searchInputLower_{id}", ref filter1Text, 64);
+                        ImGui.PopStyleColor();
                         List<string> filteredList = Card.cardNameList
                             .Where(cardName => cardName.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
@@ -195,7 +206,7 @@ class FusionEditorWindow : IImGuiWindow
                             }
                             if (ImGui.IsItemHovered())
                             {
-                              GlobalImgui.RenderTooltipCardImage(cardName);
+                                GlobalImgui.RenderTooltipCardImage(cardName);
                             }
                         }
                         if (!anyVisible)
@@ -256,16 +267,19 @@ class FusionEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                       GlobalImgui.RenderTooltipCardImage(fusion.cardResultName);
+                        GlobalImgui.RenderTooltipCardImage(fusion.cardResultName);
                     }
                 }
 
             }
+           
             ImGui.EndTable();
-            ImGui.PopStyleColor(3);
+
         }
+         ImGui.PopStyleColor(5);
         ImGui.PopFont();
     }
+
     public void Free()
     {
 
