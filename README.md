@@ -6,6 +6,7 @@ This should be cross platform but requires .NET 8
 ## Requirements
 
 - **.NET 8**: Ensure that you have .NET 8 installed on your system. You can download it from the official Microsoft website: [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/8.0?)
+- Your own Duelist of the Roses ISO, this tool doesnt not work without and, and it modifies the one you open so please make backups.
 
 ## Installation
 
