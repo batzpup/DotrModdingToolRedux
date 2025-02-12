@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Text;
 namespace DotrModdingTool2IMGUI;
 
 public class CardConstant
@@ -38,7 +39,7 @@ public class CardConstant
     public CardColourType CardColor => _cardColourType;
 
     const int maxAttackDefense = 8191;
-    
+
     byte kind;
     CardKind _cardKind;
     byte kindOfs;
@@ -58,6 +59,18 @@ public class CardConstant
     bool passwordWorks;
     bool appearsInReincarnation;
     byte[] passwordArray;
+    string password;
+
+    public string Password
+    {
+        get => password.ToUpper();
+        set
+        {
+            password = value.ToLower();
+            passwordArray = EncryptPassword(EncodePassword(password));
+        }
+    }
+
 
     public CardConstant(ushort cardIndex, byte[] bytes)
     {
@@ -83,7 +96,50 @@ public class CardConstant
         isSlotRare = dpWithFlags[dpWithFlags.Length - 2];
         hasAlternateArt = dpWithFlags[dpWithFlags.Length - 1];
         passwordArray = new byte[] { bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19] };
+        password = DecodePassword(DecryptPassword(passwordArray));
         setCardColor();
+    }
+
+    string DecodePassword(byte[] decryptedBytes)
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < decryptedBytes.Length; i++)
+        {
+            stringBuilder.Append((char)decryptedBytes[i]);
+        }
+        return stringBuilder.ToString().ToUpper();
+    }
+    //Bounds checking is done in the input field
+    byte[] EncodePassword(string password)
+    {
+        byte[] encodedBytes = new byte[password.Length];
+        for (int i = 0; i < password.Length; i++)
+        {
+            encodedBytes[i] = (byte)password[i];
+        }
+        return encodedBytes;
+    }
+
+    byte[] DecryptPassword(byte[] encryptedBytes)
+    {
+        byte[] decryptedBytes = new byte[encryptedBytes.Length];
+        string key = "HANNIBAL";
+        for (int i = 0; i < encryptedBytes.Length; i++)
+        {
+            decryptedBytes[i] = (byte)((encryptedBytes[i] + key[(i + Index) % 8]) % 256);
+        }
+        return decryptedBytes;
+    }
+
+    byte[] EncryptPassword(byte[] plainBytes)
+    {
+        byte[] encryptedBytes = new byte[plainBytes.Length];
+        string key = "HANNIBAL";
+        for (int i = 0; i < plainBytes.Length; i++)
+        {
+            encryptedBytes[i] = (byte)((plainBytes[i] - key[(i + Index) % 8] + 256) % 256);
+        }
+        return encryptedBytes;
     }
 
     public void setCardColor()
@@ -165,7 +221,7 @@ public class CardConstant
             _cardKind = new CardKind(kind);
         }
     }
-        
+
     public CardKind CardKind
     {
         get { return this._cardKind; }
@@ -176,7 +232,7 @@ public class CardConstant
         get { return this._cardKind.Name; }
     }
 
- 
+
     public ushort EffectId
     {
         get { return this.effectId; }

@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
@@ -25,6 +26,7 @@ class CardEditorWindow : IImGuiWindow
     int currentCardDeckCost;
     int currentCardKind;
     string currentMonsterStatString;
+    string currentCardPassword;
     CardConstant currentCardConst;
     CardColourType currentCardType = CardColourType.NormalMonster;
     IntPtr cardImage;
@@ -84,7 +86,7 @@ class CardEditorWindow : IImGuiWindow
         currentCardAttribute = GetAttributeVisual(currentCardConst);
         currentCardDeckCost = currentCardConst.DeckCost;
         currentCardKind = CardKind.Kinds.Keys.ToList().IndexOf(currentCardConst.CardKind.Id);
-
+        currentCardPassword = currentCardConst.Password;
         if (currentCardConst.EffectId != 0xffff)
         {
             currentEffects = Effects.MonsterEffectsList[currentCardConst.EffectId];
@@ -300,7 +302,7 @@ class CardEditorWindow : IImGuiWindow
                 //Dont show strong on toon as its in properties
                 continue;
             }
-            
+
             ImGui.Text($"{MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].GetEquipName(i)}");
             ImGui.SameLine();
             if (ImGui.RadioButton($"##equip{i}", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[i]))
@@ -569,7 +571,7 @@ class CardEditorWindow : IImGuiWindow
                                 if (ImGui.InputInt($"##Magic Effect Data Lower ({effectsTableVerticalHeaders})", ref currentMagicEffectDataLower, 0))
                                 {
                                     currentMagicEffectDataLower = Math.Clamp(currentMagicEffectDataLower, 0, 65535);
-                                    Effects.MagicEffectsList[currentMagicEffectDataLower].EffectDataLower = (ushort)currentMagicEffectDataLower;
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower = (ushort)currentMagicEffectDataLower;
                                 }
                                 break;
                         }
@@ -685,6 +687,29 @@ class CardEditorWindow : IImGuiWindow
         {
             currentCardConst.PasswordWorks = !currentCardConst.PasswordWorks;
         }
+        if (currentCardConst.PasswordWorks)
+        {
+            unsafe
+            {
+                ImGui.Text("Password:");
+                ImGui.SameLine();
+
+                if (ImGui.InputText($"##password{currentCardConst.Index}", ref currentCardPassword, 8, ImGuiInputTextFlags.CallbackCharFilter,
+                        FilterPasswordInput))
+                {
+                    if (currentCardPassword.Length != 8)
+                    {
+                        StringBuilder stringBuilder = new StringBuilder(currentCardPassword);
+                        for (int i = currentCardPassword.Length; i < 8; i++)
+                        {
+                            stringBuilder.Append('0');
+                        }
+                        currentCardPassword = stringBuilder.ToString();
+                    }
+                    currentCardConst.Password = currentCardPassword;
+                }
+            }
+        }
 
 
         if (ImGui.RadioButton("Is Slot Rare", currentCardConst.IsSlotRare))
@@ -696,12 +721,16 @@ class CardEditorWindow : IImGuiWindow
         {
             currentCardConst.AppearsInSlotReels = !currentCardConst.AppearsInSlotReels;
         }
-        ImGui.SameLine();
-        if (ImGui.RadioButton($"Strong on toon terrain", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49]))
+        if (currentCardConst.CardKind.isMonster())
         {
-            MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49] =
-                !MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49];
+            ImGui.SameLine();
+            if (ImGui.RadioButton($"Strong on toon terrain", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49]))
+            {
+                MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49] =
+                    !MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49];
+            }
         }
+
         ImGui.Separator();
 
         ImGui.Text("Leader Abilities");
@@ -761,6 +790,18 @@ class CardEditorWindow : IImGuiWindow
         textSize = ImGui.CalcTextSize(@string);
         ImGui.PopFont();
         return textSize;
+    }
+
+    unsafe int FilterPasswordInput(ImGuiInputTextCallbackData* data)
+    {
+        char typedChar = (char)data->EventChar;
+        if (!(char.IsLetterOrDigit(typedChar) && ((typedChar >= 'a' && typedChar <= 'z') || (typedChar >= 'A' && typedChar <= 'Z') ||
+                                                  (typedChar >= '0' && typedChar <= '9'))))
+        {
+            return 1;
+        }
+
+        return 0;
     }
 
     public void Free()

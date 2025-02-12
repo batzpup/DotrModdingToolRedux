@@ -2,23 +2,25 @@
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
 
-public class ImGuiErrorPopup
+public class ImGuiModalPopup
 {
-    bool showErrorPopup;
+    public bool showErrorPopup;
     string errorMessage;
+    string messageTitle;
 
 
-    public ImGuiErrorPopup()
+    public ImGuiModalPopup()
     {
         showErrorPopup = false;
         errorMessage = string.Empty;
     }
 
-    public void Show(string message,string messageTitle = "Error")
+    public void Show(string message, string MessageTitle = "Error")
     {
+        messageTitle = MessageTitle;
         errorMessage = message;
         showErrorPopup = true;
-        
+
 
     }
 
@@ -27,10 +29,10 @@ public class ImGuiErrorPopup
     {
         if (showErrorPopup)
         {
-            ImGui.OpenPopup("Error");
+            ImGui.OpenPopup(messageTitle);
             Vector2 center = ImGui.GetMainViewport().GetCenter();
             ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-            if (ImGui.BeginPopupModal("Error", ref showErrorPopup, ImGuiWindowFlags.Modal | ImGuiWindowFlags.AlwaysAutoResize))
+            if (ImGui.BeginPopupModal(messageTitle, ref showErrorPopup, ImGuiWindowFlags.Modal | ImGuiWindowFlags.AlwaysAutoResize))
             {
                 if (!imFontPtr.IsLoaded())
                 {
@@ -55,10 +57,10 @@ public class ImGuiErrorPopup
     {
         if (showErrorPopup)
         {
-            ImGui.OpenPopup("Error");
+            ImGui.OpenPopup(messageTitle);
             Vector2 center = ImGui.GetMainViewport().GetCenter();
             ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-            if (ImGui.BeginPopupModal("Error", ref showErrorPopup, ImGuiWindowFlags.Modal | ImGuiWindowFlags.AlwaysAutoResize))
+            if (ImGui.BeginPopupModal(messageTitle, ref showErrorPopup, ImGuiWindowFlags.Modal | ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.SetWindowFontScale(1f);
                 ImGui.Text(errorMessage);

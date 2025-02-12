@@ -39,7 +39,7 @@ public class EditorWindow
 
     //Data Access
     DataAccess dataAccess = DataAccess.Instance;
-    ImGuiErrorPopup errorPopup = new ImGuiErrorPopup();
+    ImGuiModalPopup _modalPopup = new ImGuiModalPopup();
     public static Action OnIsoLoaded;
 
 
@@ -59,7 +59,7 @@ public class EditorWindow
 
     public EditorWindow()
     {
-        PrintEmbeddedResources();
+        //PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
         largerfont = io.Fonts.AddFontDefault();
@@ -129,7 +129,7 @@ public class EditorWindow
                 }
                 else
                 {
-                    errorPopup.Show("No ISO open to save to");
+                    _modalPopup.Show("No ISO open to save to");
                 }
             }
             ImGui.Spacing();
@@ -224,6 +224,11 @@ public class EditorWindow
                 ImGui.EndPopup();
                 ImGui.PopFont();
             }
+          //  if (ImGui.MenuItem("Check for Updates"))
+          //  {
+          //      Task.Run(async () =>await Updater.CheckForUpdates());
+          //  }
+            
 
             ImGui.EndMenuBar();
 
@@ -238,7 +243,7 @@ public class EditorWindow
         RenderMainContent();
         ImGui.EndChild();
         ImGui.Columns(0);
-        errorPopup.Draw(largerfont);
+        _modalPopup.Draw(largerfont);
 
         ImGui.End();
 
@@ -320,7 +325,7 @@ public class EditorWindow
             else
             {
                 Console.WriteLine("Should show pop up error");
-                errorPopup.Show("Not an .iso file");
+                _modalPopup.Show("Not an .iso file");
             }
         }
     }
@@ -332,7 +337,6 @@ public class EditorWindow
     void SaveChanges()
     {
         _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
-        
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
@@ -343,8 +347,10 @@ public class EditorWindow
         dataAccess.SaveEnemyAiData(Enemies.AiBytes);
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes,Effects.MagicEffectBytes);
-        errorPopup.Show("Changes have been saved");
-
+        if(!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
+        {
+            _modalPopup.Show("Changes have been saved");
+        }
     }
 
     void LoadDataFromIso()

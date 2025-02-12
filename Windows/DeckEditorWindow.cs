@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Text;
 using ImGuiNET;
 using Raylib_cs;
 namespace DotrModdingTool2IMGUI;
@@ -14,29 +15,31 @@ public class DeckEditorWindow : IImGuiWindow
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
     List<DeckCard> sortedDeckList = new List<DeckCard>();
     List<int> trunkSelection = new List<int>();
-
+    List<string> 
+        failedToSaveDecks = new List<string>();
+    bool openDeckErrors;
+    StringBuilder deckErrorText = new StringBuilder();
     ImFontPtr fontToUse;
     Deck currentDeck;
     int currentDeckListIndex = 0;
     int lastDeckListIndex = 0;
     int enemyImageIndex;
     int deckLeaderImage;
-    ImGuiErrorPopup errorPopup = new ImGuiErrorPopup();
+    public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
     string trunkSearchFilter = "";
     bool useColour = true;
-    Vector4 highlightColour = new GuiColour(8,153,154,155).value;
+    Vector4 highlightColour = new GuiColour(8, 153, 154, 155).value;
 
     public Action<int> ViewCardInEditor;
 
     public DeckEditorWindow(ImFontPtr fontPtr)
     {
         fontToUse = fontPtr;
-   
+
     }
 
     public void Render()
     {
-        Vector2 windowSize = ImGui.GetWindowSize();
         float availableHeight = ImGui.GetContentRegionAvail().Y;
         ImGui.BeginChild("Trunk", new Vector2(ImGui.GetContentRegionAvail().X / 2f, availableHeight),
             ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
@@ -47,7 +50,11 @@ public class DeckEditorWindow : IImGuiWindow
             ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
         DrawDeckListTable();
         ImGui.EndChild();
-        errorPopup.Draw();
+        ImGui.PushFont(Fonts.MonoSpace);
+        modalPopup.Draw();
+        ImGui.PopFont();
+        
+        
     }
 
     public void Free()
@@ -57,6 +64,7 @@ public class DeckEditorWindow : IImGuiWindow
 
     public void LoadDeckLists()
     {
+        deckLists.Clear();
         deckLists = Deck.LoadDeckListFromBytes(DataAccess.Instance.LoadDecks());
         currentDeck = deckLists[currentDeckListIndex];
         sortedDeckList = new List<DeckCard>(currentDeck.CardList);
@@ -168,28 +176,10 @@ public class DeckEditorWindow : IImGuiWindow
                 ImGui.Image(GlobalImages.Instance.Enemies[(EEnemyImages)enemyImageIndex], new Vector2(128, 128));
                 ImGui.SameLine();
             }
-            // Add AI changes
+
         }
         ImGui.Image(GlobalImages.Instance.Cards[currentDeck.DeckLeader.Name], new Vector2(128, 128));
 
-
-        if (ImGui.Button("Save Deck", new Vector2(0, 0)))
-        {
-            if (sortedDeckList.Count == 40)
-            {
-                currentDeck.CardList.Clear();
-                foreach (var deckCard in sortedDeckList)
-                {
-                    currentDeck.CardList.Add(deckCard);
-                }
-                DataAccess.Instance.SaveDeck(currentDeckListIndex, currentDeck.Bytes);
-                errorPopup.Show($"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name} saved!");
-            }
-            else
-            {
-                errorPopup.Show("Deck needs 40 cards");
-            }
-        }
         if (sortedDeckList.Count == 40)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, ImageHelper.ColorToVec4Normalised(Color.Green));
@@ -205,7 +195,10 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.SameLine();
 
         ImGui.Text($"Total DC {sortedDeckList.Sum(deckCard => deckCard.CardConstant.DeckCost)}");
-
+        if (ImGui.Button("Test"))
+        {
+            modalPopup.Show(deckErrorText.ToString());
+        }
         if (ImGui.BeginTable("CurrentDeck", 9, tableFlags))
         {
             unsafe
@@ -306,7 +299,9 @@ public class DeckEditorWindow : IImGuiWindow
                     if (ImGui.Button("Remove"))
                     {
                         Console.WriteLine($"Removing {sortedDeckList[index].Name} from deck");
+                        currentDeck.CardList.Remove(sortedDeckList[index]);
                         sortedDeckList.RemoveAt(index);
+
                     }
 
                     ImGui.TableSetColumnIndex(0);
@@ -452,6 +447,7 @@ public class DeckEditorWindow : IImGuiWindow
                     {
                         Console.WriteLine($"Adding {filteredList[index].Name} to deck");
                         sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
+                        currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
                     }
                     else
                     {
@@ -467,6 +463,7 @@ public class DeckEditorWindow : IImGuiWindow
                             {
                                 Console.WriteLine($"Adding {result.Name} to deck");
                                 sortedDeckList.Add(new DeckCard(result, DeckLeaderRank.NCO));
+                                currentDeck.CardList.Add(new DeckCard(result, DeckLeaderRank.NCO));
                             }
                             else
                             {
@@ -561,12 +558,36 @@ public class DeckEditorWindow : IImGuiWindow
         return new GuiColour(ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg]);
     }
 
+
     public void SaveAllDecks()
     {
-        foreach (var deck in deckLists)
+        failedToSaveDecks.Clear();
+        for (var index = 0; index < deckLists.Count; index++)
         {
-            DataAccess.Instance.SaveDeck(deck.Index, deck.Bytes);
+            Deck deck = deckLists[index];
+            if (deck.CardList.Count == 40)
+            {
+                DataAccess.Instance.SaveDeck(index, deck.Bytes);
+            }
+            else
+            {
+                failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name}");
+            }
         }
+        LoadDeckLists();
         UpdateStartingDeck.CreateNewStartingDeckData(deckLists);
+        if (failedToSaveDecks.Count > 0)
+        {
+            deckErrorText.Clear();
+            deckErrorText.AppendLine("Failed to add:");
+            foreach (var deckError in failedToSaveDecks)
+            {
+                deckErrorText.AppendLine("  "+deckError);
+            }
+            deckErrorText.AppendLine("Decks must have exactly 40 cards");
+            deckErrorText.AppendLine("Your other changes have been saved!");
+            modalPopup.Show(deckErrorText.ToString());
+        }
+        
     }
 }

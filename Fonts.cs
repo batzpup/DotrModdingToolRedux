@@ -10,7 +10,7 @@ public static class Fonts
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
         string resourceName = $"{assembly.GetName().Name}.Fonts.{fontPath}";
-        Console.WriteLine($"Loading resource: {resourceName}");
+        //Console.WriteLine($"Loading resource: {resourceName}");
         ImFontPtr font;
         using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
         {

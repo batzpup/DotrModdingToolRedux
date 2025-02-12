@@ -489,7 +489,6 @@ public class MapEditorWindow : IImGuiWindow
     public void SaveAllMaps()
     {
         dataAccess.SaveMaps();
-        Console.WriteLine(TreasureCards.Instance.Treasures.Count);
         dataAccess.SaveAllTreasureCards();
     }
 
