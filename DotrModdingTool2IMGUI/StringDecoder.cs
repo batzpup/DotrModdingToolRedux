@@ -198,6 +198,7 @@ public static class StringDecoder
                     }
                     realChars.Add("\n");
                 }
+                realChars.Remove(realChars[^1]);
                 StringTable.Add(i, string.Join("", realChars));
             }
 

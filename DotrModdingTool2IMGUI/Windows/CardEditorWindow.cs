@@ -7,6 +7,7 @@ using Raylib_cs;
 using rlImGui_cs;
 using Color = System.Drawing.Color;
 using ImGui = ImGuiNET.ImGui;
+
 namespace DotrModdingTool2IMGUI;
 
 class CardEditorWindow : IImGuiWindow
@@ -316,8 +317,10 @@ class CardEditorWindow : IImGuiWindow
     void RenderCardText()
     {
         ImGui.Text("Card Name: ");
-        ImGui.Text(StringDecoder.StringTable[StringDecoder.CardNamesOffset + currentCardIndex]);
-
+        string name = StringDecoder.StringTable[StringDecoder.CardNamesOffset + currentCardIndex];
+        string name2 = name.ToString();
+        ImGui.InputText("##NameText", ref name2, 32, ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.AutoSelectAll);
+        ImGui.Spacing();
         ImGui.Text("Card Text: ");
         ImGui.Text(StringDecoder.StringTable[StringDecoder.CardEffectTextOffset + currentCardIndex]);
 

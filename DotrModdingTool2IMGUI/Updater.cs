@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 namespace DotrModdingTool2IMGUI;
 
 using System;
@@ -12,7 +13,7 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    static readonly string currentVersion = "v1.1.1-beta";
+    static readonly string currentVersion = "v1.1.2-beta";
     static readonly string updaterFile = "Updater.exe";
     static string latestVersion;
     static string downloadUrl;
@@ -20,6 +21,13 @@ public static class Updater
 
     public static async Task CheckForUpdates(bool isStartup = false)
     {
+        //TODO make this cross platform
+        if( !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+            
+        }
+            
         string extractPath = Path.Combine(Path.GetTempPath(), "UpdaterTemp");
         if (Directory.Exists(extractPath))
         {

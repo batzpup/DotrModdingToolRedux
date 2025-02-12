@@ -10,10 +10,11 @@ class FusionEditorWindow : IImGuiWindow
     string filter1Text = "";
     string filter2Text = "";
     string filter3Text = "";
+    string searchText = "";
     bool lowerFocusInput = true;
     bool higherFocusInput = true;
     bool resultFocusInput = true;
-    
+
     Vector4 tableBgColour = ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg];
     Vector4 searchColour = new GuiColour(Color.DimGray).value;
 
@@ -54,11 +55,14 @@ class FusionEditorWindow : IImGuiWindow
         ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
         ImGui.SameLine();
         ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.Text("Search Bar");
+        ImGui.InputText("##SearchBar", ref searchText, 32);
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
+
         if (ImGui.BeginTable("##FusionTable", 4,
                 ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.RowBg |
                 ImGuiTableFlags.Sortable))
@@ -103,14 +107,23 @@ class FusionEditorWindow : IImGuiWindow
                 sortSpecifications.SpecsDirty = false;
             }
 
+          
+            List<KeyValuePair<int, FusionData>> filteredData = sortedData.Where(entry =>
+            {
+                var fusion = entry.Value;
+                bool matchesLower = fusion.lowerCardName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                bool matchesHigher = fusion.higherCardName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                bool matchesResult = fusion.cardResultName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
 
+                return matchesLower || matchesHigher || matchesResult; 
+            }).ToList();
 
-            clipper.Begin(26540);
+            clipper.Begin(filteredData.Count);
             while (clipper.Step())
             {
                 for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    var entry = sortedData[i];
+                    var entry = filteredData[i];
                     int id = entry.Key;
                     var fusion = entry.Value;
                     fusion.UpdateFusion();
@@ -272,11 +285,11 @@ class FusionEditorWindow : IImGuiWindow
                 }
 
             }
-           
+
             ImGui.EndTable();
 
         }
-         ImGui.PopStyleColor(5);
+        ImGui.PopStyleColor(5);
         ImGui.PopFont();
     }
 

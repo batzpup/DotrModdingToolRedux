@@ -15,8 +15,10 @@ public class DeckEditorWindow : IImGuiWindow
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
     List<DeckCard> sortedDeckList = new List<DeckCard>();
     List<int> trunkSelection = new List<int>();
-    List<string> 
+
+    List<string>
         failedToSaveDecks = new List<string>();
+
     bool openDeckErrors;
     StringBuilder deckErrorText = new StringBuilder();
     ImFontPtr fontToUse;
@@ -53,8 +55,8 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.PushFont(Fonts.MonoSpace);
         modalPopup.Draw();
         ImGui.PopFont();
-        
-        
+
+
     }
 
     public void Free()
@@ -195,10 +197,7 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.SameLine();
 
         ImGui.Text($"Total DC {sortedDeckList.Sum(deckCard => deckCard.CardConstant.DeckCost)}");
-        if (ImGui.Button("Test"))
-        {
-            modalPopup.Show(deckErrorText.ToString());
-        }
+   
         if (ImGui.BeginTable("CurrentDeck", 9, tableFlags))
         {
             unsafe
@@ -456,18 +455,19 @@ public class DeckEditorWindow : IImGuiWindow
 
                     foreach (var i in trunkSelection)
                     {
-                        if (i != filteredList[index].Index)
+                        if (i != cardConstant.Index)
                         {
-                            var result = filteredList.First(card => card.Index == i);
-                            if (sortedDeckList.Count(card => card.CardConstant.Index == result.Index) < 3)
+                            CardConstant newCardConst = CardConstant.List[i];
+                            if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3)
                             {
-                                Console.WriteLine($"Adding {result.Name} to deck");
-                                sortedDeckList.Add(new DeckCard(result, DeckLeaderRank.NCO));
-                                currentDeck.CardList.Add(new DeckCard(result, DeckLeaderRank.NCO));
+                                
+                                Console.WriteLine($"Adding {newCardConst.Name} to deck");
+                                sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
+                                currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
                             }
                             else
                             {
-                                Console.WriteLine($"You already have 3 copies {result.Name} in the deck (Loop)");
+                                Console.WriteLine($"You already have 3 copies {newCardConst.Name} in the deck (Loop)");
                             }
                         }
                     }
@@ -482,8 +482,6 @@ public class DeckEditorWindow : IImGuiWindow
 
                 if (ImGui.Selectable("##Selectable", item_is_selected, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, 0)))
                 {
-
-
                     if (item_is_selected && ImGui.GetIO().KeyAlt && ImGui.GetIO().KeyCtrl)
                     {
                         trunkSelection.Remove(cardConstant.Index);
@@ -497,14 +495,20 @@ public class DeckEditorWindow : IImGuiWindow
                         }
                         else if (!item_is_selected && ImGui.GetIO().KeyShift)
                         {
-                            int smallerValue = Math.Min(trunkSelection[trunkSelection.Count - 1], cardConstant.Index);
-                            int higherValue = Math.Max(trunkSelection[trunkSelection.Count - 1], cardConstant.Index);
-                            for (int i = smallerValue; i < higherValue; i++)
+                            var original = trunkSelection[trunkSelection.Count - 1];
+                            int originalIndexInList = filteredList.FindIndex(i => i.Index == original) ;
+                            int cardConstIndexInList = filteredList.FindIndex(i => i.Index == cardConstant.Index);
+                            int smallerValue = Math.Min(originalIndexInList, cardConstIndexInList);
+                            int higherValue = Math.Max(originalIndexInList, cardConstIndexInList);
+                            for (int i = smallerValue; i <= higherValue; i++)
                             {
-                                trunkSelection.Add(i);
+                                if (i != originalIndexInList && !trunkSelection.Contains(filteredList[i].Index))
+                                {
+                                    trunkSelection.Add(filteredList[i].Index);
+                                }
                             }
                         }
-                        else if (!item_is_selected && !ImGui.GetIO().KeyAlt)
+                        else if (!item_is_selected)
                         {
                             trunkSelection.Clear();
                             trunkSelection.Add(cardConstant.Index);
@@ -582,12 +586,12 @@ public class DeckEditorWindow : IImGuiWindow
             deckErrorText.AppendLine("Failed to add:");
             foreach (var deckError in failedToSaveDecks)
             {
-                deckErrorText.AppendLine("  "+deckError);
+                deckErrorText.AppendLine("  " + deckError);
             }
             deckErrorText.AppendLine("Decks must have exactly 40 cards");
             deckErrorText.AppendLine("Your other changes have been saved!");
             modalPopup.Show(deckErrorText.ToString());
         }
-        
+
     }
 }
