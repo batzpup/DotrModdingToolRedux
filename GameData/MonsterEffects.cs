@@ -4,6 +4,16 @@ public static class Effects
 {
     public static List<MonsterEffects> MonsterEffectsList = new List<MonsterEffects>();
     public static List<Effect> MagicEffectsList = new List<Effect>();
+
+    public static byte[] MonsterEffectBytes
+    {
+        get { return MonsterEffectsList.SelectMany(a => a.Effects.SelectMany(b => b.Bytes)).ToArray(); }
+    }
+
+    public static byte[] MagicEffectBytes
+    {
+        get { return MagicEffectsList.SelectMany(a => a.Bytes).ToArray(); }
+    }
 }
 
 public class MonsterEffects
@@ -32,10 +42,30 @@ public class Effect
     public SearchMode SearchMode;
 
     //The parameter data
-    public ushort effectDataUpper;
-    public ushort effectDataLower;
+    ushort effectDataUpper;
+    ushort effectDataLower;
     public string effectName;
     public string searchModeName;
+
+    public ushort EffectDataUpper
+    {
+        get => effectDataUpper;
+        set
+        {
+            effectDataUpper = value;
+            BitConverter.GetBytes(value).CopyTo(Bytes, 6);
+        }
+    }
+
+    public ushort EffectDataLower
+    {
+        get => effectDataLower;
+        set
+        {
+            effectDataLower = value;
+            BitConverter.GetBytes(value).CopyTo(Bytes, 4);
+        }
+    }
 
 
     public Effect(byte[] EffectData)
@@ -60,7 +90,7 @@ public class Effect
             SearchMode = (SearchMode)baseSearchMode;
             effectName = Enum.GetName(typeof(EffectId), EffectId) ?? "";
             searchModeName = Enum.GetName(typeof(SearchMode), SearchMode) ?? "";
-            
+
             if (sideTarget != 0)
             {
                 searchModeName += $" ({Enum.GetName(typeof(SearchModeTargeting), sideTarget) ?? "No Targeting type"})";

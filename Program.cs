@@ -9,8 +9,9 @@ class Program
     public static void Main(string[] args)
     {
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.MaximizedWindow);
-        Raylib.InitWindow(1920, 1080, "Dotr Modding Tools");
         
+        Raylib.InitWindow(1920, 1080, "Dotr Modding Tools");
+        Raylib.SetExitKey(KeyboardKey.Null);
         Image iconImage = ImageHelper.LoadImageRaylib("Images.redRoseLeader.png");
         Raylib.SetWindowIcon(iconImage);
         Raylib.UnloadImage(iconImage);

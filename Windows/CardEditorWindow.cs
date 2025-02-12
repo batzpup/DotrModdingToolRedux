@@ -352,9 +352,9 @@ class CardEditorWindow : IImGuiWindow
                                         ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].searchModeName);
                                         break;
                                     case 2:
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].effectDataUpper.ToString());
+                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataUpper.ToString());
                                         ImGui.Separator();
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].effectDataLower.ToString());
+                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataLower.ToString());
                                         break;
                                 }
                             }
@@ -417,9 +417,9 @@ class CardEditorWindow : IImGuiWindow
                                             ImGui.Text(currentEffects.Effects[i].searchModeName);
                                             break;
                                         case 2:
-                                            ImGui.Text(currentEffects.Effects[i].effectDataUpper.ToString());
+                                            ImGui.Text(currentEffects.Effects[i].EffectDataUpper.ToString());
                                             ImGui.Separator();
-                                            ImGui.Text(currentEffects.Effects[i].effectDataLower.ToString());
+                                            ImGui.Text(currentEffects.Effects[i].EffectDataLower.ToString());
                                             break;
                                     }
                                 }
@@ -453,9 +453,9 @@ class CardEditorWindow : IImGuiWindow
                 for (int monsterEffectIndex = 0; monsterEffectIndex < 5; monsterEffectIndex++)
                 {
                     currentMonsterEffectDataUpper[monsterEffectIndex] = (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex]
-                        .Effects[monsterEffectIndex].effectDataUpper;
+                        .Effects[monsterEffectIndex].EffectDataUpper;
                     currentMonsterEffectDataLower[monsterEffectIndex] = (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex]
-                        .Effects[monsterEffectIndex].effectDataLower;
+                        .Effects[monsterEffectIndex].EffectDataLower;
                 }
                 for (int horizontalHeaderIndex = 0; horizontalHeaderIndex < effectsTableHorizontalHeaders.Length; horizontalHeaderIndex++)
                 {
@@ -492,7 +492,7 @@ class CardEditorWindow : IImGuiWindow
                                     {
                                         currentMonsterEffectDataUpper[verticalHeaderIndex] =
                                             Math.Clamp(currentMonsterEffectDataUpper[verticalHeaderIndex], 0, 65535);
-                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].effectDataUpper =
+                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].EffectDataUpper =
                                             (ushort)currentMonsterEffectDataUpper[verticalHeaderIndex];
                                     }
                                     ImGui.SetNextItemWidth(100);
@@ -502,7 +502,7 @@ class CardEditorWindow : IImGuiWindow
                                     {
                                         currentMonsterEffectDataLower[verticalHeaderIndex] =
                                             Math.Clamp(currentMonsterEffectDataLower[verticalHeaderIndex], 0, 65535);
-                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].effectDataLower =
+                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].EffectDataLower =
                                             (ushort)currentMonsterEffectDataLower[verticalHeaderIndex];
                                     }
                                     break;
@@ -537,8 +537,8 @@ class CardEditorWindow : IImGuiWindow
                         magicEffectTableEditorIndex = 0;
                     }
                 }
-                currentMagicEffectDataUpper = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].effectDataUpper;
-                currentMagicEffectDataLower = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].effectDataLower;
+                currentMagicEffectDataUpper = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataUpper;
+                currentMagicEffectDataLower = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower;
                 for (int i = 0; i < effectsTableHorizontalHeaders.Length; i++)
                 {
                     if (ImGui.BeginTable(effectsTableHorizontalHeaders[i], 1, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
@@ -563,13 +563,13 @@ class CardEditorWindow : IImGuiWindow
                                 if (ImGui.InputInt($"##Magic Effect Data Upper ({effectsTableVerticalHeaders})", ref currentMagicEffectDataUpper, 0))
                                 {
                                     currentMagicEffectDataUpper = Math.Clamp(currentMagicEffectDataUpper, 0, 65535);
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].effectDataUpper = (ushort)currentMagicEffectDataUpper;
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataUpper = (ushort)currentMagicEffectDataUpper;
                                 }
                                 ImGui.SetNextItemWidth(100);
                                 if (ImGui.InputInt($"##Magic Effect Data Lower ({effectsTableVerticalHeaders})", ref currentMagicEffectDataLower, 0))
                                 {
                                     currentMagicEffectDataLower = Math.Clamp(currentMagicEffectDataLower, 0, 65535);
-                                    Effects.MagicEffectsList[currentMagicEffectDataLower].effectDataLower = (ushort)currentMagicEffectDataLower;
+                                    Effects.MagicEffectsList[currentMagicEffectDataLower].EffectDataLower = (ushort)currentMagicEffectDataLower;
                                 }
                                 break;
                         }

@@ -360,7 +360,8 @@ public class DataAccess
     {
         byte[] monsterEffectsBytes = new byte[EffectByteCount * MonsterEffectsCount * MonsterEffectsTypeCount];
         byte[] magicEffectsBytes = new byte[EffectByteCount * MagicEffectsCount];
-
+        Effects.MonsterEffectsList.Clear();
+        Effects.MagicEffectsList.Clear();
         lock (FileStreamLock)
         {
             fileStream.Seek(MonsterEffectsOffset, SeekOrigin.Begin);

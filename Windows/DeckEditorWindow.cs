@@ -334,7 +334,7 @@ public class DeckEditorWindow : IImGuiWindow
             sortedTrunkList = new List<CardConstant>(CardConstant.List);
         }
         ImGui.TextColored(new GuiColour(System.Drawing.Color.SkyBlue).value,
-            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection, Shift + left click to add everything between your last clicked card and the this card\nCtrl+Alt+Click = remove from selection, Ctrl + Right click to clear all\n Shift + Right click = view hovered card in editor");
+            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection, Shift + left click to add everything between your last clicked card and the this card\nCtrl+Alt+Click = remove from selection, Ctrl + Right click to clear all\nShift + Right click = view hovered card in editor");
         ImGui.Text("Search Bar");
         ImGui.SameLine();
         ImGui.InputText("##SearchBar", ref trunkSearchFilter, 32);

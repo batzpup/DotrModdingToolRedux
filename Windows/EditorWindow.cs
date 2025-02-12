@@ -342,6 +342,7 @@ public class EditorWindow
         dataAccess.SaveDeckLeaderThresholds();
         dataAccess.SaveEnemyAiData(Enemies.AiBytes);
         _fusionEditorWindow.SaveFusionChanges();
+        dataAccess.SaveEffectData(Effects.MonsterEffectBytes,Effects.MagicEffectBytes);
         errorPopup.Show("Changes have been saved");
 
     }
