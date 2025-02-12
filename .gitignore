@@ -14,7 +14,10 @@
 [Dd]eploy*\
 obj/                 # Object files
 bin/                 # Output files
-
+DotrModdingTool2IMGUI/obj/
+DotrModdingTool2IMGUI/bin/
+Updater/obj
+Updater/bin
 # Rider settings
 .idea/
 
