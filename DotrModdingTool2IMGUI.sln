@@ -1,7 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotrModdingTool2IMGUI", "DotrModdingTool2IMGUI.csproj", "{581B32BA-043F-4FD2-B1EC-D051D2DD159B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotrModdingTool2IMGUI", "DotrModdingTool2IMGUI\DotrModdingTool2IMGUI.csproj", "{581B32BA-043F-4FD2-B1EC-D051D2DD159B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{EDABB9BF-185D-4255-8620-7E84CDC06B50}"
+EndProject
+
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,17 @@ Global
 		{581B32BA-043F-4FD2-B1EC-D051D2DD159B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{581B32BA-043F-4FD2-B1EC-D051D2DD159B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{581B32BA-043F-4FD2-B1EC-D051D2DD159B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73273659-DFF0-47B3-A2D6-BD5DA95B1409}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73273659-DFF0-47B3-A2D6-BD5DA95B1409}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73273659-DFF0-47B3-A2D6-BD5DA95B1409}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73273659-DFF0-47B3-A2D6-BD5DA95B1409}.Release|Any CPU.Build.0 = Release|Any CPU
+		{373CD0FD-935A-43EF-B272-2302E2FB7595}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{373CD0FD-935A-43EF-B272-2302E2FB7595}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{373CD0FD-935A-43EF-B272-2302E2FB7595}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{373CD0FD-935A-43EF-B272-2302E2FB7595}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDABB9BF-185D-4255-8620-7E84CDC06B50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDABB9BF-185D-4255-8620-7E84CDC06B50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDABB9BF-185D-4255-8620-7E84CDC06B50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDABB9BF-185D-4255-8620-7E84CDC06B50}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
