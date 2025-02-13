@@ -371,7 +371,7 @@ public class EditorWindow
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
-            _modalPopup.Show("Changes have been saved");
+            _modalPopup.Show("Changes have been saved","Save successful");
         }
     }
 

@@ -48,7 +48,7 @@ class CardEditorWindow : IImGuiWindow
     int[] currentAbilityRankIndex = new int[20];
     MonsterEffects? currentEffects = null;
     string[] effectsTableVerticalHeaders = Enum.GetNames(typeof(MonsterEffects.MonsterEffectType));
-    string[] effectsTableHorizontalHeaders = { "Effect Id", "Search Type", "Extra Data" };
+    string[] effectsTableHorizontalHeaders = { "Effect Id", "Effect Target", "Extra Data" };
     int[] currentMonsterEffectDataUpper = new int[5];
     int[] currentMonsterEffectDataLower = new int[5];
     int monsterEffectTableEditorIndex = 0;
@@ -317,9 +317,9 @@ class CardEditorWindow : IImGuiWindow
     void RenderCardText()
     {
         ImGui.Text("Card Name: ");
+        ImGui.Text("(Read only,highlightable for copy paste purposes)");
         string name = StringDecoder.StringTable[StringDecoder.CardNamesOffset + currentCardIndex];
-        string name2 = name.ToString();
-        ImGui.InputText("##NameText", ref name2, 32, ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.AutoSelectAll);
+        ImGui.InputText("##NameText", ref name, 32, ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.AutoSelectAll);
         ImGui.Spacing();
         ImGui.Text("Card Text: ");
         ImGui.Text(StringDecoder.StringTable[StringDecoder.CardEffectTextOffset + currentCardIndex]);
@@ -558,10 +558,10 @@ class CardEditorWindow : IImGuiWindow
                         switch (i)
                         {
                             case 0:
-                                ImGui.Text(Effects.MagicEffectsList[magicEffectTableEditorIndex].effectName);
+                                ImGui.Text($"{Effects.MagicEffectsList[magicEffectTableEditorIndex].effectName} : {(int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId}");
                                 break;
                             case 1:
-                                ImGui.Text(Effects.MagicEffectsList[magicEffectTableEditorIndex].searchModeName);
+                                ImGui.Text($"{Effects.MagicEffectsList[magicEffectTableEditorIndex].searchModeName} : {(int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode}");
                                 break;
                             case 2:
                                 ImGui.SetNextItemWidth(100);

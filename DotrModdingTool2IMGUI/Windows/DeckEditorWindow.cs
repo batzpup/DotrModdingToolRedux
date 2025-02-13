@@ -197,7 +197,7 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.SameLine();
 
         ImGui.Text($"Total DC {sortedDeckList.Sum(deckCard => deckCard.CardConstant.DeckCost)}");
-   
+
         if (ImGui.BeginTable("CurrentDeck", 9, tableFlags))
         {
             unsafe
@@ -297,10 +297,9 @@ public class DeckEditorWindow : IImGuiWindow
                     ImGui.TableSetColumnIndex(8);
                     if (ImGui.Button("Remove"))
                     {
-                        Console.WriteLine($"Removing {sortedDeckList[index].Name} from deck");
-                        currentDeck.CardList.Remove(sortedDeckList[index]);
+                        currentDeck.CardList.Remove(currentDeck.CardList.Find(card => card.Name == cardConstant.Name));
                         sortedDeckList.RemoveAt(index);
-
+                        Console.WriteLine($"Removing {cardConstant.Name} from deck");
                     }
 
                     ImGui.TableSetColumnIndex(0);
@@ -444,9 +443,10 @@ public class DeckEditorWindow : IImGuiWindow
                 {
                     if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < 3)
                     {
-                        Console.WriteLine($"Adding {filteredList[index].Name} to deck");
-                        sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
                         currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
+                        sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
+                        Console.WriteLine($"Adding {filteredList[index].Name} to deck");
+
                     }
                     else
                     {
@@ -460,10 +460,9 @@ public class DeckEditorWindow : IImGuiWindow
                             CardConstant newCardConst = CardConstant.List[i];
                             if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3)
                             {
-                                
-                                Console.WriteLine($"Adding {newCardConst.Name} to deck");
                                 sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
                                 currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
+                                Console.WriteLine($"Adding {newCardConst.Name} to deck");
                             }
                             else
                             {
@@ -496,7 +495,7 @@ public class DeckEditorWindow : IImGuiWindow
                         else if (!item_is_selected && ImGui.GetIO().KeyShift)
                         {
                             var original = trunkSelection[trunkSelection.Count - 1];
-                            int originalIndexInList = filteredList.FindIndex(i => i.Index == original) ;
+                            int originalIndexInList = filteredList.FindIndex(i => i.Index == original);
                             int cardConstIndexInList = filteredList.FindIndex(i => i.Index == cardConstant.Index);
                             int smallerValue = Math.Min(originalIndexInList, cardConstIndexInList);
                             int higherValue = Math.Max(originalIndexInList, cardConstIndexInList);
@@ -578,7 +577,7 @@ public class DeckEditorWindow : IImGuiWindow
                 failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name}");
             }
         }
-        LoadDeckLists();
+        //LoadDeckLists();
         UpdateStartingDeck.CreateNewStartingDeckData(deckLists);
         if (failedToSaveDecks.Count > 0)
         {
