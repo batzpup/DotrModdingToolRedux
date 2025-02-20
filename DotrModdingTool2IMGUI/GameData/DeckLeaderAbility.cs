@@ -24,9 +24,9 @@ public class DeckLeaderAbility
     public DeckLeaderAbilityType AbilityType { get; }
     public string Name { get; }
     public string Description { get; }
-    bool Enabled;
+    bool enabled;
 
-    public int rankRequired;
+    int rankRequired;
 
     public int RankRequired
     {
@@ -42,7 +42,7 @@ public class DeckLeaderAbility
             {
                 Bytes[0] = (byte)rankRequired;
             }
-            
+
         }
     }
 
@@ -54,8 +54,8 @@ public class DeckLeaderAbility
         AbilityType = (DeckLeaderAbilityType)this.AbilityIndex;
         Name = DeckLeaderAbilityInfo.NameAndDescriptions[abilityIndex][0];
         Description = DeckLeaderAbilityInfo.NameAndDescriptions[abilityIndex][1];
-        Enabled = BitConverter.ToUInt16(this.Bytes, 0) != DisabledBytesValue;
-        if (Enabled)
+        enabled = BitConverter.ToUInt16(this.Bytes, 0) != DisabledBytesValue;
+        if (enabled)
         {
             if (IsRankLowerByte((DeckLeaderAbilityType)abilityIndex))
             {
@@ -78,18 +78,31 @@ public class DeckLeaderAbility
         return Name;
     }
 
-    public bool IsEnabled => Enabled;
+    public bool IsEnabled => enabled;
 
     public void ToggleEnabled()
     {
-        Enabled = !Enabled;
-        if (!Enabled)
+        enabled = !enabled;
+        if (!enabled)
         {
             RankRequired = DisabledBytesValue;
         }
         else
         {
             RankRequired = 12;
+        }
+    }
+
+    public void SetEnabled(bool enable)
+    {
+        enabled = enable;
+        if (enable)
+        {
+            RankRequired = 12;
+        }
+        else
+        {
+            RankRequired = DisabledBytesValue;
         }
     }
 

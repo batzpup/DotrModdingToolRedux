@@ -14,7 +14,7 @@ public class DeckEditorWindow : IImGuiWindow
     List<Deck> deckLists = new List<Deck>();
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
     List<DeckCard> sortedDeckList = new List<DeckCard>();
-    List<int> trunkSelection = new List<int>();
+    HashSet<int> trunkSelection = new HashSet<int>();
 
     List<string>
         failedToSaveDecks = new List<string>();
@@ -29,10 +29,10 @@ public class DeckEditorWindow : IImGuiWindow
     int deckLeaderImage;
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
     string trunkSearchFilter = "";
-    bool useColour = true;
+
     Vector4 highlightColour = new GuiColour(8, 153, 154, 155).value;
 
-    public Action<int> ViewCardInEditor;
+    public Action<string> ViewCardInEditor;
 
     public DeckEditorWindow(ImFontPtr fontPtr)
     {
@@ -235,19 +235,14 @@ public class DeckEditorWindow : IImGuiWindow
 
                         switch (sortSpecifications.Specs.ColumnIndex)
                         {
-                            case 0: return ascending ? cardA.Index.CompareTo(cardB.Index) : cardB.Index.CompareTo(cardA.Index);
-                            case 1:
-                                return ascending ? String.CompareOrdinal(cardA.Name, cardB.Name) : String.CompareOrdinal(cardB.Name, cardA.Name);
-                            case 2: return ascending ? cardA.Attack.CompareTo(cardB.Attack) : cardB.Attack.CompareTo(cardA.Attack);
-                            case 3: return ascending ? cardA.Defense.CompareTo(cardB.Defense) : cardB.Defense.CompareTo(cardA.Defense);
-                            case 4: return ascending ? cardA.Level.CompareTo(cardB.Level) : cardB.Level.CompareTo(cardA.Level);
-                            case 5:
-                                return ascending
-                                    ? String.CompareOrdinal(cardA.AttributeName, cardB.AttributeName)
-                                    : String.CompareOrdinal(cardB.AttributeName, cardA.AttributeName);
-                            case 6:
-                                return ascending ? String.CompareOrdinal(cardA.Type, cardB.Type) : String.CompareOrdinal(cardB.Type, cardA.Type);
-                            case 7: return ascending ? cardA.DeckCost.CompareTo(cardB.DeckCost) : cardB.DeckCost.CompareTo(cardA.DeckCost);
+                            case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name, cardB.Name, ascending);
+                            case 1: return CompareWithFallback(cardA.Name, cardB.Name, cardA.Index, cardB.Index, ascending);
+                            case 2: return CompareWithFallback(cardA.Attack, cardB.Attack, cardA.Index, cardB.Index, ascending);
+                            case 3: return CompareWithFallback(cardA.Defense, cardB.Defense, cardA.Index, cardB.Index, ascending);
+                            case 4: return CompareWithFallback(cardA.Level, cardB.Level, cardA.Index, cardB.Index, ascending);
+                            case 5: return CompareWithFallback( CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB), cardA.Index, cardB.Index, ascending);
+                            case 6: return CompareWithFallback(cardA.Type, cardB.Type, cardA.Index, cardB.Index, ascending);
+                            case 7: return CompareWithFallback(cardA.DeckCost, cardB.DeckCost, cardA.Index, cardB.Index, ascending);
                             default: return 0;
                         }
                     });
@@ -327,17 +322,20 @@ public class DeckEditorWindow : IImGuiWindow
             sortedTrunkList = new List<CardConstant>(CardConstant.List);
         }
         ImGui.TextColored(new GuiColour(System.Drawing.Color.SkyBlue).value,
-            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection, Shift + left click to add everything between your last clicked card and the this card\nCtrl+Alt+Click = remove from selection, Ctrl + Right click to clear all\nShift + Right click = view hovered card in editor");
+            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection or remove a card already selected\nShift + left click to add everything between your last clicked card and the this card, Ctrl + Right click to clear all\nShift + Right click = view hovered card in editor");
         ImGui.Text("Search Bar");
         ImGui.SameLine();
         ImGui.InputText("##SearchBar", ref trunkSearchFilter, 32);
         ImGui.SameLine();
-        if (ImGui.RadioButton("Use colour", useColour))
+        if (ImGui.RadioButton("Use colour", UserSettings.deckEditorUseColours))
         {
-            useColour = !useColour;
+            UserSettings.deckEditorUseColours = !UserSettings.deckEditorUseColours;
         }
         ImGui.SameLine();
-        ImGui.ColorEdit4("Highlight colour", ref highlightColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        if (ImGui.ColorEdit4("Highlight colour", ref highlightColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        {
+            UserSettings.DeckEditorHighlightcolour = highlightColour;
+        }
         if (ImGui.BeginTable("Trunk", 9, tableFlags))
         {
             float idWidth = ImGui.CalcTextSize("999").X;
@@ -365,33 +363,30 @@ public class DeckEditorWindow : IImGuiWindow
             bool ascending = sortSpecifications.Specs.SortDirection == ImGuiSortDirection.Ascending;
             if (sortSpecifications.SpecsDirty)
             {
-                sortedTrunkList.Sort((a, b) =>
+                sortedTrunkList.Sort((cardA, cardB) =>
                 {
-                    switch (sortSpecifications.Specs.ColumnIndex)
-                    {
-                        case 0: return ascending ? a.Index.CompareTo(b.Index) : b.Index.CompareTo(a.Index);
-                        case 1: return ascending ? String.CompareOrdinal(a.Name, b.Name) : String.CompareOrdinal(b.Name, a.Name);
-                        case 2: return ascending ? a.Attack.CompareTo(b.Attack) : b.Attack.CompareTo(a.Attack);
-                        case 3: return ascending ? a.Defense.CompareTo(b.Defense) : b.Defense.CompareTo(a.Defense);
-                        case 4: return ascending ? a.Level.CompareTo(b.Level) : b.Level.CompareTo(a.Level);
-                        case 5:
-                            return ascending
-                                ? String.CompareOrdinal(a.AttributeName, b.AttributeName)
-                                : String.CompareOrdinal(b.AttributeName, a.AttributeName);
-                        case 6: return ascending ? String.CompareOrdinal(a.Type, b.Type) : String.CompareOrdinal(b.Type, a.Type);
-                        case 7: return ascending ? a.DeckCost.CompareTo(b.DeckCost) : b.DeckCost.CompareTo(a.DeckCost);
-                        default: return 0;
-                    }
+                    
+                              switch (sortSpecifications.Specs.ColumnIndex)
+                        {
+                            case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name, cardB.Name, ascending);
+                            case 1: return CompareWithFallback(cardA.Name, cardB.Name, cardA.Index, cardB.Index, ascending);
+                            case 2: return CompareWithFallback(cardA.Attack, cardB.Attack, cardA.Index, cardB.Index, ascending);
+                            case 3: return CompareWithFallback(cardA.Defense, cardB.Defense, cardA.Index, cardB.Index, ascending);
+                            case 4: return CompareWithFallback(cardA.Level, cardB.Level, cardA.Index, cardB.Index, ascending);
+                            case 5: return CompareWithFallback( CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB), cardA.Index, cardB.Index, ascending);
+                            case 6: return CompareWithFallback(cardA.Type, cardB.Type, cardA.Index, cardB.Index, ascending);
+                            case 7: return CompareWithFallback(cardA.DeckCost, cardB.DeckCost, cardA.Index, cardB.Index, ascending);
+                            default: return 0;
+                        }
                 });
                 sortSpecifications.SpecsDirty = false;
             }
 
             List<CardConstant> filteredList =
                 sortedTrunkList.Where(card => card.Name.Contains(trunkSearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (useColour)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Header, highlightColour);
-            }
+
+            ImGui.PushStyleColor(ImGuiCol.Header, highlightColour);
+
             for (var index = 0; index < filteredList.Count; index++)
             {
                 CardConstant cardConstant = filteredList[index];
@@ -481,56 +476,56 @@ public class DeckEditorWindow : IImGuiWindow
 
                 if (ImGui.Selectable("##Selectable", item_is_selected, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, 0)))
                 {
-                    if (item_is_selected && ImGui.GetIO().KeyAlt && ImGui.GetIO().KeyCtrl)
+                    if (ImGui.GetIO().KeyCtrl)
                     {
-                        trunkSelection.Remove(cardConstant.Index);
-                    }
-
-                    else
-                    {
-                        if (!item_is_selected && ImGui.GetIO().KeyCtrl)
+                        if (!trunkSelection.Add(cardConstant.Index))
                         {
-                            trunkSelection.Add(cardConstant.Index);
+                            trunkSelection.Remove(cardConstant.Index);
                         }
-                        else if (!item_is_selected && ImGui.GetIO().KeyShift)
+
+                    }
+                    else if (!item_is_selected && ImGui.GetIO().KeyShift)
+                    {
+                        if (trunkSelection.Count > 0)
                         {
-                            var original = trunkSelection[trunkSelection.Count - 1];
-                            int originalIndexInList = filteredList.FindIndex(i => i.Index == original);
-                            int cardConstIndexInList = filteredList.FindIndex(i => i.Index == cardConstant.Index);
-                            int smallerValue = Math.Min(originalIndexInList, cardConstIndexInList);
-                            int higherValue = Math.Max(originalIndexInList, cardConstIndexInList);
-                            for (int i = smallerValue; i <= higherValue; i++)
+                            int originalIndex = filteredList.FindIndex(i => i.Index == trunkSelection.Last());
+                            int newIndex = filteredList.FindIndex(i => i.Index == cardConstant.Index);
+
+                            if (originalIndex != -1 && newIndex != -1)
                             {
-                                if (i != originalIndexInList && !trunkSelection.Contains(filteredList[i].Index))
+                                int minIndex = Math.Min(originalIndex, newIndex);
+                                int maxIndex = Math.Max(originalIndex, newIndex);
+
+                                for (int i = minIndex; i <= maxIndex; i++)
                                 {
                                     trunkSelection.Add(filteredList[i].Index);
                                 }
                             }
                         }
-                        else if (!item_is_selected)
-                        {
-                            trunkSelection.Clear();
-                            trunkSelection.Add(cardConstant.Index);
-                        }
-
                     }
+                    else
+                    {
+                        trunkSelection.Clear();
+                        trunkSelection.Add(cardConstant.Index);
+                    }
+
+
                 }
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(cardConstant.Name);
                     if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
                     {
-                        ViewCardInEditor?.Invoke(cardConstant.Index);
+                        ViewCardInEditor?.Invoke(cardConstant.Name);
                     }
 
                 }
                 ImGui.PopID();
 
             }
-            if (useColour)
-            {
-                ImGui.PopStyleColor();
-            }
+
+            ImGui.PopStyleColor();
+
             ImGui.EndTable();
         }
         ImGui.PopFont();
@@ -539,7 +534,7 @@ public class DeckEditorWindow : IImGuiWindow
 
     GuiColour CardConstantRowColor(CardConstant cardConstant)
     {
-        if (useColour)
+        if (UserSettings.deckEditorUseColours)
         {
             switch (cardConstant.CardColor)
             {
@@ -577,7 +572,7 @@ public class DeckEditorWindow : IImGuiWindow
                 failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name}");
             }
         }
-        //LoadDeckLists();
+        LoadDeckLists();
         UpdateStartingDeck.CreateNewStartingDeckData(deckLists);
         if (failedToSaveDecks.Count > 0)
         {
@@ -592,5 +587,17 @@ public class DeckEditorWindow : IImGuiWindow
             modalPopup.Show(deckErrorText.ToString());
         }
 
+    }
+
+    public static int CompareWithFallback<TPrimary, TSecondary>(TPrimary primaryA, TPrimary primaryB, TSecondary secondaryA, TSecondary secondaryB,
+        bool ascending) where TPrimary : IComparable<TPrimary>
+        where TSecondary : IComparable<TSecondary>
+    {
+        int result = primaryA.CompareTo(primaryB);
+        if (result == 0) // If primary comparison is equal, use secondary
+        {
+            return ascending ? secondaryA.CompareTo(secondaryB) : secondaryB.CompareTo(secondaryA);
+        }
+        return ascending ? result : -result;
     }
 }

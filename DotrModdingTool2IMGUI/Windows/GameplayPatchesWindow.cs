@@ -83,8 +83,8 @@ class GameplayPatchesWindow : IImGuiWindow
     #region CustomSlots
 
     bool bSaveCustomSlotRewards;
-    Vector4 tableBgColour = ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg];
-    Vector4 searchColour = new GuiColour(Color.DimGray).value;
+    Vector4 tableBgColour = UserSettings.CustomSlotTableBgColour;
+    Vector4 searchColour = UserSettings.CustomSlotDropdownColour;
 
     #endregion
 
@@ -245,9 +245,16 @@ class GameplayPatchesWindow : IImGuiWindow
         {
             ImGui.SetTooltip("Requires Fast Intro");
         }
-        ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        {
+            UserSettings.CustomSlotTableBgColour = tableBgColour;
+        }
+            
         ImGui.SameLine();
-        ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        if(ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        {
+            UserSettings.CustomSlotDropdownColour = searchColour;
+        }
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);

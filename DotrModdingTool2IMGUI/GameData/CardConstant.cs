@@ -5,6 +5,7 @@ namespace DotrModdingTool2IMGUI;
 public class CardConstant
 {
     public static List<CardConstant> List = new List<CardConstant> { };
+    public static Dictionary<string, CardConstant> CardLookup;
 
     public static void LoadFromBytes(byte[][] bytes)
     {
@@ -14,6 +15,7 @@ public class CardConstant
         {
             List.Add(new CardConstant(i, bytes[i]));
         }
+        CardLookup = List.ToDictionary(c => c.Name);
     }
 
     public static List<CardConstant> Monsters
@@ -109,6 +111,7 @@ public class CardConstant
         }
         return stringBuilder.ToString().ToUpper();
     }
+
     //Bounds checking is done in the input field
     byte[] EncodePassword(string password)
     {

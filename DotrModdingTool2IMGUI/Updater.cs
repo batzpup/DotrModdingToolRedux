@@ -13,11 +13,12 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    static readonly string currentVersion = "v1.1.3-beta";
+    public static readonly string currentVersion = "v1.1.4-beta";
     static readonly string updaterFile = "Updater.exe";
-    static string latestVersion;
+    public static string latestVersion;
     static string downloadUrl;
-    public static Action<bool> NeedsUpdate;
+    static string body;
+    public static Action<bool,string?> NeedsUpdate;
 
     public static async Task CheckForUpdates(bool isStartup = false)
     {
@@ -65,19 +66,21 @@ public static class Updater
             var latestRelease = releases.First();
             latestVersion = latestRelease.GetProperty("tag_name").GetString();
             downloadUrl = latestRelease.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+            body = latestRelease.GetProperty("body").GetString();
 
             Console.WriteLine($"Latest Version: {latestVersion}");
             Console.WriteLine($"Download URL: {downloadUrl}");
             if (latestVersion != currentVersion)
             {
+                
                 Console.WriteLine("Update Available");
-                NeedsUpdate?.Invoke(true);
+                NeedsUpdate?.Invoke(true,body);
             }
             else
             {
                 if (!isStartup)
                 {
-                    NeedsUpdate.Invoke(false);
+                    NeedsUpdate.Invoke(false,string.Empty);
                 }
                 Console.WriteLine("Program is up to date");
             }

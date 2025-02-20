@@ -5,6 +5,7 @@ public class Card
 {
     public const ushort TotalCardCount = 854;
     public static string[] cardNameList;
+    public static Dictionary<string, int> CardNameIndexDictionary = new Dictionary<string, int>();
     public const int EquipCardStartIndex = 752;
     public const int EquipCardEndIndex = 800;
     public const int EquipCardCount = EquipCardEndIndex - EquipCardStartIndex;
@@ -25,6 +26,9 @@ public class Card
             using (StreamReader streamReader = new StreamReader(stream))
             {
                 cardNameList = streamReader.ReadToEnd().ToString().Split(Environment.NewLine, StringSplitOptions.None);
+                CardNameIndexDictionary = cardNameList
+                    .Select((name, index) => new KeyValuePair<string, int>(name, index))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             }
         }
     }

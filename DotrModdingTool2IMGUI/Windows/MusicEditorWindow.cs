@@ -12,7 +12,7 @@ public class MusicEditorWindow : IImGuiWindow
     //Music
     static int AddCustomMusicPtr = 0x17ac58;
     static int TaTuto_DrawTrapArea = 0x24f800;
-    
+
     WaveOutEvent waveOut;
     Mp3FileReader mp3Reader;
     bool isMusicPlaying = false;
@@ -26,7 +26,7 @@ public class MusicEditorWindow : IImGuiWindow
     bool bSaveMusicChanges;
     ImFontPtr monoSpaceFont;
     public static Action<bool> OnSaveCustomMusic;
-    
+
 
     #region StringsArrays
 
@@ -133,7 +133,7 @@ public class MusicEditorWindow : IImGuiWindow
         }
         currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
 
-        currentSlotMusicIndex = dataAccess.ReadBytes(SlotMusicPatch.SlotTrackPtr, 1)[0] -1;
+        currentSlotMusicIndex = dataAccess.ReadBytes(SlotMusicPatch.SlotTrackPtr, 1)[0] - 1;
     }
 
     public void Render()
@@ -171,14 +171,14 @@ public class MusicEditorWindow : IImGuiWindow
         ImGui.EndChild();
 
         ImGui.SameLine();
-        
-        
+
+
         ImGui.BeginChild("MiddleThirdPanel", new Vector2(windowSize.X / 3f, ImGui.GetContentRegionAvail().Y),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
         ImGui.Text("Music Tracks");
         ImGui.PushItemWidth(windowSize.X / 3f);
         if (ImGui.ListBox("MusicTrack", ref currentTrackIndex, musicTracks, musicTracks.Length,
-                (int)((ImGui.GetContentRegionAvail().Y  / ImGui.GetTextLineHeightWithSpacing() -1))))
+                (int)((ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing() - 1))))
         {
             DuelistMusic[currentDuelistSelected] = currentTrackIndex + 1;
             PlaySelectedTrack(currentTrackIndex);
@@ -191,11 +191,11 @@ public class MusicEditorWindow : IImGuiWindow
         ImGui.Text("Music Options");
         ImGui.Separator();
         ImGui.Text("Slot Music");
-        if(ImGui.ListBox("##SlotMusic", ref currentSlotMusicIndex, musicTracks, musicTracks.Length))
+        if (ImGui.ListBox("##SlotMusic", ref currentSlotMusicIndex, musicTracks, musicTracks.Length))
         {
-             PlaySelectedTrack(currentSlotMusicIndex);
+            PlaySelectedTrack(currentSlotMusicIndex);
         }
-        
+
         if (ImGui.Button(playStopButton, new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
             if (!isMusicPlaying)
@@ -209,16 +209,23 @@ public class MusicEditorWindow : IImGuiWindow
         }
         if (ImGui.Button("Extract Music", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
-            GetMusicFiles();
+            
+            
+            Task.Run(async () => await StartMusicTask());
+
         }
         if (ImGui.Button("Reset to Default", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
             LoadDefaultMusic();
             currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
         }
+
+
+
         ImGui.PopFont();
         ImGui.EndChild();
     }
+
 
     public void Free()
     {
@@ -236,8 +243,17 @@ public class MusicEditorWindow : IImGuiWindow
     }
 
 
-    void GetMusicFiles()
+    public async Task StartMusicTask()
     {
+        EditorWindow.Disabled = true;
+        EditorWindow._modalPopup.Show("Extracting Music Please wait", "Loading Music");
+        await Task.Run(() => GetMusicFiles());
+        EditorWindow.Disabled = false;
+    }
+
+    Task GetMusicFiles()
+    {
+
         if (!Directory.Exists(MusicDirectory))
         {
             Directory.CreateDirectory(MusicDirectory);
@@ -261,7 +277,7 @@ public class MusicEditorWindow : IImGuiWindow
                     }
                     ImGui.EndPopup();
                 }
-                return;
+                return Task.CompletedTask;
             }
 
             // Extract the file to the destination folder
@@ -290,17 +306,7 @@ public class MusicEditorWindow : IImGuiWindow
 
         CleanUpPcms();
         MediaFoundationApi.Shutdown();
-        //DOesnt work TODO
-        if (ImGui.BeginPopup("ResultSuccessful"))
-        {
-            ImGui.Text("File extracted successfully.");
-            if (ImGui.Button("Close"))
-            {
-                ImGui.CloseCurrentPopup();
-            }
-            ImGui.EndPopup();
-        }
-
+        return Task.CompletedTask;
     }
 
     void CleanUpPcms()
@@ -342,7 +348,7 @@ public class MusicEditorWindow : IImGuiWindow
 
     void ChangeSlotMusic()
     {
-        new SlotMusicPatch().Apply((byte)(currentSlotMusicIndex+1));
+        new SlotMusicPatch().Apply((byte)(currentSlotMusicIndex + 1));
     }
 
     public void SaveMusicChanges()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using ImGuiNET;
 using NativeFileDialogSharp;
 using Raylib_cs;
@@ -15,8 +16,8 @@ public class EditorWindow
     EditorContentMode currentMode = EditorContentMode.EnemyEditor;
 
     ImGuiIOPtr io = ImGui.GetIO();
-    ImFontPtr largerfont;
     ImFontPtr menuBarFont = Fonts.LoadCustomFont("SpaceMonoRegular-JRrmm.ttf", 24);
+    public static bool Disabled = false;
 
     public static Vector2 AspectRatio
     {
@@ -26,8 +27,7 @@ public class EditorWindow
     float buttonWidthScaled = 200f;
     float buttonHeightRatio = 100f;
     float buttonSpacingScaled = 10f;
-
-    ImColor backgroundColour;
+    
     EnemyEditorWindow _enemyEditorWindow;
     CardEditorWindow _cardEditorWindow;
     GameplayPatchesWindow _gameplayPatchesWindow;
@@ -39,7 +39,7 @@ public class EditorWindow
 
     //Data Access
     DataAccess dataAccess = DataAccess.Instance;
-    ImGuiModalPopup _modalPopup = new ImGuiModalPopup();
+    public static ImGuiModalPopup _modalPopup = new ImGuiModalPopup();
     public static Action OnIsoLoaded;
 
 
@@ -61,9 +61,7 @@ public class EditorWindow
     {
         //PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
-
-        largerfont = io.Fonts.AddFontDefault();
-        largerfont.ConfigData.SizePixels = 19;
+        
         ImGui.GetIO().Fonts.Build();
         rlImGui.ReloadFonts();
         _enemyEditorWindow = new EnemyEditorWindow(Fonts.LoadCustomFont(pixelSize: 26), Fonts.LoadCustomFont(pixelSize: 22));
@@ -72,22 +70,31 @@ public class EditorWindow
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+
         Updater.NeedsUpdate += HandleNeedsUpdate;
-        Task.Run(async () => await Updater.CheckForUpdates(true));
+        Task.Run(async () =>
+        {
+            EditorWindow.Disabled = true;
+            await Updater.CheckForUpdates(true);
+            EditorWindow.Disabled = false;
+        });
+
     }
 
-    void HandleNeedsUpdate(bool needsUpdate)
+    void HandleNeedsUpdate(bool needsUpdate, string changes)
     {
-        
         if (needsUpdate)
         {
-            _modalPopup.Show("An update is available\nwould you like to update?", "Update",RequestDownload,true);
+            string output = string.Join("\n", changes.Split('\n').Select(line => "- " + line));
+            _modalPopup.Show(
+                $"An update is available to {Updater.latestVersion} from {Updater.currentVersion}\nChanges:\n{output}\nWould you like to update?",
+                "Update", RequestDownload, true);
         }
         else
         {
-            _modalPopup.Show("Is up to date","Update");
+            _modalPopup.Show($"You are up to date, you are on version {Updater.latestVersion}", "Update");
         }
-        
+
     }
 
     void RequestDownload()
@@ -95,10 +102,10 @@ public class EditorWindow
         Task.Run(async () => await Updater.DownloadUpdate());
     }
 
-    void ViewCardInEditor(int index)
+    void ViewCardInEditor(string name)
     {
         currentMode = EditorContentMode.CardEditor;
-        _cardEditorWindow.SetCurrentCardIndex(index);
+        _cardEditorWindow.SetCurrentCard(name);
     }
 
     public Dictionary<EditorContentMode, string> ButtonModeTable = new Dictionary<EditorContentMode, string>() {
@@ -122,6 +129,10 @@ public class EditorWindow
         buttonWidthScaled = Math.Max(200f * AspectRatio.X, 100);
         buttonHeightRatio = Math.Max(100f * AspectRatio.Y, 50);
         buttonSpacingScaled = Math.Max(10f * AspectRatio.X, 5);
+        if (EditorWindow.Disabled)
+        {
+            ImGui.BeginDisabled();
+        }
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate.ToString()}");
 
         ImGui.PushFont(menuBarFont);
@@ -162,7 +173,7 @@ public class EditorWindow
 
             }
             ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.T);
-            if (ImGui.MenuItem("Toggle Image tooltips", null, ref GlobalImgui.ShowImageHighlight))
+            if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
             {
 
             }
@@ -177,7 +188,7 @@ public class EditorWindow
             }
 
             ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.P);
-            ImGui.MenuItem("Performance Mode", null, ref Program.peformanceMode);
+            ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode);
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
@@ -247,7 +258,13 @@ public class EditorWindow
             ImGui.Spacing();
             if (ImGui.MenuItem("Check for Updates"))
             {
-                Task.Run(async () => await Updater.CheckForUpdates());
+                Task.Run(async () =>
+                {
+                    Disabled = true;
+                    await Updater.CheckForUpdates(false);
+                    Disabled = false;
+
+                });
             }
 
 
@@ -257,17 +274,21 @@ public class EditorWindow
 
         }
 
-        
+
         DrawLeftPanel();
         ImGui.SameLine();
         ImGui.BeginChild("MainContent", new Vector2(0, 0), ImGuiChildFlags.None);
         RenderMainContent();
         ImGui.EndChild();
         ImGui.Columns(0);
+        if (Disabled)
+        {
+            ImGui.EndDisabled();
+        }
         _modalPopup.Draw(Fonts.MonoSpace);
 
-        ImGui.End();
 
+        ImGui.End();
         rlImGui.End();
     }
 
@@ -327,10 +348,6 @@ public class EditorWindow
         }
     }
 
-    void EncodeStrings()
-    {
-        StringEncoder.Run();
-    }
 
     void OpenIso()
     {
@@ -351,10 +368,6 @@ public class EditorWindow
         }
     }
 
-    public void ChangeMode(EditorContentMode mode)
-    {
-        currentMode = mode;
-    }
 
     void SaveChanges()
     {
@@ -367,11 +380,13 @@ public class EditorWindow
         dataAccess.SaveMonsterEnchantData(MonsterEnchantData.Bytes);
         dataAccess.SaveDeckLeaderThresholds();
         dataAccess.SaveEnemyAiData(Enemies.AiBytes);
+        dataAccess.SaveEnchantData();
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
+        UserSettings.SaveSettings();
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
-            _modalPopup.Show("Changes have been saved","Save successful");
+            _modalPopup.Show("Changes have been saved", "Save successful");
         }
     }
 
@@ -389,8 +404,10 @@ public class EditorWindow
         dataAccess.LoadLeaderThresholdData();
         dataAccess.LoadFusionData();
         dataAccess.LoadEnemyAIData();
+        dataAccess.LoadEnchantData();
 
         StringDecoder.Run();
+        //CreateCSVFromMonsterEffects(Effects.MonsterEffectsList);
         OnIsoLoaded?.Invoke();
     }
 
@@ -407,5 +424,35 @@ public class EditorWindow
         {
             Console.WriteLine("Failed to open URL: " + ex.Message);
         }
+    }
+
+     public static void CreateCSVFromMonsterEffects(List<MonsterEffects> monsterEffectsList)
+    {
+        var sb = new StringBuilder();
+
+ 
+        sb.AppendLine("AttackEffectName,AttackSearchMode,MovementEffectName,MovementSearchMode,NatureEffectName,NatureSearchMode,FlipEffectName,FlipSearchMode,DestructionEffectName,DestructionSearchMode");
+
+        // Iterate through each MonsterEffects object
+        foreach (var monsterEffect in monsterEffectsList)
+        {
+            var row = new List<string>();
+
+           
+            foreach (var effect in monsterEffect.Effects)
+            {
+                string effectData = effect.effectName;
+                string searchModeData = effect.searchModeName;
+
+                row.Add(effectData);          // Effect Name column
+                row.Add(searchModeData);      // Search Mode Name column
+            }
+
+          
+            sb.AppendLine(string.Join(",", row));
+        }
+        
+        File.WriteAllText("MonsterEffects.csv", sb.ToString());
+        Console.WriteLine("CSV file created successfully.");
     }
 }

@@ -79,7 +79,7 @@ Reduction depends on the leader’s kind and level as follows:
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.FriendlyImprovedResistance] = new string[] {
             "Improved Resistance For Same Type Friendlies",
-            "Any of your monsters of the same type and within your Deck Leader's range will be immune to enemy traps, spells and monster abilities."
+            "Any of your monsters of the same type and within your Deck Leader's range will be immune to enemy traps and spells."
         };
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.FriendlyMovementBoost] = new string[] {

@@ -15,8 +15,8 @@ class FusionEditorWindow : IImGuiWindow
     bool higherFocusInput = true;
     bool resultFocusInput = true;
 
-    Vector4 tableBgColour = ImGui.GetStyle().Colors[(int)ImGuiCol.TableRowBg];
-    Vector4 searchColour = new GuiColour(Color.DimGray).value;
+    Vector4 tableBgColour = UserSettings.FusionTableBgColour;
+    Vector4 searchColour = UserSettings.FusionDropdownColour;
 
     public FusionEditorWindow()
     {
@@ -49,12 +49,18 @@ class FusionEditorWindow : IImGuiWindow
             return;
         }
 
-        int totalRows = 26540;
+        
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         float columnWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X + 100;
-        ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        {
+            UserSettings.FusionTableBgColour = tableBgColour;
+        }
         ImGui.SameLine();
-        ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        if (ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        {
+            UserSettings.FusionDropdownColour = searchColour;
+        }
         ImGui.Text("Search Bar");
         ImGui.InputText("##SearchBar", ref searchText, 32);
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);

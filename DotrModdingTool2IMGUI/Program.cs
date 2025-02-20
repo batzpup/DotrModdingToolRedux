@@ -5,10 +5,17 @@ namespace DotrModdingTool2IMGUI;
 
 class Program
 {
-    public static bool peformanceMode = false;
-
     public static void Main(string[] args)
     {
+        UserSettings.LoadSettings();
+        AppDomain.CurrentDomain.DomainUnload += (sender, _) =>
+        {
+            Console.WriteLine("Saving settings");
+            UserSettings.SaveSettings();
+            Console.WriteLine("Settings saved");
+        };
+
+
         Raylib.SetTraceLogLevel(TraceLogLevel.None);
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.MaximizedWindow);
 
@@ -16,7 +23,7 @@ class Program
         Raylib.SetExitKey(KeyboardKey.Null);
         Image iconImage = ImageHelper.LoadImageRaylib("Images.redRoseLeader.png");
         Raylib.SetWindowIcon(iconImage);
-        Raylib.UnloadImage(iconImage);  
+        Raylib.UnloadImage(iconImage);
         Raylib.SetTargetFPS(Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor()));
         rlImGui.Setup(true);
         Raylib.MaximizeWindow();
@@ -24,9 +31,10 @@ class Program
         EditorWindow editorWindow = new EditorWindow();
         int lastFps = Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor());
 
+
         while (!Raylib.WindowShouldClose())
         {
-            if (peformanceMode)
+            if (UserSettings.performanceMode)
             {
                 int targetFps = Raylib.IsWindowFocused() || ImGui.IsAnyItemHovered() ? Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor()) : 30;
 
@@ -43,7 +51,7 @@ class Program
             editorWindow.Render();
             Raylib.EndDrawing();
         }
-
+        UserSettings.SaveSettings();
         rlImGui.Shutdown();
         Raylib.CloseWindow();
     }

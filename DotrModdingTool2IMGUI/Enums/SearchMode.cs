@@ -1,5 +1,32 @@
 ﻿namespace DotrModdingTool2IMGUI;
 
+public enum SomeOtherSearch{
+    defaultSearch = 0,
+    SameRow = 16,
+    SameRowOrCol = 18,
+    TenRandomSpots = 19,
+    onForest =20,
+    onWasteland =21,
+    onMountain =22,
+    onMeadow =23,
+    onSea =24,
+    onDark =25,
+    onToon =26,
+    onNormal =27,
+    onLab =28,
+    onCrush =29,
+    EnemySummoningArea = 30,
+    AllySummoningArea = 31,
+}
+
+public enum MathOperation
+{
+    Minus,
+    Add,
+    Multiply,
+    Divide
+}
+    
 public enum SearchMode
 {
     Dragon = 0x00,
@@ -28,8 +55,8 @@ public enum SearchMode
     EarthAttributeMonsters = 0x17,
     WaterAttributeMonsters = 0x18,
     WindAttributeMonsters = 0x19,
-    MaybeBattlingOpponent = 0x1a,
-    MaybeSelf = 0x1b,
+    BattlingOpponent = 0x1a,
+    Self = 0x1b,
     CardNumberMatchesExtraData = 0x1C,
     Monsters = 0x1D,
     Spells = 0x1E,

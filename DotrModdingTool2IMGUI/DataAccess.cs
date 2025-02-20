@@ -43,6 +43,12 @@ public class DataAccess
     public const int MagicEffectsOffset = 0x29C6F0;
     public const int MagicEffectsCount = 171;
 
+    public const int EnchantIdsOffset = 0x26D5E0;
+    public const int EnchantIdSize = 2;
+    public const int EnchantDataCount = 50;
+    public const int EnchantScoresOffset = 0x26D612;
+    public const int EnchantScoresSize = 2;
+
     public DotrMap[] maps = new DotrMap[46];
     private static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
@@ -266,6 +272,56 @@ public class DataAccess
 
     }
 
+    public void LoadEnchantData()
+    {
+        EnchantData.EnchantIds.Clear();
+        EnchantData.EnchantScores.Clear();
+        ;
+        lock (FileStreamLock)
+        {
+            for (int enchantId = 0; enchantId < EnchantDataCount; enchantId++)
+            {
+                byte[] buffer = new byte[1];
+                fileStream.Seek(DataAccess.EnchantIdsOffset + enchantId, SeekOrigin.Begin);
+                fileStream.Read(buffer, 0, buffer.Length);
+                EnchantData.EnchantIds.Add(buffer[0]);
+            }
+            for (int enchantScoreIndex = 0; enchantScoreIndex < EnchantDataCount; enchantScoreIndex++)
+            {
+                byte[] buffer = new byte[EnchantScoresSize];
+                int cardIndexOffset = EnchantScoresSize * enchantScoreIndex;
+                fileStream.Seek(DataAccess.EnchantScoresOffset + cardIndexOffset, SeekOrigin.Begin);
+                fileStream.Read(buffer, 0, buffer.Length);
+                EnchantData.EnchantScores.Add(BitConverter.ToUInt16(buffer));
+            }
+       
+        }
+
+
+    }
+
+    public void SaveEnchantData()
+    {
+
+        lock (FileStreamLock)
+        {
+            for (int enchantId = 0; enchantId < EnchantDataCount; enchantId++)
+            {
+                byte[] idBytes = EnchantData.EnchantIds.ToArray();
+                fileStream.Seek(EnchantIdsOffset, SeekOrigin.Begin);
+                fileStream.Write(idBytes, 0, idBytes.Length);
+                fileStream.Flush();
+            }
+            for (int enchantScoreIndex = 0; enchantScoreIndex < EnchantDataCount; enchantScoreIndex++)
+            {
+                byte[] scoreBytes = EnchantData.EnchantIds.ToArray();
+                fileStream.Seek(EnchantScoresOffset, SeekOrigin.Begin);
+                fileStream.Write(EnchantData.EquipScoreBytes, 0, EnchantData.EquipScoreBytes.Length);
+                fileStream.Flush();
+            }
+        }
+    }
+
     public byte[][] LoadCardConstantData()
     {
         byte[][] cardConstantsBytes = new byte[CardConstantCount][];
@@ -417,7 +473,7 @@ public class DataAccess
             fileStream.Read(buffer, 0, buffer.Length);
         }
         Enemies.LoadEnemies(buffer);
-        
+
     }
 
     public void SaveEnemyAiData(byte[] byteData)

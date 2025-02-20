@@ -4,12 +4,11 @@ namespace DotrModdingTool2IMGUI;
 
 public class GlobalImgui
 {
-    public static bool ShowImageHighlight = true;
     public static Vector4 defaultColor = new GuiColour(20, 20, 20, 240).value;
 
     public static void RenderTooltipCardImage(string cardName)
     {
-        if (!ShowImageHighlight)
+        if (!UserSettings.ToggleImageTooltips)
             return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
         ImGui.BeginTooltip();
@@ -25,7 +24,7 @@ public class GlobalImgui
 
     public static void RenderTooltipOpponentImage(EEnemyImages enemyImage)
     {
-        if (!ShowImageHighlight)
+        if (!UserSettings.ToggleImageTooltips)
             return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
         ImGui.BeginTooltip();
@@ -39,7 +38,7 @@ public class GlobalImgui
 
     public static void RenderTooltipRankImage(DeckLeaderRank leaderRank, int xSize = 64, int ySize = 64)
     {
-        if (!ShowImageHighlight)
+        if (!UserSettings.ToggleImageTooltips)
             return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
         ImGui.BeginTooltip();
@@ -49,5 +48,30 @@ public class GlobalImgui
         ImGui.Image(GlobalImages.Instance.LeaderRanks[leaderRank], new Vector2(xSize, ySize));
         ImGui.EndTooltip();
         ImGui.PopStyleColor();
+    }
+
+    public static void CardEditorCombo<T>(string label, ref int currentIndex, T[] values, Action<int> applyChange)
+    {
+        string previewText = (currentIndex >= 0 && currentIndex < values.Length)
+            ? values[currentIndex]?.ToString()
+            : values[values.Length-1].ToString();
+        if (ImGui.BeginCombo(label, previewText))
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                bool isSelected = (currentIndex == i);
+                if (ImGui.Selectable(values[i]?.ToString(), isSelected))
+                {
+                    currentIndex = i;
+                    applyChange(i);
+                }
+
+                if (isSelected)
+                {
+                    ImGui.SetItemDefaultFocus();
+                }
+            }
+            ImGui.EndCombo();
+        }
     }
 }
