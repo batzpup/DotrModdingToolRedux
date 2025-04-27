@@ -27,12 +27,13 @@ public class EditorWindow
     float buttonWidthScaled = 200f;
     float buttonHeightRatio = 100f;
     float buttonSpacingScaled = 10f;
-    
+
     EnemyEditorWindow _enemyEditorWindow;
     CardEditorWindow _cardEditorWindow;
     GameplayPatchesWindow _gameplayPatchesWindow;
     FusionEditorWindow _fusionEditorWindow;
-
+    MiscEditorWindow _miscEditorWindow;
+    RandomiserWindow _randomiserWindow;
     MusicEditorWindow _musicEditorWindow;
 
     bool isCreditsOpen = false;
@@ -61,7 +62,7 @@ public class EditorWindow
     {
         //PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
-        
+
         ImGui.GetIO().Fonts.Build();
         rlImGui.ReloadFonts();
         _enemyEditorWindow = new EnemyEditorWindow(Fonts.LoadCustomFont(pixelSize: 26), Fonts.LoadCustomFont(pixelSize: 22));
@@ -69,14 +70,15 @@ public class EditorWindow
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
+        _randomiserWindow = new RandomiserWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
         Task.Run(async () =>
         {
-            EditorWindow.Disabled = true;
+            Disabled = true;
             await Updater.CheckForUpdates(true);
-            EditorWindow.Disabled = false;
+            Disabled = false;
         });
 
     }
@@ -113,8 +115,10 @@ public class EditorWindow
         { EditorContentMode.CardEditor, "Card Editor" },
         { EditorContentMode.FusionEditor, "Fusion Editor" },
         { EditorContentMode.MechanicsEditor, "Mechanics Editor" },
-        { EditorContentMode.MusicEditor, "Music Editor" }
+        { EditorContentMode.MusicEditor, "Music Editor" },
+        { EditorContentMode.Randomiser, "Randomiser" },
     };
+
 
     public void Render()
     {
@@ -345,6 +349,12 @@ public class EditorWindow
             case EditorContentMode.MusicEditor:
                 _musicEditorWindow.Render();
                 break;
+            case EditorContentMode.Misc:
+                _miscEditorWindow.Render();
+                break;
+            case EditorContentMode.Randomiser:
+                _randomiserWindow.Render();
+                break;
         }
     }
 
@@ -426,32 +436,31 @@ public class EditorWindow
         }
     }
 
-     public static void CreateCSVFromMonsterEffects(List<MonsterEffects> monsterEffectsList)
+    public static void CreateCSVFromMonsterEffects(List<MonsterEffects> monsterEffectsList)
     {
         var sb = new StringBuilder();
 
- 
-        sb.AppendLine("AttackEffectName,AttackSearchMode,MovementEffectName,MovementSearchMode,NatureEffectName,NatureSearchMode,FlipEffectName,FlipSearchMode,DestructionEffectName,DestructionSearchMode");
 
-        // Iterate through each MonsterEffects object
+        sb.AppendLine(
+            "AttackEffectName,AttackSearchMode,MovementEffectName,MovementSearchMode,NatureEffectName,NatureSearchMode,FlipEffectName,FlipSearchMode,DestructionEffectName,DestructionSearchMode");
+
         foreach (var monsterEffect in monsterEffectsList)
         {
             var row = new List<string>();
 
-           
             foreach (var effect in monsterEffect.Effects)
             {
                 string effectData = effect.effectName;
                 string searchModeData = effect.searchModeName;
 
-                row.Add(effectData);          // Effect Name column
-                row.Add(searchModeData);      // Search Mode Name column
+                row.Add(effectData); // Effect Name column
+                row.Add(searchModeData); // Search Mode Name column
             }
 
-          
+
             sb.AppendLine(string.Join(",", row));
         }
-        
+
         File.WriteAllText("MonsterEffects.csv", sb.ToString());
         Console.WriteLine("CSV file created successfully.");
     }

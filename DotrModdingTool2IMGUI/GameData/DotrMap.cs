@@ -4,8 +4,6 @@ namespace DotrModdingTool2IMGUI;
 public class DotrMap
 {
     public Terrain[,] tiles;
-  
-
     public DotrMap()
     {
         tiles = new Terrain[7, 7];
@@ -38,6 +36,5 @@ public class DotrMap
               
             }
         }
-       
     }
 }

@@ -6,6 +6,7 @@ public enum EditorContentMode
     CardEditor,
     FusionEditor,
     MechanicsEditor,
-
-    MusicEditor
+    MusicEditor,
+    Misc,
+    Randomiser
 }

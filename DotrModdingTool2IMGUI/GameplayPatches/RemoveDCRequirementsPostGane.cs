@@ -1,5 +1,5 @@
     namespace GameplayPatches {
-    public class RemoveDCRequirements : Patch {
+    public class RemoveDCRequirementsPostGane : Patch {
         static int patchLocation = 0x209f40;
         static int TaTutoDbgInit34 = 0x145f60;
 

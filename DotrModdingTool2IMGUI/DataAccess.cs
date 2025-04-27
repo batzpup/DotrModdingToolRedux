@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using DiscUtils.Iso9660;
 namespace DotrModdingTool2IMGUI;
 
 public class DataAccess
@@ -49,6 +50,11 @@ public class DataAccess
     public const int EnchantScoresOffset = 0x26D612;
     public const int EnchantScoresSize = 2;
 
+    public const int PicPackSize = 0x4410;
+    public const int PictureSize = 0x4800;
+    public const int PickPackOffset = 0xe9b800;
+    public const IntPtr  picPackArtsSLUSArray = 0x29eafc;
+    
     public DotrMap[] maps = new DotrMap[46];
     private static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
@@ -294,7 +300,7 @@ public class DataAccess
                 fileStream.Read(buffer, 0, buffer.Length);
                 EnchantData.EnchantScores.Add(BitConverter.ToUInt16(buffer));
             }
-       
+
         }
 
 
@@ -577,6 +583,119 @@ public class DataAccess
             }
             fileStream.Flush();
         }
+    }
+
+    public void ModifyMrgFile(string mrgPath)
+    {
+        try
+        {
+            string directoryPath = Path.GetDirectoryName(mrgPath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            using (FileStream fs = new FileStream(mrgPath, FileMode.Create, FileAccess.Write))
+            {
+                for (int i = 0; i < 871; i++)
+                {
+                    byte[] picture = PreLoadImageEditor.CardArtBytes[i];
+                    if (picture.Length == PictureSize)
+                    {
+                        lock (FileStreamLock)
+                        {
+                            fs.Seek(i * PicPackSize, SeekOrigin.Begin);
+                            fs.Write(PreLoadImageEditor.ConvertPictureToPicPack(picture), 0, PicPackSize);
+                        }
+                    }
+                    else
+                    {
+                        //MessageBox.Show($"Card: #{i}'s picture length is not 0x4800");
+                    }
+                }
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            //   MessageBox.Show("Access to the path is denied. Details: " + ex.Message);
+        }
+    }
+
+    public void WritePicPackImage(int CardArtIndex, int PicPackIndex)
+    {
+        byte[] picture = PreLoadImageEditor.CardArtBytes[CardArtIndex];
+        if (picture.Length == PictureSize)
+        {
+            lock (FileStreamLock)
+            {
+                fileStream.Seek(PickPackOffset + PicPackIndex * PicPackSize, SeekOrigin.Begin);
+                fileStream.Write(PreLoadImageEditor.ConvertPictureToPicPack(picture), 0, PicPackSize);
+                fileStream.Flush();
+            }
+        }
+    }
+
+    public static void LoadImageData()
+    {
+        CDReader isoFile = new CDReader(fileStream, true);
+        // Get the file from inside the ISO
+        PreLoadImageEditor.fileEntries = isoFile.GetFiles($"Data");
+        if (PreLoadImageEditor.fileEntries == null)
+        {
+            return;
+        }
+        foreach (var file in PreLoadImageEditor.fileEntries)
+        {
+
+            if (file == "Data\\PICTURE.MRG;1")
+            {
+
+                var data = isoFile.OpenFile(file, FileMode.Open);
+                for (int i = 0; i < 871; i++)
+                {
+                    byte[] picture = new byte[PictureSize];
+                    data.Read(picture, 0, PictureSize);
+                    PreLoadImageEditor.CardArtBytes[i] = picture;
+                }
+
+            }
+            else if (file == "Data\\PICPACK.MRG;1")
+            {
+
+                var data = isoFile.OpenFile(file, FileMode.Open);
+                for (int i = 0; i < 223; i++)
+                {
+                    byte[] picture = new byte[PicPackSize];
+
+                    data.Read(picture, 0, PicPackSize);
+                   PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
+
+                }
+            }
+        }
+    }
+
+    public void SavePreloadImages(Dictionary<int, int> images)
+    {
+        if (fileStream != null)
+        {
+            for (int i = 0; i < images.Count; i++)
+            {
+                if (images[i] == -1)
+                {
+                    continue;
+                }
+                WritePicPackImage(images[i], i);
+                byte[] bytes = BitConverter.GetBytes((ushort)images[i]);
+                lock (FileStreamLock)
+                {
+                    fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
+                    fileStream.Write(bytes, 0, 2);
+                    fileStream.Flush();
+                }
+            }
+        }
+
     }
 
     public void ApplyPatches()

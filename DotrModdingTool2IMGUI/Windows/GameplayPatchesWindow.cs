@@ -476,7 +476,7 @@ class GameplayPatchesWindow : IImGuiWindow
         ImGui.Text("AI Patches");
         ImGui.Checkbox("Fix Dark Hole Usage", ref bFixDarkHole);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Fixes bug the defaults its usage to true");
+            ImGui.SetTooltip("Fixes bug that defaults its usage to true");
 
         ImGui.Checkbox("Improved Feather Duster Usage", ref bMaiFeatherDuster);
         if (ImGui.IsItemHovered())
@@ -498,9 +498,9 @@ class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Because the AI does not use equips on the board properly");
 
         ImGui.Checkbox("Give Joey Revive Mission for copycat", ref bGiveJoeyReviveMission);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with copy cat");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with copycat");
         ImGui.Checkbox("Fix Yugi Raigeki use", ref bYugiRaigeki);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug where yugi swaps the comparison of cards when checking to using raigeki");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug where Yugi swaps the comparison of cards when checking to using raigeki");
 
 
 
@@ -520,7 +520,7 @@ class GameplayPatchesWindow : IImGuiWindow
         bRemoveSlotRng = new RemoveRNGFromSlots().IsApplied();
         bAllCustomDuels = new AllowAllCustomDuels().IsApplied();
         bRemoveExpLoss = new NoNegativeXP().IsApplied();
-        bNoDcPostGame = new RemoveDCRequirements().IsApplied();
+        bNoDcPostGame = new RemoveDCRequirementsPostGane().IsApplied();
         bKeepReincarnatedCard = new KeepReincarnatedCard().IsApplied();
         bUnlockFusions = dataAccess.CheckIfPatchApplied(Patcher.AllowAllHandFusions.Offset, Patcher.AllowAllHandFusions.Patch) ||
                          dataAccess.CheckIfPatchApplied(Patcher.AllowAllFieldFusions.Offset, Patcher.AllowAllFieldFusions.Patch);
@@ -692,7 +692,7 @@ class GameplayPatchesWindow : IImGuiWindow
         new ToonLeadersMovePatch().ApplyOrRemove(bToonLeaderLandChange);
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
-        new RemoveDCRequirements().ApplyOrRemove(bNoDcPostGame);
+        new RemoveDCRequirementsPostGane().ApplyOrRemove(bNoDcPostGame);
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
 
         ApplyValuePatches();
