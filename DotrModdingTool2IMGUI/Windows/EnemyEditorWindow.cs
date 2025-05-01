@@ -2,7 +2,7 @@
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
 
-class EnemyEditorWindow : IImGuiWindow
+public class EnemyEditorWindow : IImGuiWindow
 {
     public MapEditorWindow MapEditorWindow;
     public DeckEditorWindow DeckEditorWindow;

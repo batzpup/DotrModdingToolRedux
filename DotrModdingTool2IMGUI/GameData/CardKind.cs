@@ -44,7 +44,12 @@ public class CardKind
 
     public bool isMagic()
     {
-        return this.Id >= 32 && !isTrap() && ! isRitual();
+        return this.Id >= 32 && !isTrap() && ! isRitual() && !isPowerUp();
+    }
+
+    public bool isPowerUp()
+    {
+        return Id == 64;
     }
     public bool isTrap()
     {

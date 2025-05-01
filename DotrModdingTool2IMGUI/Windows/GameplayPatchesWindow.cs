@@ -4,7 +4,7 @@ using GameplayPatches;
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
 
-class GameplayPatchesWindow : IImGuiWindow
+public class GameplayPatchesWindow : IImGuiWindow
 {
     ImFontPtr font;
     DataAccess dataAccess = DataAccess.Instance;
@@ -54,6 +54,8 @@ class GameplayPatchesWindow : IImGuiWindow
     bool bAllCustomDuels;
     bool bKeepReincarnatedCard;
     bool bNoDcPostGame;
+    bool bNoDcAllGame;
+    bool bNineCardLimit;
     bool bToonLeaderLandChange;
     bool bAllKindsExtraSlots;
 
@@ -249,9 +251,9 @@ class GameplayPatchesWindow : IImGuiWindow
         {
             UserSettings.CustomSlotTableBgColour = tableBgColour;
         }
-            
+
         ImGui.SameLine();
-        if(ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
+        if (ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {
             UserSettings.CustomSlotDropdownColour = searchColour;
         }
@@ -465,8 +467,21 @@ class GameplayPatchesWindow : IImGuiWindow
             ImGui.SetTooltip(
                 "If a deck leader that has the Terrain Change leader ability is strong on toon\nit will create toon for its ability instead");
 
-        ImGui.Checkbox("No DC requirements post game", ref bNoDcPostGame);
+        if (ImGui.Checkbox("No DC requirements post game", ref bNoDcPostGame))
+        {
+            bNoDcAllGame = false;
+        }
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("After beating the campaign you can battle whoever regardless of your Deck Cost");
+
+        if (ImGui.Checkbox("No DC requirements at all", ref bNoDcAllGame))
+        {
+            bNoDcPostGame = false;
+        }
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Completely Removes DC requirements");
+
+        ImGui.Checkbox("Removes Card limit in deck ", ref bNineCardLimit);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Changes the limit from 3 to 9 (max ownable copies)");
 
         ImGui.Checkbox("All kinds can get extra slots ability", ref bAllKindsExtraSlots);
         if (ImGui.IsItemHovered())
@@ -513,6 +528,7 @@ class GameplayPatchesWindow : IImGuiWindow
 
     public void ReadGameplayPatchesFromIso()
     {
+
         bFastIntro = new FastIntro().IsApplied();
         bAiDoubleTap = new AIFasterTurnPassing().IsApplied();
         bCameraFix = new EmulatorCameraFix().IsApplied();
@@ -520,7 +536,8 @@ class GameplayPatchesWindow : IImGuiWindow
         bRemoveSlotRng = new RemoveRNGFromSlots().IsApplied();
         bAllCustomDuels = new AllowAllCustomDuels().IsApplied();
         bRemoveExpLoss = new NoNegativeXP().IsApplied();
-        bNoDcPostGame = new RemoveDCRequirementsPostGane().IsApplied();
+
+        bNoDcPostGame = new RemoveDCRequirementsPostGame().IsApplied();
         bKeepReincarnatedCard = new KeepReincarnatedCard().IsApplied();
         bUnlockFusions = dataAccess.CheckIfPatchApplied(Patcher.AllowAllHandFusions.Offset, Patcher.AllowAllHandFusions.Patch) ||
                          dataAccess.CheckIfPatchApplied(Patcher.AllowAllFieldFusions.Offset, Patcher.AllowAllFieldFusions.Patch);
@@ -692,7 +709,9 @@ class GameplayPatchesWindow : IImGuiWindow
         new ToonLeadersMovePatch().ApplyOrRemove(bToonLeaderLandChange);
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
-        new RemoveDCRequirementsPostGane().ApplyOrRemove(bNoDcPostGame);
+        new ExtendedCardCopyLimitPatch().ApplyOrRemove(bNineCardLimit);
+        new RemoveDCRequirementsGeneral().ApplyOrRemove(bNoDcAllGame);
+        new RemoveDCRequirementsPostGame().ApplyOrRemove(bNoDcPostGame);
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
 
         ApplyValuePatches();

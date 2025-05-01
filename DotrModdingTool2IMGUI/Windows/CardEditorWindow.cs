@@ -401,14 +401,14 @@ class CardEditorWindow : IImGuiWindow
 
             if (ImGui.InputInt("##attackValue", ref currentMonsterAttack, 100))
             {
-                currentMonsterAttack = Math.Clamp(currentMonsterAttack, 0, 9999);
+                currentMonsterAttack = Math.Clamp(currentMonsterAttack, 0, 8191);
                 currentCardConst.Attack = (ushort)currentMonsterAttack;
             }
             ImGui.SetCursorPos(pos + new Vector2(100 * imageScale + xTextPadding, 301 * imageScale + 46 * imageScale / 2f));
 
             if (ImGui.InputInt("##defenseValue", ref currentMonsterDefense, 100))
             {
-                currentMonsterDefense = Math.Clamp(currentMonsterDefense, 0, 9999);
+                currentMonsterDefense = Math.Clamp(currentMonsterDefense, 0, 8191);
                 currentCardConst.Defense = (ushort)currentMonsterDefense;
             }
             ImGui.PopStyleColor(4);
@@ -596,7 +596,7 @@ class CardEditorWindow : IImGuiWindow
             {
                 if (ImGui.InputInt("##EnchantScore", ref currentEnchantScore, 0))
                 {
-                    currentEnchantScore = Math.Clamp(currentEnchantScore, 0, 9999);
+                    currentEnchantScore = Math.Clamp(currentEnchantScore, 0, 8191);
                     foreach (var selectedCard in selectedCards)
                     {
                         EnchantData.EnchantScores[CardConstant.CardLookup[selectedCard].Index - Card.EquipCardStartIndex] = (ushort)currentEnchantScore;
@@ -1294,6 +1294,7 @@ class CardEditorWindow : IImGuiWindow
 
         if (firstSelected.CardKind.isMonster()) return card.CardKind.isMonster();
         if (firstSelected.CardKind.isMagic()) return card.CardKind.isMagic();
+        if (firstSelected.CardKind.isPowerUp()) return card.CardKind.isPowerUp();
         if (firstSelected.CardKind.isTrap()) return card.CardKind.isTrap();
         if (firstSelected.CardKind.isRitual()) return card.CardKind.isRitual();
 

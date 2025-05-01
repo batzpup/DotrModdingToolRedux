@@ -11,7 +11,7 @@ public class DeckEditorWindow : IImGuiWindow
                                  ImGuiTableFlags.ScrollX |
                                  ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.BordersInnerH;
 
-    List<Deck> deckLists = new List<Deck>();
+
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
     List<DeckCard> sortedDeckList = new List<DeckCard>();
     HashSet<int> trunkSelection = new HashSet<int>();
@@ -64,11 +64,9 @@ public class DeckEditorWindow : IImGuiWindow
 
     }
 
-    public void LoadDeckLists()
+    public void UpdateDeckData()
     {
-        deckLists.Clear();
-        deckLists = Deck.LoadDeckListFromBytes(DataAccess.Instance.LoadDecks());
-        currentDeck = deckLists[currentDeckListIndex];
+        currentDeck = Deck.DeckList[currentDeckListIndex];
         sortedDeckList = new List<DeckCard>(currentDeck.CardList);
     }
 
@@ -81,7 +79,7 @@ public class DeckEditorWindow : IImGuiWindow
         }
         if (currentDeckListIndex != lastDeckListIndex)
         {
-            currentDeck = deckLists[currentDeckListIndex];
+            currentDeck = Deck.DeckList[currentDeckListIndex];
             sortedDeckList = new List<DeckCard>(currentDeck.CardList);
             lastDeckListIndex = currentDeckListIndex;
         }
@@ -89,10 +87,10 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.PushFont(fontToUse);
         if (ImGui.BeginCombo("Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name}", ImGuiComboFlags.HeightLarge))
         {
-            for (var index = 0; index < deckLists.Count; index++)
+            for (var index = 0; index < Deck.DeckList.Count; index++)
             {
-                bool isSelected = deckLists[index] == currentDeck;
-                if (ImGui.Selectable($"{Deck.NamePrefix(index)} - {deckLists[index].DeckLeader.Name}", isSelected))
+                bool isSelected = Deck.DeckList[index] == currentDeck;
+                if (ImGui.Selectable($"{Deck.NamePrefix(index)} - {Deck.DeckList[index].DeckLeader.Name}", isSelected))
                 {
                     currentDeckListIndex = index;
                 }
@@ -106,7 +104,7 @@ public class DeckEditorWindow : IImGuiWindow
                     {
                         GlobalImgui.RenderTooltipOpponentImage((EEnemyImages)index - 26);
                     }
-                    GlobalImgui.RenderTooltipCardImage(deckLists[index].DeckLeader.Name);
+                    GlobalImgui.RenderTooltipCardImage(Deck.DeckList[index].DeckLeader.Name);
                 }
             }
             ImGui.EndCombo();
@@ -560,9 +558,9 @@ public class DeckEditorWindow : IImGuiWindow
     public void SaveAllDecks()
     {
         failedToSaveDecks.Clear();
-        for (var index = 0; index < deckLists.Count; index++)
+        for (var index = 0; index < Deck.DeckList.Count; index++)
         {
-            Deck deck = deckLists[index];
+            Deck deck = Deck.DeckList[index];
             if (deck.CardList.Count == 40)
             {
                 DataAccess.Instance.SaveDeck(index, deck.Bytes);
@@ -572,8 +570,8 @@ public class DeckEditorWindow : IImGuiWindow
                 failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name}");
             }
         }
-        LoadDeckLists();
-        UpdateStartingDeck.CreateNewStartingDeckData(deckLists);
+        UpdateDeckData();
+        UpdateStartingDeck.CreateNewStartingDeckData(Deck.DeckList);
         if (failedToSaveDecks.Count > 0)
         {
             deckErrorText.Clear();
@@ -586,7 +584,6 @@ public class DeckEditorWindow : IImGuiWindow
             deckErrorText.AppendLine("Your other changes have been saved!");
             modalPopup.Show(deckErrorText.ToString());
         }
-
     }
 
     public static int CompareWithFallback<TPrimary, TSecondary>(TPrimary primaryA, TPrimary primaryB, TSecondary secondaryA, TSecondary secondaryB,

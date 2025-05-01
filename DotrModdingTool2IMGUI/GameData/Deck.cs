@@ -1,7 +1,9 @@
 ﻿namespace DotrModdingTool2IMGUI;
 
+
 public class Deck
 {
+    public static List<Deck> DeckList = new List<Deck>();
     public int Index { get; }
     public DeckCard DeckLeader { get; set; } = null;
     public List<DeckCard> CardList { get; set; }

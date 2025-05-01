@@ -64,7 +64,7 @@ The logic is hardcoded and can't be changed with this tool.
 Reduction depends on the leader’s kind and level as follows:
   Immortal -> always 1
   Beast-Warrior, Sea Serpent -> 2 if level is at least 6, else 1
-  Dragon, Winged Beast, Fish, Machine -> 2 if level is at least 7, else 1."
+  Dragon, Winged Beast, Fish, Machine -> 2 if level is at least 7, else 0."
         };
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.ExtendedSupportRange] = new string[] {
@@ -115,11 +115,10 @@ The logic regarding what type powers down what type is hardcoded:
             "Spellbind Specific Enemy Type",
             @"Spellbind specific enemy type for 1 turn whilst in your support range.
 This logic is hardcoded and can't be changed with this tool:
- Fairy destroys Fiend.
- Reptile destroys Insect.
- Pyro destroys Zombie and Plant.
- Rock destroys Dinosaur.
- Plant destroys Rock."
+ Plant Spellbinds Dragon.
+ Pyro Spellbinds Beast.
+ Reptile Spellbinds Aqua.
+ Fairy Spellbinds Zombie."
         };
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.DestroySpecificEnemyType] = new string[] {

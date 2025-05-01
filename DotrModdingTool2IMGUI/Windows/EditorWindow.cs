@@ -70,7 +70,7 @@ public class EditorWindow
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
-        _randomiserWindow = new RandomiserWindow();
+        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
@@ -393,6 +393,7 @@ public class EditorWindow
         dataAccess.SaveEnchantData();
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
+        _randomiserWindow.DoRandomiserPatches();
         UserSettings.SaveSettings();
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
@@ -403,10 +404,10 @@ public class EditorWindow
     void LoadDataFromIso()
     {
         CardConstant.LoadFromBytes(dataAccess.LoadCardConstantData());
+        dataAccess.LoadDecksData();
         _enemyEditorWindow.MapEditorWindow.LoadMapData();
         _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
-        _enemyEditorWindow.DeckEditorWindow.LoadDeckLists();
-
+        _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
         _musicEditorWindow.LoadMusicFromIso();
         dataAccess.LoadMonsterEquipCardData();
         dataAccess.LoadCardDeckLeaderAbilities();

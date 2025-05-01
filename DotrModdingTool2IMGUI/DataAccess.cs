@@ -53,8 +53,8 @@ public class DataAccess
     public const int PicPackSize = 0x4410;
     public const int PictureSize = 0x4800;
     public const int PickPackOffset = 0xe9b800;
-    public const IntPtr  picPackArtsSLUSArray = 0x29eafc;
-    
+    public const IntPtr picPackArtsSLUSArray = 0x29eafc;
+
     public DotrMap[] maps = new DotrMap[46];
     private static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
@@ -197,6 +197,12 @@ public class DataAccess
         }
 
         return allDeckBytes;
+    }
+
+    public void LoadDecksData()
+    {
+        Deck.DeckList.Clear();
+        Deck.DeckList = Deck.LoadDeckListFromBytes(LoadDecks());
     }
 
     public byte[][] LoadMonsterEquipCardData()
@@ -668,7 +674,7 @@ public class DataAccess
                     byte[] picture = new byte[PicPackSize];
 
                     data.Read(picture, 0, PicPackSize);
-                   PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
+                    PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
 
                 }
             }
