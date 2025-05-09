@@ -70,7 +70,7 @@ public class EditorWindow
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
-        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
+        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow,_musicEditorWindow);
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
@@ -101,7 +101,15 @@ public class EditorWindow
 
     void RequestDownload()
     {
-        Task.Run(async () => await Updater.DownloadUpdate());
+        
+        Task.Run(async () =>
+        {
+            Disabled = true;
+            _modalPopup.Show($"Downloading Update.\nThe tool will close, then command prompt will appear swap the files, and re-open the tool", "Updater");
+            await Updater.DownloadUpdate();
+            Disabled = false;
+        });
+        
     }
 
     void ViewCardInEditor(string name)
@@ -440,8 +448,6 @@ public class EditorWindow
     public static void CreateCSVFromMonsterEffects(List<MonsterEffects> monsterEffectsList)
     {
         var sb = new StringBuilder();
-
-
         sb.AppendLine(
             "AttackEffectName,AttackSearchMode,MovementEffectName,MovementSearchMode,NatureEffectName,NatureSearchMode,FlipEffectName,FlipSearchMode,DestructionEffectName,DestructionSearchMode");
 

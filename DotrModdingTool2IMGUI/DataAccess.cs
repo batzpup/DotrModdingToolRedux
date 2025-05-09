@@ -308,8 +308,6 @@ public class DataAccess
             }
 
         }
-
-
     }
 
     public void SaveEnchantData()

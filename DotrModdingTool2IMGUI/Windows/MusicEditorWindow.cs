@@ -23,7 +23,7 @@ public class MusicEditorWindow : IImGuiWindow
     int currentDuelistSelected;
     int currentTrackIndex;
     int currentSlotMusicIndex;
-    bool bSaveMusicChanges;
+    public bool bSaveMusicChanges;
     ImFontPtr monoSpaceFont;
     public static Action<bool> OnSaveCustomMusic;
 
@@ -132,7 +132,6 @@ public class MusicEditorWindow : IImGuiWindow
             }
         }
         currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
-
         currentSlotMusicIndex = dataAccess.ReadBytes(SlotMusicPatch.SlotTrackPtr, 1)[0] - 1;
     }
 

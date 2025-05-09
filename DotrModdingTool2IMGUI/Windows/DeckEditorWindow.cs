@@ -68,6 +68,7 @@ public class DeckEditorWindow : IImGuiWindow
     {
         currentDeck = Deck.DeckList[currentDeckListIndex];
         sortedDeckList = new List<DeckCard>(currentDeck.CardList);
+        sortedTrunkList = new List<CardConstant>(CardConstant.List);
     }
 
     void DrawDeckListTable()

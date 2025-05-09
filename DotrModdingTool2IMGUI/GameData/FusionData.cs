@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Text;
 namespace DotrModdingTool2IMGUI;
 
 public class FusionData
@@ -20,6 +21,11 @@ public class FusionData
     public string cardResultName;
 
 
+    public FusionData()
+    {
+
+    }
+
     public FusionData(byte[] data)
     {
 
@@ -36,7 +42,7 @@ public class FusionData
     {
 
         OrderFusionMaterials();
-        fusionData = (uint)(higherCardId |lowerCardId  << 10 | resultId << 20);
+        fusionData = (uint)(higherCardId | lowerCardId << 10 | resultId << 20);
         lowerCardName = Card.cardNameList[lowerCardId];
         higherCardName = Card.cardNameList[higherCardId];
         cardResultName = Card.cardNameList[resultId];
@@ -54,5 +60,60 @@ public class FusionData
             (lowerCardName, higherCardName) = (higherCardName, lowerCardName);
 
         }
+    }
+
+    public static void ExportToCSV(string filePath)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(
+            "LowerId,HigherId,ResultId,LowerName,HigherName,ResultName");
+
+        foreach (var fusionData in FusionTableData.Values)
+        {
+            var row = new List<string>();
+            row.Add(fusionData.lowerCardId.ToString());
+            row.Add(fusionData.higherCardId.ToString());
+            row.Add(fusionData.resultId.ToString());
+            
+            row.Add(fusionData.lowerCardName.Replace(',',' '));
+            row.Add(fusionData.higherCardName.Replace(',',' '));
+            row.Add(fusionData.cardResultName.Replace(',',' '));
+            sb.AppendLine(string.Join(",", row));
+        }
+        File.WriteAllText(filePath, sb.ToString());
+
+    }
+
+    public static void ImportFromCSV(string filePath)
+    {
+        FusionTableData.Clear();
+        int index = 0;
+        string[] lines = File.ReadAllLines(filePath);
+        for (int i = 1; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            string[] values = line.Split(',');
+
+            if (values.Length == 6) 
+            {
+                ushort lowerId = ushort.Parse(values[0]);
+                ushort higherId = ushort.Parse(values[1]);
+                ushort resultId = ushort.Parse(values[2]);
+                
+                FusionData data = new FusionData {
+                    lowerCardId = lowerId,
+                    higherCardId = higherId,
+                    resultId = resultId,
+                    fusionData = 0, //updated in updateFusion
+                    lowerCardName = Card.cardNameList.Length > lowerId ? Card.cardNameList[lowerId] : $"Card_{lowerId}",
+                    higherCardName = Card.cardNameList.Length > higherId ? Card.cardNameList[higherId] : $"Card_{higherId}",
+                    cardResultName = Card.cardNameList.Length > resultId ? Card.cardNameList[resultId] : $"Card_{resultId}"
+                };
+                data.UpdateFusion();
+                FusionTableData[index] = data;
+                index++;
+            }
+        }
+        Console.WriteLine($"Imported {FusionTableData.Count} fusion data entries from {filePath}");
     }
 }

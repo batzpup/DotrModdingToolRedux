@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using ImGuiNET;
+using NativeFileDialogSharp;
 namespace DotrModdingTool2IMGUI;
 
 class FusionEditorWindow : IImGuiWindow
@@ -28,6 +29,7 @@ class FusionEditorWindow : IImGuiWindow
         sortedData = FusionData.FusionTableData.ToList();
     }
 
+  
     public void Render()
     {
         DrawFusionTable();
@@ -49,7 +51,7 @@ class FusionEditorWindow : IImGuiWindow
             return;
         }
 
-        
+
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         float columnWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X + 100;
         if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
@@ -63,6 +65,34 @@ class FusionEditorWindow : IImGuiWindow
         }
         ImGui.Text("Search Bar");
         ImGui.InputText("##SearchBar", ref searchText, 32);
+        ImGui.SameLine();
+        if (ImGui.Button("Import from CSV"))
+        {
+            DialogResult result = Dialog.FileOpen("csv");
+            if (result.IsOk)
+            {
+                string isoPath = result.Path;
+                if (result.Path.EndsWith(".csv"))
+                {
+                    FusionData.ImportFromCSV(isoPath);
+                    sortedData = FusionData.FusionTableData.ToList();
+                }
+                else
+                {
+                    Console.WriteLine("Should show pop up error");
+                }
+            }
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Export to CSV"))
+        {
+            DialogResult result = Dialog.FileSave("csv");
+            if (result.IsOk)
+            {
+                string isoPath = result.Path + ".csv";
+                FusionData.ExportToCSV(isoPath);
+            }
+        }
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
@@ -113,7 +143,7 @@ class FusionEditorWindow : IImGuiWindow
                 sortSpecifications.SpecsDirty = false;
             }
 
-          
+
             List<KeyValuePair<int, FusionData>> filteredData = sortedData.Where(entry =>
             {
                 var fusion = entry.Value;
@@ -121,7 +151,7 @@ class FusionEditorWindow : IImGuiWindow
                 bool matchesHigher = fusion.higherCardName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
                 bool matchesResult = fusion.cardResultName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
 
-                return matchesLower || matchesHigher || matchesResult; 
+                return matchesLower || matchesHigher || matchesResult;
             }).ToList();
 
             clipper.Begin(filteredData.Count);
@@ -153,6 +183,7 @@ class FusionEditorWindow : IImGuiWindow
                         ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
                         ImGui.InputText($"##searchInputLower_{id}", ref filter1Text, 64);
                         ImGui.PopStyleColor();
+
                         List<string> filteredList = Card.cardNameList
                             .Where(cardName => cardName.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
