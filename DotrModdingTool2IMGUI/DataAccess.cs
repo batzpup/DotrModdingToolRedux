@@ -273,15 +273,16 @@ public class DataAccess
 
     public void OpenIso(string filePath)
     {
-        if (fileStream != null)
-        {
+        fileStream?.Dispose();
 
-            fileStream.Dispose();
-        }
         this.filePath = filePath;
-        fileStream = new FileStream(filePath, FileMode.Open);
-        IsIsoLoaded = true;
+        fileStream = new FileStream(
+            filePath,
+            FileMode.Open,
+            FileAccess.ReadWrite,
+            FileShare.ReadWrite);
 
+        IsIsoLoaded = true;
     }
 
     public void LoadEnchantData()

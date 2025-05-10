@@ -14,7 +14,6 @@ public class GameplayPatchesWindow : IImGuiWindow
     static int MakeWhiteStart = 0x179074; //Makes white always start
     static int changeTeamStart = 0x179074;
     static int ChangeTerrainValues = 0x236590;
-
     static int MoreDigitsOnScreen = 0x181cd0;
 
     //BELOW HERE REQUIRE FAST INTRO TO BE ENABLED:
@@ -44,47 +43,47 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #region Toggle only
 
-    bool bAiDoubleTap;
-    bool bFastIntro;
-    bool bUnlockFusions;
-    bool bCameraFix;
-    bool bExpandedZoom;
-    bool bRemoveExpLoss;
-    bool bRemoveSlotRng;
-    bool bAllCustomDuels;
-    bool bKeepReincarnatedCard;
-    bool bNoDcPostGame;
-    bool bNoDcAllGame;
-    bool bNineCardLimit;
-    bool bToonLeaderLandChange;
-    bool bAllKindsExtraSlots;
-
-    bool bSaveMusic;
+    public bool bAiDoubleTap;
+    public bool bFastIntro;
+    public bool bUserToggledFastIntro = false;
+    public bool bUnlockFusions;
+    public bool bCameraFix;
+    public bool bExpandedZoom;
+    public bool bRemoveExpLoss;
+    public bool bRemoveSlotRng;
+    public bool bAllCustomDuels;
+    public bool bKeepReincarnatedCard;
+    public bool bNoDcPostGame;
+    public bool bNoDcAllGame;
+    public bool bNineCardLimit;
+    public bool bToonLeaderLandChange;
+    public bool bAllKindsExtraSlots;
+    public bool bSaveMusic;
 
     #endregion
 
     #region Toggle and value
 
-    int currentSideToGoFirst;
+    public int currentSideToGoFirst;
     string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
-    bool bSideToGoFirst;
-    bool bForceNewStartSide;
-    bool bLpCap;
-    bool bReincarnationCount;
-    bool bTerrainBuff;
-    bool bDeckLeaderRecovery;
+    public bool bSideToGoFirst;
+    public bool bForceNewStartSide;
+    public bool bLpCap;
+    public bool bReincarnationCount;
+    public bool bTerrainBuff;
+    public bool bDeckLeaderRecovery;
 
-    int forceSideIndex;
-    int lpCap;
-    int reincarnationCount;
-    int terrainBuffAmount;
-    int leaderRecovery;
+    public int forceSideIndex;
+    public int lpCap;
+    public int reincarnationCount;
+    public int terrainBuffAmount;
+    public int leaderRecovery;
 
     #endregion
 
     #region CustomSlots
 
-    bool bSaveCustomSlotRewards;
+    public bool bSaveCustomSlotRewards;
     Vector4 tableBgColour = UserSettings.CustomSlotTableBgColour;
     Vector4 searchColour = UserSettings.CustomSlotDropdownColour;
 
@@ -133,8 +132,11 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #endregion
 
+    public static GameplayPatchesWindow Instance { get; private set; }
+
     public GameplayPatchesWindow()
     {
+        Instance = this;
         font = Fonts.MonoSpace;
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         MusicEditorWindow.OnSaveCustomMusic += onSaveMusicChanged;
@@ -421,7 +423,10 @@ public class GameplayPatchesWindow : IImGuiWindow
             ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
         ImGui.Text("On/Off patches");
         ImGui.Separator();
-        ImGui.Checkbox("Fast intro", ref bFastIntro);
+        if (ImGui.Checkbox("Fast intro", ref bFastIntro))
+        {
+            bUserToggledFastIntro = !bUserToggledFastIntro;
+        }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Skips unneeded cutscenes when starting a new campaign\nRemoves the tutorial to allow space for new mods");
 
@@ -1308,9 +1313,10 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
     }
 
-    bool IsUsingFastIntroMods()
+    public bool IsUsingFastIntroMods()
     {
         return bSaveCustomSlotRewards || bAiDoubleTap || bAllCustomDuels ||
-               bNoDcPostGame || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic;
+               bNoDcPostGame || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
+               bUserToggledFastIntro;
     }
 }

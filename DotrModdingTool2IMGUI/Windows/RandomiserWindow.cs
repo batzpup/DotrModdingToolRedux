@@ -58,7 +58,9 @@ public class RandomiserWindow : IImGuiWindow
     int randomEffectChance = 15;
     int maxRandomRank = 12;
     int maxLeaderAbilities = 16;
-    int leaderAbilityChance = 30;
+    int weakLeaderAbilityChance = 30;
+    int strongLeaderAbilityChance = 30;
+    int OPLeaderAbilityChance = 30;
     int bannedDcLimit = 99;
     int bannedLevelLimit = 12;
     int bannedDefLimit = 8000;
@@ -88,6 +90,9 @@ public class RandomiserWindow : IImGuiWindow
     List<(int index, byte deckCost)> strongestSpells = new List<(int index, byte deckCost)>();
     List<(int index, byte deckCost)> strongestTraps = new List<(int index, byte deckCost)>();
 
+    List<DeckLeaderAbilityType> weakLeaderAbilities = new List<DeckLeaderAbilityType>();
+    List<DeckLeaderAbilityType> strongLeaderAbilities = new List<DeckLeaderAbilityType>();
+    List<DeckLeaderAbilityType> OPLeaderAbilities = new List<DeckLeaderAbilityType>();
 
     HashSet<int> bannedCards = new HashSet<int>();
     List<string> bannedCardFilteredList = new List<string>();
@@ -141,8 +146,20 @@ Not recommended to edit card effects as it will not update the text, but im not 
             RandomiseLeaderRanks();
             RandomiseMaps();
             ChangeAllAi();
+            RandomiseMusic();
             _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
             hasRandomised = true;
+            if (hasRandomised)
+            {
+                GameplayPatchesWindow.Instance.bNineCardLimit = true;
+                if (GameplayPatchesWindow.Instance.bNoDcPostGame)
+                {
+                    GameplayPatchesWindow.Instance.bNoDcPostGame = false;
+                }
+                GameplayPatchesWindow.Instance.bNoDcAllGame = true;
+                GameplayPatchesWindow.Instance.bAllKindsExtraSlots = true;
+                new ExtendedCardCopyLimitPatch().ApplyOrRemove(true);
+            }
         }
         ImGui.SameLine();
         ImGui.Text("Press this button after selecting your settings");
@@ -167,7 +184,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
             }
             ImGui.Checkbox("Balanced deck", ref balancedRandom);
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("you will always have X monsters X equips X spells X traps and X rituals\n Must add up to 40 cards");
+                ImGui.SetTooltip("you will always have X monsters X power ups X spells X traps and X rituals\n Must add up to 40 cards");
             if (balancedRandom)
             {
                 if (!balancedDeckCorrectAmount)
@@ -310,7 +327,17 @@ Not recommended to edit card effects as it will not update the text, but im not 
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("The max amount of leader abilities a unit get it");
 
-            if (ImGui.SliderInt("Leader ability % chance", ref leaderAbilityChance, 0, 100))
+            if (ImGui.SliderInt("Weak leader ability % chance", ref weakLeaderAbilityChance, 0, 100))
+            {
+            }
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("");
+
+            if (ImGui.SliderInt("Strong leader ability % chance", ref strongLeaderAbilityChance, 0, 100))
+            {
+            }
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("The % chance of success of a given roll when attempting to get a leader ability");
+
+            if (ImGui.SliderInt("OP leader ability % chance", ref OPLeaderAbilityChance, 0, 100))
             {
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("The % chance of success of a given roll when attempting to get a leader ability");
@@ -510,23 +537,30 @@ Not recommended to edit card effects as it will not update the text, but im not 
         }
         ImGui.Checkbox("Randomise enemy background music tracks", ref randomiseMusic);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Not recommended because it forces fast intro mod to work");
+
+        ImGui.PopFont();
+    }
+
+    void RandomiseMusic()
+    {
         if (randomiseMusic)
         {
             foreach (var key in _musicEditorWindow.DuelistMusic.Keys)
             {
 
                 _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(0, _musicEditorWindow.DuelistMusic.Keys.Count);
-                while (_musicEditorWindow.DuelistMusic[key] == 1 ||_musicEditorWindow.DuelistMusic[key] == 6 || _musicEditorWindow.DuelistMusic[key] == 23 ||
+                while (_musicEditorWindow.DuelistMusic[key] == 1 || _musicEditorWindow.DuelistMusic[key] == 6 ||
+                       _musicEditorWindow.DuelistMusic[key] == 23 ||
                        _musicEditorWindow.DuelistMusic[key] == 39 || _musicEditorWindow.DuelistMusic[key] == 42 ||
                        _musicEditorWindow.DuelistMusic[key] == 43)
                 {
-                    _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(0, _musicEditorWindow.DuelistMusic.Keys.Count);
+                    _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(2, 45);
 
                 }
             }
             _musicEditorWindow.bSaveMusicChanges = true;
+            GameplayPatchesWindow.Instance.bSaveMusic = true;
         }
-        ImGui.PopFont();
     }
 
 
@@ -569,8 +603,8 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
         foreach (var deckLeaderAbilityInstance in CardDeckLeaderAbilities.MonsterAbilities)
         {
-            int numberOfPossibleAbilities = RandomNumberGenerator.GetInt32(3, maxLeaderAbilities + 1);
-            int attemptedAbilities = 0;
+
+            int assignedAbilities = 0;
             StartingDeckData.StarterDeckDataEnums.Kind cardKind =
                 (StartingDeckData.StarterDeckDataEnums.Kind)CardConstant.Monsters[deckLeaderAbilityInstance.CardId].CardKind.Id + 1;
             for (int i = 0; i < deckLeaderAbilityInstance.Abilities.Length; i++)
@@ -578,14 +612,14 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 deckLeaderAbilityInstance.Abilities[i].SetEnabled(false);
             }
 
-            for (int i = 0; i < deckLeaderAbilityInstance.Abilities.Length && attemptedAbilities < numberOfPossibleAbilities; i++)
+            for (int i = 0; i < deckLeaderAbilityInstance.Abilities.Length && assignedAbilities < maxLeaderAbilities; i++)
             {
                 DeckLeaderAbilityType currentAbility = (DeckLeaderAbilityType)i;
                 if (currentAbility == DeckLeaderAbilityType.HiddenCard)
                 {
                     deckLeaderAbilityInstance.Abilities[i].SetEnabled(true);
                     deckLeaderAbilityInstance.Abilities[i].RankRequired = 1;
-                    attemptedAbilities++;
+                    assignedAbilities++;
                     continue;
                 }
                 bool isValid = true;
@@ -596,8 +630,22 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
                 if (isValid)
                 {
-                    attemptedAbilities++;
-                    if (RandomBoolIn100(leaderAbilityChance))
+                    assignedAbilities++;
+                    int chanceToEnable = 0;
+
+                    if (weakLeaderAbilities.Contains(currentAbility))
+                    {
+                        chanceToEnable = weakLeaderAbilityChance;
+                    }
+                    else if (strongLeaderAbilities.Contains(currentAbility))
+                    {
+                        chanceToEnable = strongLeaderAbilityChance;
+                    }
+                    else if (OPLeaderAbilities.Contains(currentAbility))
+                    {
+                        chanceToEnable = OPLeaderAbilityChance;
+                    }
+                    if (RandomBoolIn100(chanceToEnable))
                     {
                         deckLeaderAbilityInstance.Abilities[i].SetEnabled(true);
                         deckLeaderAbilityInstance.Abilities[i].RankRequired = RandomNumberGenerator.GetInt32(1, 13);
@@ -768,27 +816,27 @@ Not recommended to edit card effects as it will not update the text, but im not 
                                 deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
                                 if (currentMonsterCount < monsterCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", true,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", true, deckIndex);
                                     currentMonsterCount++;
                                 }
                                 else if (currentSpellCount < spellCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", true,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", true, deckIndex);
                                     currentSpellCount++;
                                 }
                                 else if (currentEquipCount < equipCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "equip", true,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "equip", true, deckIndex);
                                     currentEquipCount++;
                                 }
                                 else if (currentTrapCount < trapCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "trap", true,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "trap", true, deckIndex);
                                     currentTrapCount++;
                                 }
                                 else if (currentRitualCount < ritualCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "ritual", true,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "ritual", true, deckIndex);
                                     currentRitualCount++;
                                 }
                             }
@@ -800,27 +848,27 @@ Not recommended to edit card effects as it will not update the text, but im not 
                                 deck.DeckLeader = CreateRandomCard("monster", false, leaderRanksOriginal[deckIndex]);
                                 if (currentMonsterCount < monsterCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", false,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", false, deckIndex);
                                     currentMonsterCount++;
                                 }
                                 else if (currentSpellCount < spellCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", false,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", false, deckIndex);
                                     currentSpellCount++;
                                 }
                                 else if (currentEquipCount < equipCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "equip", false,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "equip", false, deckIndex);
                                     currentEquipCount++;
                                 }
                                 else if (currentTrapCount < trapCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "trap", false,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "trap", false, deckIndex);
                                     currentTrapCount++;
                                 }
                                 else if (currentRitualCount < ritualCount)
                                 {
-                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "ritual", false,deckIndex);
+                                    FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "ritual", false, deckIndex);
                                     currentRitualCount++;
                                 }
                             }
@@ -841,7 +889,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                             if (deckIndex < 17)
                             {
                                 deck.DeckLeader = CreateRandomCard("monster");
-                                FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false,deckIndex);
+                                FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false, deckIndex);
                             }
                         }
                         if (randomiseOpponentDecks)
@@ -849,7 +897,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                             if (deckIndex >= 27)
                             {
                                 deck.DeckLeader = CreateRandomCard("monster");
-                                FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false,deckIndex);
+                                FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false, deckIndex);
                             }
                         }
                     }
@@ -1209,7 +1257,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                             monsterEnchantData.Flags[flagIndex] = true;
                             break;
                         case 38: // 790 Multiply
-                            monsterEnchantData.Flags[flagIndex] = true;
                             break;
                         case 39: // 791 Sword of Dragon's Soul
                             if (CardConstant.List[i].CardKind.Id == (int)CardKind.CardKindEnum.Warrior)
@@ -1323,7 +1370,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
         }
     }
 
-    void FillDeckWithType(Dictionary<int, int> CurrentDeckCardCount, Deck deck, int deckSlot, string type, bool isStarterDeck,int index)
+    void FillDeckWithType(Dictionary<int, int> CurrentDeckCardCount, Deck deck, int deckSlot, string type, bool isStarterDeck, int index)
     {
         bool cardAdded = false;
         DeckCard card;
@@ -1552,6 +1599,62 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
     void RandomiseMaps()
     {
+        if (randomiseMaps)
+        {
+            DotrMap[] maps = DataAccess.Instance.maps;
+            DotrMap[] newMapOrder = new DotrMap[maps.Length];
+            Array.Copy(maps, newMapOrder, maps.Length);
+            List<int> mapIndicesToSkip = new List<int>();
+            
+            bool keptOneSingleTerrainMap = false;
+            for (int i = 0; i < newMapOrder.Length; i++)
+            {
+                if (newMapOrder[i].tiles.Length > 0)
+                {
+                    int firstTerrain = (int)newMapOrder[i].tiles[0,0];
+                    bool singleTerrainMap = true;
+                    
+                    foreach (var terrain in newMapOrder[i].tiles)
+                    {
+                        if ((int)terrain != firstTerrain)
+                        {
+                            singleTerrainMap = false;
+                            break;
+                        }
+                    }
+                    if (singleTerrainMap)
+                    {
+                        if (keptOneSingleTerrainMap)
+                        {
+                            mapIndicesToSkip.Add(i);
+                        }
+                        else
+                        {
+                            keptOneSingleTerrainMap = true;
+                        }
+                    }
+                }
+            }
+
+            // Fisher-Yates shuffle, skipping single-terrain maps (except the first one)
+            for (int i = newMapOrder.Length - 1; i > 0; i--)
+            {
+                if (mapIndicesToSkip.Contains(i))
+                {
+                    continue;
+                }
+                int j;
+                do
+                {
+                    j = RandomNumberGenerator.GetInt32(0, i + 1);
+                } while (mapIndicesToSkip.Contains(j));
+                // ReSharper disable once SwapViaDeconstruction
+                DotrMap temp = newMapOrder[i];
+                newMapOrder[i] = newMapOrder[j];
+                newMapOrder[j] = temp;
+            }
+            Array.Copy(newMapOrder, DataAccess.Instance.maps, newMapOrder.Length);
+        }
         if (randomiseMapsTiles)
         {
             foreach (var map in DataAccess.Instance.maps)
@@ -1568,7 +1671,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 }
                 else
                 {
-                    //tile replacement map
                     Dictionary<Terrain, Terrain> terrainSwapMap = new Dictionary<Terrain, Terrain>();
                     for (int i = 0; i < 10; i++)
                     {
@@ -1577,7 +1679,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                         terrainSwapMap[originalTerrain] = newTerrain;
                     }
 
-                    // Then apply this mapping to all tiles
                     for (var index0 = 0; index0 < map.tiles.GetLength(0); index0++)
                     for (var index1 = 0; index1 < map.tiles.GetLength(1); index1++)
                     {
@@ -1638,25 +1739,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 EnsureTraversableMap(map);
             }
         }
-        if (randomiseMaps)
-        {
-            DotrMap[] maps = DataAccess.Instance.maps;
-            DotrMap[] newMapOrder = new DotrMap[maps.Length];
-            Array.Copy(maps, newMapOrder, maps.Length);
 
-            // Fisher-Yates shuffle
-            for (int i = newMapOrder.Length - 1; i > 0; i--)
-            {
-                int j = RandomNumberGenerator.GetInt32(0, i + 1);
-                // could use xor swap instead, eh
-                // ReSharper disable once SwapViaDeconstruction
-                DotrMap temp = newMapOrder[i];
-                newMapOrder[i] = newMapOrder[j];
-                newMapOrder[j] = temp;
-            }
-            Array.Copy(newMapOrder, DataAccess.Instance.maps, newMapOrder.Length);
-
-        }
         foreach (var treasureCard in TreasureCards.Instance.Treasures)
         {
             if (randomiseHiddenCardLocation)
@@ -1669,8 +1752,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 treasureCard.CardIndex = CreateRandomCard("").CardConstant.Index;
             }
         }
-
-
     }
 
     Terrain GetRandomTerrain()
@@ -1782,7 +1863,13 @@ Not recommended to edit card effects as it will not update the text, but im not 
             {
                 if (EnchantData.EnchantIds[i] == 0)
                 {
-                    EnchantData.EnchantScores[i] = (ushort)Math.Clamp(GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta), 0, 8000);
+                    if (i == 37)
+                    {
+                        continue;
+                    }
+                    EnchantData.EnchantScores[i] = (ushort)Math.Clamp(
+                        Math.Round(GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta) / 50.0) * 50,
+                        50, 8000);
                 }
             }
         }
@@ -2124,21 +2211,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
         EditorWindow.OnIsoLoaded -= LoadLeaderRanks;
     }
 
-    public void DoRandomiserPatches()
-    {
-        if (hasRandomised)
-        {
-            new ExtendedCardCopyLimitPatch().ApplyOrRemove(true);
-            //No DC all Game
-            var dcPatch = new RemoveDCRequirementsPostGame();
-            if (dcPatch.IsApplied())
-            {
-                dcPatch.ApplyOrRemove(false);
-            }
-            new RemoveDCRequirementsGeneral().ApplyOrRemove(true);
-            new AllKindsExtraCardLeaderAbility().ApplyOrRemove(true);
-        }
-    }
 
     //AI Code
     void EnsureTraversableMap(DotrMap dotrMap)

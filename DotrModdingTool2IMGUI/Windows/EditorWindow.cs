@@ -401,7 +401,6 @@ public class EditorWindow
         dataAccess.SaveEnchantData();
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
-        _randomiserWindow.DoRandomiserPatches();
         UserSettings.SaveSettings();
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {

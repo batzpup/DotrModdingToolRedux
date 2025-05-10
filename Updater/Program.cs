@@ -19,7 +19,6 @@ class Program
 
         string targetDir = args[0];
         int mainProcessId = int.Parse(args[1]);
-
         try
         {
             Process mainProcess = Process.GetProcessById(mainProcessId);
@@ -29,26 +28,23 @@ class Program
         {
             Console.WriteLine("Main application already closed.");
         }
-
         Thread.Sleep(1000);
-
         string updaterDir = AppDomain.CurrentDomain.BaseDirectory;
         foreach (var file in Directory.GetFiles(updaterDir))
         {
             string destFile = Path.Combine(targetDir, Path.GetFileName(file));
-        
+
             if (filesToNotReplace.All(fileName => Path.GetFileName(file) != fileName))
             {
                 File.Copy(file, destFile, true);
                 Console.WriteLine($"Updated: {destFile}");
             }
         }
-
         string mainExe = Path.Combine(targetDir, "DotrModdingTool2IMGUI.exe");
         Process.Start(new ProcessStartInfo {
             FileName = mainExe,
             UseShellExecute = true
         });
-        
+
     }
 }
