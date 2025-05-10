@@ -73,6 +73,21 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bTerrainBuff;
     public bool bDeckLeaderRecovery;
 
+    public bool bStartingLpRed;
+    public bool bSpRecoveryRed;
+    public bool bStartingSpRed;
+
+    public int startingSpRed = 4;
+    public int startingLpRed = 4000;
+    public int spRecoveryRed = 3;
+
+    public bool bStartingLpWhite;
+    public bool bSpRecoveryWhite;
+    public bool bStartingSpWhite;
+    public int startingSpWhite = 4;
+    public int startingLpWhite = 4000;
+    public int spRecoveryWhite = 3;
+
     public int forceSideIndex;
     public int lpCap;
     public int reincarnationCount;
@@ -414,6 +429,53 @@ public class GameplayPatchesWindow : IImGuiWindow
             ImGui.InputInt("##leaderRecovery", ref leaderRecovery, 50);
         }
 
+        ImGui.Checkbox("Change red starting lp", ref bStartingLpRed);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial LP for Red/Lancasters");
+        if (bStartingLpRed)
+        {
+            startingLpRed = Math.Clamp(startingLpRed, 1, lpCap);
+            ImGui.InputInt("##startingLpRed", ref startingLpRed, 50);
+        }
+
+        ImGui.Checkbox("Change white starting lp", ref bStartingLpWhite);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial LP for White/Yorkists");
+        if (bStartingLpWhite)
+        {
+            startingLpWhite = Math.Clamp(startingLpWhite, 1, lpCap);
+            ImGui.InputInt("##startingLpWhite", ref startingLpWhite, 50);
+        }
+
+        ImGui.Checkbox("Change red starting SP", ref bStartingSpRed);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial SP for Red/Lancasters");
+        if (bStartingSpRed)
+        {
+            startingSpRed = Math.Clamp(startingSpRed, 0, 12);
+            ImGui.SliderInt("##startingSpRed", ref startingSpRed, 0, 12);
+        }
+
+        ImGui.Checkbox("Change white starting SP", ref bStartingSpWhite);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial SP for White/Yorkists");
+        if (bStartingSpWhite)
+        {
+            startingSpWhite = Math.Clamp(startingSpWhite, 0, 12);
+            ImGui.SliderInt("##startingSpWhite", ref startingSpWhite, 0, 12);
+        }
+
+        ImGui.Checkbox("Change red SP recovery", ref bSpRecoveryRed);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes SP per turn for Red/Lancasters");
+        if (bSpRecoveryRed)
+        {
+            spRecoveryRed = Math.Clamp(spRecoveryRed, 0, 12);
+            ImGui.SliderInt("##SpRecoveryRed", ref spRecoveryRed, 0, 12);
+        }
+
+        ImGui.Checkbox("Change white SP recovery", ref bSpRecoveryWhite);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes SP per turn for White/Yorkists");
+        if (bSpRecoveryWhite)
+        {
+            spRecoveryWhite = Math.Clamp(spRecoveryWhite, 0, 12);
+            ImGui.SliderInt("##SpRecoveryWhite", ref spRecoveryWhite, 0, 12);
+        }
         ImGui.EndChild();
     }
 
@@ -647,8 +709,40 @@ public class GameplayPatchesWindow : IImGuiWindow
             terrainBuffAmount = 500;
         }
 
-        bSaveCustomSlotRewards = dataAccess.CheckIfPatchApplied(AddSlotRewardsPtr, new byte[8] { 0x44, 0xc9, 0x05, 0x08, 0x00, 0x00, 0x00, 0x00 });
+        bStartingLpRed = new ChangeStartingLp().IsApplied();
+        if (bStartingLpRed)
+        {
+            startingLpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLp.patchLocationRed, 2), 0);
+        }
+        bStartingSpRed = new ChangeStartingSp().IsApplied();
+        if (bStartingSpRed)
+        {
+            startingSpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSp.patchLocationRed, 2), 0);
+        }
+        bSpRecoveryRed = new ChangeSpRecovery().IsApplied();
+        if (bSpRecoveryRed)
+        {
+            spRecoveryRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecovery.patchLocationRed, 2), 0);
+        }
+        bSpRecoveryWhite = new ChangeSpRecovery().IsApplied();
+        if (bSpRecoveryWhite)
+        {
+            spRecoveryWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecovery.patchLocationWhite, 2), 0);
+        }
 
+        bStartingLpWhite = new ChangeStartingLp().IsApplied();
+        if (bStartingLpWhite)
+        {
+            startingLpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLp.patchLocationWhite, 2), 0);
+        }
+        bStartingSpWhite = new ChangeStartingSp().IsApplied();
+        if (bStartingSpWhite)
+        {
+            startingSpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSp.patchLocationWhite, 2), 0);
+        }
+
+
+        bSaveCustomSlotRewards = dataAccess.CheckIfPatchApplied(AddSlotRewardsPtr, new byte[8] { 0x44, 0xc9, 0x05, 0x08, 0x00, 0x00, 0x00, 0x00 });
         if (bSaveCustomSlotRewards)
         {
             byte[] bytes = dataAccess.ReadBytes(TaTutoFocusUnit032, 768);
@@ -903,6 +997,14 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         new ChangeLpRecovery().ApplyOrRemove(bDeckLeaderRecovery, leaderRecovery);
 
+        new ChangeStartingLp().ApplyOrRemove(bStartingLpRed, (uint)startingLpRed, 0);
+        new ChangeStartingLp().ApplyOrRemove(bStartingLpWhite, (uint)startingLpWhite, 1);
+
+        new ChangeSpRecovery().ApplyOrRemove(bSpRecoveryRed, (uint)spRecoveryRed, 0);
+        new ChangeSpRecovery().ApplyOrRemove(bSpRecoveryWhite, (uint)spRecoveryWhite, 1);
+
+        new ChangeStartingSp().ApplyOrRemove(bStartingSpRed, (uint)startingSpRed, 0);
+        new ChangeStartingSp().ApplyOrRemove(bStartingSpWhite, (uint)startingSpWhite, 1);
     }
 
     void NopTutorialsForOtherMods()
