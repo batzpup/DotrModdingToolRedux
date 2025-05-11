@@ -70,7 +70,7 @@ public class EditorWindow
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
-        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow,_musicEditorWindow);
+        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow, _musicEditorWindow);
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
@@ -101,15 +101,16 @@ public class EditorWindow
 
     void RequestDownload()
     {
-        
+
         Task.Run(async () =>
         {
             Disabled = true;
-            _modalPopup.Show($"Downloading Update.\nThe tool will close, then command prompt will appear swap the files, and re-open the tool", "Updater");
+            _modalPopup.Show($"Downloading Update.\nThe tool will close, then command prompt will appear swap the files, and re-open the tool",
+                "Updater");
             await Updater.DownloadUpdate();
             Disabled = false;
         });
-        
+
     }
 
     void ViewCardInEditor(string name)
@@ -128,13 +129,15 @@ public class EditorWindow
     };
 
 
+
     public void Render()
     {
         rlImGui.Begin();
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10f, 10f));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10f, 10f));
         ImGui.Begin("Dotr Modding tool 2",
-            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
+            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse |
+            ImGuiWindowFlags.HorizontalScrollbar);
         ImGui.SetWindowPos(Vector2.Zero);
         ImGui.SetWindowSize(new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
         ImGui.PopStyleVar(2);
@@ -311,7 +314,7 @@ public class EditorWindow
         //Draw stuff
 
         ImGui.BeginChild("LeftSidePanel", new Vector2(buttonWidthScaled + (buttonSpacingScaled * 2), 0),
-            ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened);
+            ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysUseWindowPadding);
         ImGui.PushFont(menuBarFont);
         foreach (var modeButtonPair in ButtonModeTable)
         {
@@ -470,4 +473,6 @@ public class EditorWindow
         File.WriteAllText("MonsterEffects.csv", sb.ToString());
         Console.WriteLine("CSV file created successfully.");
     }
+
+    
 }

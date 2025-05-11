@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Security.Cryptography;
+using System.Text;
 using GameplayPatches;
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
@@ -90,10 +91,32 @@ public class RandomiserWindow : IImGuiWindow
     List<(int index, byte deckCost)> strongestSpells = new List<(int index, byte deckCost)>();
     List<(int index, byte deckCost)> strongestTraps = new List<(int index, byte deckCost)>();
 
-    List<DeckLeaderAbilityType> weakLeaderAbilities = new List<DeckLeaderAbilityType>();
-    List<DeckLeaderAbilityType> strongLeaderAbilities = new List<DeckLeaderAbilityType>();
-    List<DeckLeaderAbilityType> OPLeaderAbilities = new List<DeckLeaderAbilityType>();
+    List<DeckLeaderAbilityType> weakLeaderAbilities = new List<DeckLeaderAbilityType>() {
+        DeckLeaderAbilityType.FriendlyIncreasedStrength,
+        DeckLeaderAbilityType.WeakenSpecificEnemyType,
+        DeckLeaderAbilityType.FriendlyMovementBoost,
+        DeckLeaderAbilityType.LevelCostReduction,
+        DeckLeaderAbilityType.DestinyDraw
+    };
 
+    List<DeckLeaderAbilityType> strongLeaderAbilities = new List<DeckLeaderAbilityType>() {
+        DeckLeaderAbilityType.FriendlyImprovedResistance,
+        DeckLeaderAbilityType.ExtendedSupportRange,
+        DeckLeaderAbilityType.LPRecovery,
+        DeckLeaderAbilityType.TerrainChange,
+    };
+
+    List<DeckLeaderAbilityType> OPLeaderAbilities = new List<DeckLeaderAbilityType>() {
+        DeckLeaderAbilityType.OpenCard,
+        DeckLeaderAbilityType.DestroySpecificEnemyType,
+        DeckLeaderAbilityType.SpellbindSpecificEnemyType,
+        DeckLeaderAbilityType.DirectDamageHalved,
+        DeckLeaderAbilityType.IncreasedMovement
+    };
+
+    string weakLeaderAbilitiesTooltip = null;
+    string strongLeaderAbilitiesTooltip = null;
+    string opLeaderAbilitiesTooltip = null;
     HashSet<int> bannedCards = new HashSet<int>();
     List<string> bannedCardFilteredList = new List<string>();
     HashSet<string> selectedCards = new HashSet<string>();
@@ -113,6 +136,38 @@ public class RandomiserWindow : IImGuiWindow
         EditorWindow.OnIsoLoaded += LoadLeaderRanks;
         _enemyEditorWindow = enemyEditorWindow;
         _musicEditorWindow = musicEditorWindow;
+        CreateLeaderAbilityTooltips();
+    }
+
+    void CreateLeaderAbilityTooltips()
+    {
+        StringBuilder tooltipBuilder = new StringBuilder();
+        tooltipBuilder.Clear().Append("Weak leader abilities:\n");
+        for (int i = 0; i < weakLeaderAbilities.Count; i++)
+        {
+            if (i > 0)
+                tooltipBuilder.Append('\n');
+            tooltipBuilder.Append(weakLeaderAbilities[i].ToString());
+        }
+        weakLeaderAbilitiesTooltip = tooltipBuilder.ToString();
+
+        tooltipBuilder.Clear().Append("Strong leader abilities:\n");
+        for (int i = 0; i < strongLeaderAbilities.Count; i++)
+        {
+            if (i > 0)
+                tooltipBuilder.Append('\n');
+            tooltipBuilder.Append(strongLeaderAbilities[i].ToString());
+        }
+        strongLeaderAbilitiesTooltip = tooltipBuilder.ToString();
+
+        tooltipBuilder.Clear().Append("OP leader abilities:\n");
+        for (int i = 0; i < OPLeaderAbilities.Count; i++)
+        {
+            if (i > 0)
+                tooltipBuilder.Append('\n');
+            tooltipBuilder.Append(OPLeaderAbilities[i].ToString());
+        }
+        opLeaderAbilitiesTooltip = tooltipBuilder.ToString();
     }
 
     void LoadLeaderRanks()
@@ -151,14 +206,14 @@ Not recommended to edit card effects as it will not update the text, but im not 
             hasRandomised = true;
             if (hasRandomised)
             {
-                GameplayPatchesWindow.Instance.bNineCardLimit = true;
+
                 if (GameplayPatchesWindow.Instance.bNoDcPostGame)
                 {
                     GameplayPatchesWindow.Instance.bNoDcPostGame = false;
                 }
                 GameplayPatchesWindow.Instance.bNoDcAllGame = true;
                 GameplayPatchesWindow.Instance.bAllKindsExtraSlots = true;
-                new ExtendedCardCopyLimitPatch().ApplyOrRemove(true);
+                GameplayPatchesWindow.Instance.bNineCardLimit = true;
             }
         }
         ImGui.SameLine();
@@ -330,17 +385,17 @@ Not recommended to edit card effects as it will not update the text, but im not 
             if (ImGui.SliderInt("Weak leader ability % chance", ref weakLeaderAbilityChance, 0, 100))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(weakLeaderAbilitiesTooltip);
 
             if (ImGui.SliderInt("Strong leader ability % chance", ref strongLeaderAbilityChance, 0, 100))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("The % chance of success of a given roll when attempting to get a leader ability");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{strongLeaderAbilitiesTooltip}");
 
             if (ImGui.SliderInt("OP leader ability % chance", ref OPLeaderAbilityChance, 0, 100))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("The % chance of success of a given roll when attempting to get a leader ability");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip(opLeaderAbilitiesTooltip);
             ImGui.Unindent();
         }
         ImGui.Checkbox("Randomise card ATK-DEF", ref randomiseCardATKDEF);
@@ -545,14 +600,12 @@ Not recommended to edit card effects as it will not update the text, but im not 
     {
         if (randomiseMusic)
         {
+            HashSet<int> bannedMusic = new HashSet<int> { 1, 6, 23, 39, 42, 43 };
             foreach (var key in _musicEditorWindow.DuelistMusic.Keys)
             {
 
-                _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(0, _musicEditorWindow.DuelistMusic.Keys.Count);
-                while (_musicEditorWindow.DuelistMusic[key] == 1 || _musicEditorWindow.DuelistMusic[key] == 6 ||
-                       _musicEditorWindow.DuelistMusic[key] == 23 ||
-                       _musicEditorWindow.DuelistMusic[key] == 39 || _musicEditorWindow.DuelistMusic[key] == 42 ||
-                       _musicEditorWindow.DuelistMusic[key] == 43)
+                _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(2, 45);
+                while (bannedMusic.Contains(_musicEditorWindow.DuelistMusic[key]))
                 {
                     _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(2, 45);
 
@@ -631,7 +684,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 if (isValid)
                 {
                     assignedAbilities++;
-                    int chanceToEnable = 0;
+                    int chanceToEnable = weakLeaderAbilityChance;
 
                     if (weakLeaderAbilities.Contains(currentAbility))
                     {
@@ -807,7 +860,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                     //Still need to check for my than triples or disable it.
                     for (var deckSlot = 0; deckSlot < deck.CardList.Count; deckSlot++)
                     {
-
                         Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
                         if (randomiseStartingDecks)
                         {
@@ -1548,6 +1600,10 @@ Not recommended to edit card effects as it will not update the text, but im not 
             {
                 case "monster":
                     cardIndex = RandomNumberGenerator.GetInt32(0, 683);
+                    while (cardIndex == 671)
+                    {
+                        cardIndex = RandomNumberGenerator.GetInt32(0, 683);
+                    }
                     break;
                 case "spell":
                     cardIndex = RandomNumberGenerator.GetInt32(683, 752);
@@ -1605,15 +1661,15 @@ Not recommended to edit card effects as it will not update the text, but im not 
             DotrMap[] newMapOrder = new DotrMap[maps.Length];
             Array.Copy(maps, newMapOrder, maps.Length);
             List<int> mapIndicesToSkip = new List<int>();
-            
+
             bool keptOneSingleTerrainMap = false;
             for (int i = 0; i < newMapOrder.Length; i++)
             {
                 if (newMapOrder[i].tiles.Length > 0)
                 {
-                    int firstTerrain = (int)newMapOrder[i].tiles[0,0];
+                    int firstTerrain = (int)newMapOrder[i].tiles[0, 0];
                     bool singleTerrainMap = true;
-                    
+
                     foreach (var terrain in newMapOrder[i].tiles)
                     {
                         if ((int)terrain != firstTerrain)

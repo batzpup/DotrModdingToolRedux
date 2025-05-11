@@ -596,7 +596,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     public void ReadGameplayPatchesFromIso()
     {
 
-        bFastIntro = new FastIntro().IsApplied();
+        bUserToggledFastIntro = new FastIntro().IsApplied();
         bAiDoubleTap = new AIFasterTurnPassing().IsApplied();
         bCameraFix = new EmulatorCameraFix().IsApplied();
         bExpandedZoom = new ExpandedZoom().IsApplied();
@@ -611,8 +611,9 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         bToonLeaderLandChange = new ToonLeadersMovePatch().IsApplied();
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
-
-
+        bNineCardLimit = new ExtendedCardCopyLimitPatch().IsApplied();
+        bNoDcAllGame = new RemoveDCRequirementsGeneral().IsApplied();
+        bNoDcPostGame = new RemoveDCRequirementsPostGame().IsApplied();
         ReadValuesFromIso();
         ReadAiPatches();
     }
@@ -809,9 +810,9 @@ public class GameplayPatchesWindow : IImGuiWindow
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
         new ExtendedCardCopyLimitPatch().ApplyOrRemove(bNineCardLimit);
-        new RemoveDCRequirementsGeneral().ApplyOrRemove(bNoDcAllGame);
         new RemoveDCRequirementsPostGame().ApplyOrRemove(bNoDcPostGame);
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
+        new RemoveDCRequirementsGeneral().ApplyOrRemove(bNoDcAllGame);
 
         ApplyValuePatches();
 

@@ -118,6 +118,7 @@ class CardEditorWindow : IImGuiWindow
             return;
         }
 
+        
         Vector2 windowPos = ImGui.GetWindowPos();
         Vector2 windowSize = ImGui.GetWindowSize();
         float windowBottom = windowPos.Y + windowSize.Y - 90f * EditorWindow.AspectRatio.Y;

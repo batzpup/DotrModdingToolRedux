@@ -13,32 +13,29 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    public static readonly string currentVersion = "v1.1.9-beta";
+    public static readonly string currentVersion = "v1.2.0-beta";
     static readonly string updaterFile = "Updater.exe";
     public static string latestVersion;
     static string downloadUrl;
     static string body;
-    public static Action<bool,string?> NeedsUpdate;
+    public static Action<bool, string?> NeedsUpdate;
 
     public static async Task CheckForUpdates(bool isStartup = false)
     {
         //TODO make this cross platform
-        if( !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             return;
-            
         }
-            
         string extractPath = Path.Combine(Path.GetTempPath(), "UpdaterTemp");
         if (Directory.Exists(extractPath))
         {
             string[] filesToReplace = new[] { "Updater.deps.json", "Updater.dll", "Updater.exe", "Updater.runtimeconfig.json" };
             foreach (var file in Directory.GetFiles(extractPath))
             {
-                string destFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(file));
-
-                if (filesToReplace.All(fileName => Path.GetFileName(file) == fileName))
+                if (filesToReplace.Contains(Path.GetFileName(file)))
                 {
+                    string destFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(file));
                     File.Copy(file, destFile, true);
                     Console.WriteLine($"Updated: {destFile}");
                 }
@@ -72,15 +69,15 @@ public static class Updater
             Console.WriteLine($"Download URL: {downloadUrl}");
             if (latestVersion != currentVersion)
             {
-                
+
                 Console.WriteLine("Update Available");
-                NeedsUpdate?.Invoke(true,body);
+                NeedsUpdate?.Invoke(true, body);
             }
             else
             {
                 if (!isStartup)
                 {
-                    NeedsUpdate.Invoke(false,string.Empty);
+                    NeedsUpdate.Invoke(false, string.Empty);
                 }
                 Console.WriteLine("Program is up to date");
             }
