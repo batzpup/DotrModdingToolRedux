@@ -1,20 +1,16 @@
 ﻿namespace DotrModdingTool2IMGUI;
 
-public enum SomeOtherSearch{
-    defaultSearch = 0,
+public enum SomeOtherSearch
+{
+    Manhattan_Distance = -1,
     SameRow = 16,
-    SameRowOrCol = 18,
+    SAME_COL_OR_ROW = 18,
     TenRandomSpots = 19,
-    onForest =20,
-    onWasteland =21,
-    onMountain =22,
-    onMeadow =23,
-    onSea =24,
-    onDark =25,
-    onToon =26,
-    onNormal =27,
-    onLab =28,
-    onCrush =29,
+    Forest = 20,
+    Mountain = 22,
+    Meadow = 23,
+    Sea = 24,
+    Crush = 29,
     EnemySummoningArea = 30,
     AllySummoningArea = 31,
 }
@@ -26,8 +22,8 @@ public enum MathOperation
     Multiply,
     Divide
 }
-    
-public enum SearchMode
+
+public enum SearchMode : byte
 {
     Dragon = 0x00,
     Spellcaster = 0x01,
@@ -67,15 +63,16 @@ public enum SearchMode
     MonstersWithAttackGreaterOrEqual = 0x24,
     MonstersWithAttackLessOrEqual = 0x25,
     LastPlayedCard = 0x2D,
+    MonsterOfType = 0x2e,
     Graveyard = 0x2f,
-    Random = 0x30,
+    RandomButNotSelf = 0x30,
     Female = 0x31,
     ChooseTarget = 0x33,
     AllCardsExceptLeaders = 0x34,
     CardsInAttackPosition = 0x35,
     FaceUpTraps = 0x36,
     DragonsWithAttackGreaterOrEqual = 0x37,
-    LeaderKind =0x38,
+    LeaderKind = 0x38,
     MonstersWithDefenseGreaterOrEqual = 0x39,
     MonstersWithDefenseLessOrEqual = 0x3A,
     Immortal = 0x3B,

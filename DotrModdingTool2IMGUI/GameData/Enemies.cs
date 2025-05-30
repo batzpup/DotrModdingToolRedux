@@ -2,32 +2,6 @@
 
 public class Enemies
 {
-    public static void LoadEnemies(byte[] bytes)
-    {
-        for (int  bi = 0; bi < bytes.Length;  bi += DataAccess.EnemyAiByteLength)
-        {
-            byte[] aiBytes = new byte[] { bytes[bi], bytes[bi + 1], bytes[bi + 2], bytes[bi + 3] };
-            EnemyList.Add(new Enemy(bi/4, aiBytes));
-        }
-    }
-
-  
-
-    public static byte[] AiBytes
-    {
-        get { return EnemyList.SelectMany(x => x.AI.Bytes).ToArray(); }
-    }
-
-
-    public static List<Enemy> EnemyList { get; set; } = new List<Enemy>();
-}
-
-public class Enemy
-{
-    public int Index { get; }
-    public string Name { get; }
-    public Ai AI { get; set; }
-
     public static string[] nameList = new string[] {
         "Simon McMooran?",
         "Seto",
@@ -56,6 +30,33 @@ public class Enemy
         "Deck Master T",
         "Deck Master S"
     };
+    public static void LoadEnemies(byte[] bytes)
+    {
+        for (int  bi = 0; bi < bytes.Length;  bi += DataAccess.EnemyAiByteLength)
+        {
+            byte[] aiBytes = new byte[] { bytes[bi], bytes[bi + 1], bytes[bi + 2], bytes[bi + 3] };
+            EnemyList.Add(new Enemy(bi/4, aiBytes));
+        }
+    }
+
+  
+
+    public static byte[] AiBytes
+    {
+        get { return EnemyList.SelectMany(x => x.AI.Bytes).ToArray(); }
+    }
+
+
+    public static List<Enemy> EnemyList { get; set; } = new List<Enemy>();
+}
+
+public class Enemy
+{
+    public int Index { get; }
+    public string Name { get; }
+    public Ai AI { get; set; }
+
+    
 
     public Enemy(int index, byte[] aiBytes)
     {
@@ -66,7 +67,7 @@ public class Enemy
 
     public static string GetEnemyNameByIndex(int index)
     {
-        return nameList.ElementAtOrDefault(index) == null ? "???" : nameList[index];
+        return Enemies.nameList.ElementAtOrDefault(index) == null ? "???" : Enemies.nameList[index];
     }
 
     public int AiId

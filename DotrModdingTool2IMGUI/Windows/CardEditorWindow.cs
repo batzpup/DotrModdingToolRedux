@@ -29,12 +29,12 @@ class CardEditorWindow : IImGuiWindow
     bool cardEditorSearchAscending = true;
     HashSet<string> selectedCards = new HashSet<string>();
     bool showHelpText = true;
-    
+
     List<string> filteredList = new List<string>();
     CardColourType currentCardType = CardColourType.NormalMonster;
     IntPtr cardImage;
-    IntPtr cardFrame;   
-    
+    IntPtr cardFrame;
+
     //16x16 size
     IntPtr starImagePtr;
     string cardName;
@@ -50,13 +50,26 @@ class CardEditorWindow : IImGuiWindow
     int[] currentAbilityRankIndex = new int[20];
     MonsterEffects? currentEffects = null;
     string[] effectsTableVerticalHeaders = Enum.GetNames(typeof(MonsterEffects.MonsterEffectType));
-    string[] effectsTableHorizontalHeaders = { "Effect Id", "Effect Target", "Extra Data" };
+    string[] effectsTableHorizontalHeaders = { "Effect Id", "Effect Target", "Effect Target Type", "Extra Data" };
     int[] currentMonsterEffectDataUpper = new int[5];
     int[] currentMonsterEffectDataLower = new int[5];
+    int[] currentMonsterEffectId = new int[5];
+    int[] currentMonsterEffectSearchMode = new int[5];
+    int[] currentMonsterEffectSearchModeTargeting = new int[5];
+
+
     int monsterEffectTableEditorIndex = 0;
     int currentMagicEffectDataUpper;
     int currentMagicEffectDataLower;
     int magicEffectTableEditorIndex;
+    int currentMagicEffectId;
+    int currentMagicEffectSearchMode;
+    int currentMagicEffectSearchModeTargeting;
+
+    ImGuiModalPopup _modalPopup = new ImGuiModalPopup();
+    bool allowEffectEditing = false;
+    bool showEditEffectWarning = true;
+
 
     public CardEditorWindow()
     {
@@ -69,6 +82,9 @@ class CardEditorWindow : IImGuiWindow
         innerTextBoxSizeInPixelsScaled = new Vector2(218, 26) * imageScale;
         EditorWindow.OnIsoLoaded += updateCardChanges;
         EditorWindow.OnIsoLoaded += FilterAndSort;
+
+        currentCardIndex = 0;
+        selectedCards.Add("Blue-Eyes White Dragon");
     }
 
     public void SetCurrentCard(string name)
@@ -83,7 +99,6 @@ class CardEditorWindow : IImGuiWindow
 
     void updateCardChanges()
     {
-
         currentCardConst = CardConstant.List[currentCardIndex];
         cardImage = GlobalImages.Instance.Cards[Card.cardNameList[currentCardIndex]];
         cardFrame = GlobalImages.Instance.CardFrames[currentCardConst.CardColor];
@@ -106,8 +121,7 @@ class CardEditorWindow : IImGuiWindow
         }
 
     }
-
-
+    
     public void Render()
     {
         ImGui.PushFont(font);
@@ -118,20 +132,20 @@ class CardEditorWindow : IImGuiWindow
             return;
         }
 
-        
         Vector2 windowPos = ImGui.GetWindowPos();
         Vector2 windowSize = ImGui.GetWindowSize();
         float windowBottom = windowPos.Y + windowSize.Y - 90f * EditorWindow.AspectRatio.Y;
 
-
+        _modalPopup.Draw();
         ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, windowSize.Y),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
         ImGui.Text("Cards:");
         ImGui.SameLine();
         ImGui.Checkbox("Show help", ref showHelpText);
         ImGui.SameLine();
-        
-        ImGui.ColorEdit4("Difference highlight colour", ref UserSettings.CardEditorDifferenceHighlightColour ,ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+
+        ImGui.ColorEdit4("Difference highlight colour", ref UserSettings.CardEditorDifferenceHighlightColour,
+            ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
         if (showHelpText)
         {
             ImGui.PushFont(smallerFont);
@@ -139,7 +153,7 @@ class CardEditorWindow : IImGuiWindow
             ImGui.TextWrapped(
                 "Multi select works the same as the deck editor but you cannot select cards of different types (only monsters, only power up, etc..");
 
-            ImGui.PushStyleColor(ImGuiCol.Text,UserSettings.CardEditorDifferenceHighlightColour );
+            ImGui.PushStyleColor(ImGuiCol.Text, UserSettings.CardEditorDifferenceHighlightColour);
             ImGui.TextWrapped(
                 "If a field is this colour, it means at least one of the values across all the cards are different for the given field");
             ImGui.PopStyleColor();
@@ -253,7 +267,6 @@ class CardEditorWindow : IImGuiWindow
             {
                 cardEditorSearchSortField = "Kind";
                 cardEditorSearchAscending = true;
-
             }
             FilterAndSort();
         }
@@ -283,6 +296,9 @@ class CardEditorWindow : IImGuiWindow
 
         float availableHeight = windowBottom - ImGui.GetCursorPosY();
         ImGui.PushItemWidth(windowSize.X / 3f);
+
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
+    ;
 
         if (ImGui.BeginListBox("##Cards", new Vector2(0, availableHeight)))
         {
@@ -333,7 +349,6 @@ class CardEditorWindow : IImGuiWindow
                                 selectedCards.Remove(filteredName);
                                 currentCardIndex = Array.IndexOf(Card.cardNameList, selectedCards.Last());
                             }
-
                         }
                     }
                     else
@@ -344,16 +359,14 @@ class CardEditorWindow : IImGuiWindow
                     }
 
                 }
-
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(filteredName);
                 }
             }
-
-
             ImGui.EndListBox();
         }
+        ImGui.PopStyleVar(1);
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
@@ -590,10 +603,9 @@ class CardEditorWindow : IImGuiWindow
             ImGui.TableSetColumnIndex(0);
             ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2f);
             ImGui.Text(EnchantData.GetEnchantScoreName(currentEnchantScore));
-
             ImGui.TableNextColumn();
 
-           ColourMatchFrame(() => !AllSelectedEnchantDataHaveSame(index => EnchantData.EnchantScores[index]), () =>
+            ColourMatchFrame(() => !AllSelectedEnchantDataHaveSame(index => EnchantData.EnchantScores[index]), () =>
             {
                 if (ImGui.InputInt("##EnchantScore", ref currentEnchantScore, 0))
                 {
@@ -602,8 +614,6 @@ class CardEditorWindow : IImGuiWindow
                     {
                         EnchantData.EnchantScores[CardConstant.CardLookup[selectedCard].Index - Card.EquipCardStartIndex] = (ushort)currentEnchantScore;
                     }
-
-
                 }
             });
             ImGui.EndTable();
@@ -623,15 +633,14 @@ class CardEditorWindow : IImGuiWindow
         {
             if (i == 47 || i == 48 || i == 49)
             {
-                //Dont show Insect Imitation and Metalmorph due to hard coded equip logic
-                //Dont show strong on toon as its in properties
+                //Don't show Insect Imitation and Metalmorph due to hard coded equip logic
+                //Don't show strong on toon as its in properties
                 continue;
             }
             ImGui.Text($"{MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].GetEquipName(i)}");
             ImGui.SameLine();
             ColourMatchFrame(() => !AllSelectedMonsterEnchantFlagsHaveSame(i), () =>
             {
-
                 if (ImGui.RadioButton($"##equip{i}", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[i]))
                 {
                     MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[i] =
@@ -642,7 +651,6 @@ class CardEditorWindow : IImGuiWindow
                         MonsterEnchantData.MonsterEnchantDataList[cardIndex].Flags[i] =
                             MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[i];
                     }
-
                 }
             });
         }
@@ -657,19 +665,28 @@ class CardEditorWindow : IImGuiWindow
         ImGui.Spacing();
         ImGui.Text("Card Text: ");
         ImGui.Text(StringDecoder.StringTable[StringDecoder.CardEffectTextOffset + currentCardIndex]);
-
     }
 
     void RenderEffects()
     {
         ImGui.TextColored(new GuiColour(Color.Orange).value, "Works but is a WIP");
+        if (ImGui.Checkbox("Allow Effect editing", ref allowEffectEditing))
+        {
+            if (showEditEffectWarning && allowEffectEditing)
+            {
+                _modalPopup.Show(
+                    "WARNING:\nNot all effect combinations work, what works and what doesn't isn't fully known.\nIf an effect doesnt work it could be because its not supported by the game to exist.\nHide this prompt in the future?",
+                    "Warning", HideEffectWarning, ImGuiModalPopup.ShowType.YesNo);
 
+            }
+        }
         if (ImGui.BeginTabBar("EffectTabBar", ImGuiTabBarFlags.None))
         {
             if (ImGui.BeginTabItem("View Card Effects"))
             {
                 if (currentCardIndex >= 683)
                 {
+                    ImGui.Text($"Original effect ({Effects.MagicEffectOwnerNames[currentCardConst.EffectId]})");
                     ImGui.Text($"Magic Effect Id: {currentCardConst.EffectId}");
                     for (int j = 0; j < effectsTableHorizontalHeaders.Length; j++)
                     {
@@ -686,12 +703,18 @@ class CardEditorWindow : IImGuiWindow
                                 switch (j)
                                 {
                                     case 0:
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].effectName);
+                                        ImGui.Text(
+                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].effectName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].EffectId}");
                                         break;
                                     case 1:
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].searchModeName);
+                                        ImGui.Text(
+                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].SearchMode}");
                                         break;
                                     case 2:
+                                        ImGui.Text(
+                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeTargetingName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeTargeting}");
+                                        break;
+                                    case 3:
                                         ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataUpper.ToString());
                                         ImGui.Separator();
                                         ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataLower.ToString());
@@ -704,13 +727,21 @@ class CardEditorWindow : IImGuiWindow
                 }
                 else
                 {
+                    if (currentCardConst.EffectId != 65535)
+                    {
+                        ImGui.Text($"Original effect ({Effects.MonsterEffectOwnerNames[currentCardConst.EffectId]})");
+                    }
+                    else
+                    {
+                        ImGui.Text($"Original effect (no effect)");
+                    }
+
                     ImGui.Text($"Monster Effect Id:");
                     ImGui.SameLine();
                     int effectId = currentCardConst.EffectId;
                     ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3);
                     ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.EffectId), () =>
                     {
-
                         if (ImGui.InputInt("##EffectId", ref effectId))
                         {
                             foreach (var selectedCard in selectedCards)
@@ -762,9 +793,12 @@ class CardEditorWindow : IImGuiWindow
                                             ImGui.Text(currentEffects.Effects[i].effectName);
                                             break;
                                         case 1:
-                                            ImGui.Text(currentEffects.Effects[i].searchModeName);
+                                            ImGui.Text(currentEffects.Effects[i].SearchModeName);
                                             break;
                                         case 2:
+                                            ImGui.Text(currentEffects.Effects[i].SearchModeTargetingName);
+                                            break;
+                                        case 3:
                                             ImGui.Text(currentEffects.Effects[i].EffectDataUpper.ToString());
                                             ImGui.Separator();
                                             ImGui.Text(currentEffects.Effects[i].EffectDataLower.ToString());
@@ -779,6 +813,11 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.EndTabItem();
 
             }
+            if (!allowEffectEditing)
+            {
+                ImGui.BeginDisabled();
+            }
+
             if (ImGui.BeginTabItem("Edit Monster Effect Table"))
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
@@ -786,7 +825,7 @@ class CardEditorWindow : IImGuiWindow
                     "Note:\nThis changes all monster cards that reference this id, you cannot change an individual monster effect you must change the effect in this table and then change the effect id on the monster to match the effect you want");
                 ImGui.PopStyleColor();
                 ImGui.Separator();
-                ImGui.Text($"Original");
+                ImGui.Text($"Original: ({Effects.MonsterEffectOwnerNames[monsterEffectTableEditorIndex]})");
                 ImGui.SetNextItemWidth(200);
 
                 if (ImGui.InputInt("Current monster effect index", ref monsterEffectTableEditorIndex))
@@ -806,6 +845,14 @@ class CardEditorWindow : IImGuiWindow
                         .Effects[monsterEffectIndex].EffectDataUpper;
                     currentMonsterEffectDataLower[monsterEffectIndex] = (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex]
                         .Effects[monsterEffectIndex].EffectDataLower;
+
+                    currentMonsterEffectId[monsterEffectIndex] =
+                        (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[monsterEffectIndex].EffectId;
+                    currentMonsterEffectSearchMode[monsterEffectIndex] =
+                        (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[monsterEffectIndex].SearchMode;
+                    currentMonsterEffectSearchModeTargeting[monsterEffectIndex] = (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex]
+                        .Effects[monsterEffectIndex].SearchModeTargeting;
+
                 }
                 for (int horizontalHeaderIndex = 0; horizontalHeaderIndex < effectsTableHorizontalHeaders.Length; horizontalHeaderIndex++)
                 {
@@ -821,21 +868,64 @@ class CardEditorWindow : IImGuiWindow
                             ImGui.TableNextRow();
                             ImGui.TableSetColumnIndex(0);
                             ImGui.Text(effectsTableVerticalHeaders[verticalHeaderIndex]);
-
+                            if (horizontalHeaderIndex == 0)
+                            {
+                                if (ImGui.Button($"Disable##{verticalHeaderIndex}"))
+                                {
+                                    Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].DisableEffect();
+                                }
+                            }
                             ImGui.TableSetColumnIndex(1);
                             switch (horizontalHeaderIndex)
                             {
                                 case 0:
-                                    ImGui.Text(
-                                        $"{Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].effectName} : {(int)(Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].EffectId)}");
-                                    ImGui.SameLine();
-
+                                    ImGui.Text($"{Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].effectName}");
+                                    if (ImGui.InputInt($"##EffectId{verticalHeaderIndex}", ref currentMonsterEffectId[verticalHeaderIndex]))
+                                    {
+                                        int value = currentMonsterEffectId[verticalHeaderIndex];
+                                        int wrappedValue = ((value - 1) % 88 + 88) % 88 + 1;
+                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].EffectId =
+                                            (EffectId)wrappedValue;
+                                    }
                                     break;
                                 case 1:
                                     ImGui.Text(
-                                        $"{Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].searchModeName} : {(int)(Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].SearchMode)}");
+                                        $"{Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].SearchModeName}");
+                                    if (ImGui.InputInt($"##EffectTarget{verticalHeaderIndex}", ref currentMonsterEffectSearchMode[verticalHeaderIndex]))
+                                    {
+                                        int value = currentMonsterEffectSearchMode[verticalHeaderIndex];
+                                        int wrappedValue = (value % 62 + 62) % 62;
+
+                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].SearchMode =
+                                            (SearchMode)wrappedValue;
+                                    }
                                     break;
                                 case 2:
+                                    ImGui.Text(
+                                        $"{Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].SearchModeTargetingName}");
+                                    if (ImGui.InputInt($"##EffectTargetType{verticalHeaderIndex}",
+                                            ref currentMonsterEffectSearchModeTargeting[verticalHeaderIndex], 0x40))
+                                    {
+                                        int value = currentMonsterEffectSearchModeTargeting[verticalHeaderIndex];
+                                        int wrappedValue;
+
+                                        if (value > 255)
+                                        {
+                                            wrappedValue = 0x00;
+                                        }
+                                        else if (value < 0xc0 && value > 0x80)
+                                        {
+                                            wrappedValue = 0xc0;
+                                        }
+                                        else
+                                        {
+                                            wrappedValue = (value % 0x100 + 0x100) % 0x100;
+                                        }
+                                        Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[verticalHeaderIndex].SearchModeTargeting =
+                                            (SearchModeTargeting)wrappedValue;
+                                    }
+                                    break;
+                                case 3:
                                     ImGui.SetNextItemWidth(100);
                                     if (ImGui.InputInt($"##Monster Effect Data Upper ({effectsTableVerticalHeaders[verticalHeaderIndex]})",
                                             ref currentMonsterEffectDataUpper[verticalHeaderIndex], 0))
@@ -875,6 +965,7 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.PopStyleColor();
                 ImGui.Separator();
 
+                ImGui.Text($"Original: ({Effects.MagicEffectOwnerNames[magicEffectTableEditorIndex]})");
                 ImGui.SetNextItemWidth(200);
                 if (ImGui.InputInt("Current Magic effect index", ref magicEffectTableEditorIndex))
                 {
@@ -887,8 +978,16 @@ class CardEditorWindow : IImGuiWindow
                         magicEffectTableEditorIndex = 0;
                     }
                 }
+                currentMagicEffectId = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId;
+                currentMagicEffectSearchMode = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode;
+                currentMagicEffectSearchModeTargeting = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargeting;
                 currentMagicEffectDataUpper = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataUpper;
                 currentMagicEffectDataLower = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower;
+
+                if (ImGui.Button($"Disable##Magic"))
+                {
+                    Effects.MagicEffectsList[magicEffectTableEditorIndex].DisableEffect();
+                }
                 for (int i = 0; i < effectsTableHorizontalHeaders.Length; i++)
                 {
                     if (ImGui.BeginTable(effectsTableHorizontalHeaders[i], 1, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
@@ -898,41 +997,96 @@ class CardEditorWindow : IImGuiWindow
                         ImGui.TableHeadersRow();
                         ImGui.TableNextRow();
                         ImGui.TableSetColumnIndex(0);
-
-                        ImGui.TableSetColumnIndex(0);
                         switch (i)
                         {
                             case 0:
-                                ImGui.Text(
-                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].effectName} : {(int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId}");
+                                ImGui.Text($"{Effects.MagicEffectsList[magicEffectTableEditorIndex].effectName}");
+                                if (ImGui.InputInt($"##EffectId{i}", ref currentMagicEffectId))
+                                {
+                                    int value = currentMagicEffectId;
+                                    int wrappedValue = ((value - 1) % 88 + 88) % 88 + 1;
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId =
+                                        (EffectId)wrappedValue;
+                                }
                                 break;
                             case 1:
                                 ImGui.Text(
-                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].searchModeName} : {(int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode}");
+                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeName}");
+                                if (ImGui.InputInt($"##EffectTarget{i}", ref currentMagicEffectSearchMode))
+                                {
+                                    int value = currentMagicEffectSearchMode;
+                                    int wrappedValue = (value % 62 + 62) % 62;
+
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode =
+                                        (SearchMode)wrappedValue;
+                                }
                                 break;
                             case 2:
-                                ImGui.SetNextItemWidth(100);
-                                if (ImGui.InputInt($"##Magic Effect Data Upper ({effectsTableVerticalHeaders})", ref currentMagicEffectDataUpper, 0))
+                                ImGui.Text(
+                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargetingName}");
+                                if (ImGui.InputInt($"##EffectTarget{i}",
+                                        ref currentMagicEffectSearchModeTargeting, 0x40))
                                 {
-                                    currentMagicEffectDataUpper = Math.Clamp(currentMagicEffectDataUpper, 0, 65535);
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataUpper = (ushort)currentMagicEffectDataUpper;
+                                    int value = currentMagicEffectSearchModeTargeting;
+                                    int wrappedValue;
+
+                                    if (value > 255)
+                                    {
+                                        wrappedValue = 0x00;
+                                    }
+                                    else if (value < 0xc0 && value > 0x80)
+                                    {
+                                        wrappedValue = 0xc0;
+                                    }
+                                    else
+                                    {
+                                        wrappedValue = (value % 0x100 + 0x100) % 0x100;
+                                    }
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargeting =
+                                        (SearchModeTargeting)wrappedValue;
+                                }
+                                break;
+                            case 3:
+                                ImGui.SetNextItemWidth(100);
+                                if (ImGui.InputInt($"##Magic Effect Data Upper ({effectsTableVerticalHeaders[i]})",
+                                        ref currentMagicEffectDataUpper, 0))
+                                {
+                                    currentMagicEffectDataUpper =
+                                        Math.Clamp(currentMonsterEffectDataUpper[i], 0, 65535);
+                                    Effects.MonsterEffectsList[monsterEffectTableEditorIndex].Effects[i].EffectDataUpper =
+                                        (ushort)currentMagicEffectDataUpper;
                                 }
                                 ImGui.SetNextItemWidth(100);
-                                if (ImGui.InputInt($"##Magic Effect Data Lower ({effectsTableVerticalHeaders})", ref currentMagicEffectDataLower, 0))
+                                if (ImGui.InputInt($"##Magic Effect Data Lower ({effectsTableVerticalHeaders[i]})",
+                                        ref currentMagicEffectDataLower,
+                                        0))
                                 {
-                                    currentMagicEffectDataLower = Math.Clamp(currentMagicEffectDataLower, 0, 65535);
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower = (ushort)currentMagicEffectDataLower;
+                                    currentMagicEffectDataLower =
+                                        Math.Clamp(currentMagicEffectDataLower, 0, 65535);
+                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower =
+                                        (ushort)currentMagicEffectDataLower;
                                 }
                                 break;
                         }
                     }
+
                     ImGui.EndTable();
                 }
                 ImGui.EndTabItem();
             }
+            if (!allowEffectEditing)
+            {
+                ImGui.EndDisabled();
+            }
+
             ImGui.EndTabBar();
         }
 
+    }
+
+    void HideEffectWarning()
+    {
+        showEditEffectWarning = false;
     }
 
     void RenderProperties()
@@ -1130,18 +1284,18 @@ class CardEditorWindow : IImGuiWindow
         }
 
 
-        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.IsSlotRare), () =>
+        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.IsRareDrop), () =>
         {
-            if (ImGui.RadioButton("Is Slot Rare", currentCardConst.IsSlotRare))
+            if (ImGui.RadioButton("Is Slot Rare", currentCardConst.IsRareDrop))
             {
-                CardConstant.List[currentCardIndex].IsSlotRare = !CardConstant.List[currentCardIndex].IsSlotRare;
+                CardConstant.List[currentCardIndex].IsRareDrop = !CardConstant.List[currentCardIndex].IsRareDrop;
                 foreach (var selectedCardName in selectedCards)
                 {
                     if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
                     {
                         if (card.Index != currentCardIndex)
                         {
-                            card.IsSlotRare = CardConstant.List[currentCardIndex].IsSlotRare;
+                            card.IsRareDrop = CardConstant.List[currentCardIndex].IsRareDrop;
                         }
                     }
                 }
@@ -1310,31 +1464,31 @@ class CardEditorWindow : IImGuiWindow
         return selectedCards.All(cardName =>
             EqualityComparer<T>.Default.Equals(propertySelector(CardConstant.List.Find(c => c.Name == cardName)), firstValue));
     }
-bool AllSelectedEnchantDataHaveSame<T>(Func<int, T> propertySelector)
-{
-    if (selectedCards.Count == 0) return true;
 
-    int firstEnchantIndex = CardConstant.CardLookup[selectedCards.First()].Index - Card.EquipCardStartIndex;
-    
-    if (firstEnchantIndex < 0 || firstEnchantIndex >= EnchantData.EnchantIds.Count)
-        return false;
-
-    T firstValue = propertySelector(firstEnchantIndex);
-
-    return selectedCards.All(cardName =>
+    bool AllSelectedEnchantDataHaveSame<T>(Func<int, T> propertySelector)
     {
-        if (!CardConstant.CardLookup.TryGetValue(cardName, out var card)) 
-            return false; 
+        if (selectedCards.Count == 0) return true;
 
-        int enchantIndex = card.Index - Card.EquipCardStartIndex;
-        
-        if (enchantIndex < 0 || enchantIndex >= EnchantData.EnchantIds.Count)
+        int firstEnchantIndex = CardConstant.CardLookup[selectedCards.First()].Index - Card.EquipCardStartIndex;
+
+        if (firstEnchantIndex < 0 || firstEnchantIndex >= EnchantData.EnchantIds.Count)
             return false;
 
-        return EqualityComparer<T>.Default.Equals(propertySelector(enchantIndex), firstValue);
-    });
-}
+        T firstValue = propertySelector(firstEnchantIndex);
 
+        return selectedCards.All(cardName =>
+        {
+            if (!CardConstant.CardLookup.TryGetValue(cardName, out var card))
+                return false;
+
+            int enchantIndex = card.Index - Card.EquipCardStartIndex;
+
+            if (enchantIndex < 0 || enchantIndex >= EnchantData.EnchantIds.Count)
+                return false;
+
+            return EqualityComparer<T>.Default.Equals(propertySelector(enchantIndex), firstValue);
+        });
+    }
 
 
     bool AllSelectedMonsterEnchantFlagsHaveSame(int flagNumber)

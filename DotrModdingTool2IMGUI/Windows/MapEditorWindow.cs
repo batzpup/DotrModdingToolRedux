@@ -21,7 +21,7 @@ public class MapEditorWindow : IImGuiWindow
     Vector2 paletteImageSize = new Vector2(128, 128);
     TreasureCard currentTreasureCard;
 
-    string[] duelistMaps = new string[] {
+    public string[] duelistMaps = new string[] {
         "Tutorial",
         "Seto",
         "Weevil",

@@ -6,7 +6,7 @@ public class ImGuiModalPopup
 {
     public Action? callback;
     public bool showErrorPopup;
-    bool yesNo = false;
+    ShowType showType;
     string errorMessage;
     string messageTitle;
 
@@ -17,13 +17,25 @@ public class ImGuiModalPopup
         errorMessage = string.Empty;
     }
 
-    public void Show(string message, string MessageTitle = "Error", Action? callback = null, bool YesNo = false)
+    public enum ShowType
     {
-        yesNo = YesNo;
+        OneButton,
+        YesNo,
+        NoButton
+    }
+
+    public void Show(string message, string MessageTitle = "Error", Action? callback = null, ShowType type = ShowType.OneButton)
+    {
+        showType = type;
         this.callback = callback;
         messageTitle = MessageTitle;
         errorMessage = message;
         showErrorPopup = true;
+    }
+
+    public void Hide()
+    {
+        showErrorPopup = false;
     }
 
 
@@ -45,30 +57,35 @@ public class ImGuiModalPopup
 
                 ImGui.Text(errorMessage);
                 ImGui.Separator();
-                if (yesNo)
+                switch (showType)
                 {
-                    Vector2 buttonSize = new Vector2(ImGui.CalcTextSize("YESNO").X, ImGui.CalcTextSize("YESNO").X * 0.75f);
-                    if (ImGui.Button("Yes", buttonSize))
-                    {
-                        showErrorPopup = false;
-                        callback?.Invoke();
-                        ImGui.CloseCurrentPopup();
-                    }
-                    ImGui.SameLine();
-                    if (ImGui.Button("No", buttonSize))
-                    {
-                        showErrorPopup = false;
-                        ImGui.CloseCurrentPopup();
-                    }
-                }
-                else
-                {
-                    if (ImGui.Button("OK"))
-                    {
-                        showErrorPopup = false;
-                        callback?.Invoke();
-                        ImGui.CloseCurrentPopup();
-                    }
+                    case ShowType.OneButton:
+                        if (ImGui.Button("OK"))
+                        {
+                            showErrorPopup = false;
+                            callback?.Invoke();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        break;
+                    case ShowType.YesNo:
+                        Vector2 buttonSize = new Vector2(ImGui.CalcTextSize("YESNO").X, ImGui.CalcTextSize("YESNO").X * 0.75f);
+                        if (ImGui.Button("Yes", buttonSize))
+                        {
+                            showErrorPopup = false;
+                            callback?.Invoke();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("No", buttonSize))
+                        {
+                            showErrorPopup = false;
+                            ImGui.CloseCurrentPopup();
+                        }
+                        break;
+                    case ShowType.NoButton:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
 
@@ -80,26 +97,50 @@ public class ImGuiModalPopup
 
     public void Draw()
     {
+        ImGui.PushFont(Fonts.MonoSpace);
         if (showErrorPopup)
         {
-            ImGui.PushFont(Fonts.MonoSpace);
             ImGui.OpenPopup(messageTitle);
             Vector2 center = ImGui.GetMainViewport().GetCenter();
             ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
             if (ImGui.BeginPopupModal(messageTitle, ref showErrorPopup, ImGuiWindowFlags.Modal | ImGuiWindowFlags.AlwaysAutoResize))
             {
-                ImGui.SetWindowFontScale(1f);
                 ImGui.Text(errorMessage);
                 ImGui.Separator();
-                if (ImGui.Button("OK"))
+                switch (showType)
                 {
-                    ImGui.SetWindowFontScale(1f);
-                    showErrorPopup = false;
-                    ImGui.CloseCurrentPopup();
+                    case ShowType.OneButton:
+                        if (ImGui.Button("OK"))
+                        {
+                            showErrorPopup = false;
+                            callback?.Invoke();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        break;
+                    case ShowType.YesNo:
+                        Vector2 buttonSize = new Vector2(ImGui.CalcTextSize("YESNO").X, ImGui.CalcTextSize("YESNO").X * 0.75f);
+                        if (ImGui.Button("Yes", buttonSize))
+                        {
+                            showErrorPopup = false;
+                            callback?.Invoke();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("No", buttonSize))
+                        {
+                            showErrorPopup = false;
+                            ImGui.CloseCurrentPopup();
+                        }
+                        break;
+                    case ShowType.NoButton:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
+
                 ImGui.EndPopup();
             }
-            ImGui.PopFont();
         }
+        ImGui.PopFont();
     }
 }

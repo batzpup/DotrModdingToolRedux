@@ -30,7 +30,7 @@ public class MusicEditorWindow : IImGuiWindow
 
     #region StringsArrays
 
-    string[] musicTargets = new[] {
+    public string[] musicTargets = new[] {
         "Tutorial",
         "Seto",
         "Weevil",
@@ -55,7 +55,7 @@ public class MusicEditorWindow : IImGuiWindow
         "MFL Chakra"
     };
 
-    string[] musicTracks = new[] {
+    public string[] musicTracks = new[] {
         "01OpeningCutscene",
         "02MainMenu",
         "03CustomDuel",

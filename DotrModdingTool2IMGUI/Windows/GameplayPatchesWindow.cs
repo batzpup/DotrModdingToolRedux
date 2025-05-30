@@ -53,12 +53,14 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bRemoveSlotRng;
     public bool bAllCustomDuels;
     public bool bKeepReincarnatedCard;
-    public bool bNoDcPostGame;
-    public bool bNoDcAllGame;
+
     public bool bNineCardLimit;
     public bool bToonLeaderLandChange;
     public bool bAllKindsExtraSlots;
     public bool bSaveMusic;
+    
+    public int CurrentRule;
+    string[] ruleList = new []{"Normal","No requirements post game","No requirements"};
 
     #endregion
 
@@ -128,6 +130,8 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     Vector2 rankImageSize = new Vector2(72, 72);
     public static int[] rankExp = new int[12];
+    int[] defaultExp = new int[12] { 500, 1000, 2000, 4000, 7000, 11000, 16000, 22000, 30000, 40000, 52000, 65535 };
+    int[] casualFriendlyExp = new int[12] { 200, 500, 900, 1400, 2000, 2700, 3500, 4500, 5700, 7000, 8500, 10000 };
 
     public static string[] RankNames = new string[13] {
         "NCO",
@@ -155,6 +159,11 @@ public class GameplayPatchesWindow : IImGuiWindow
         font = Fonts.MonoSpace;
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         MusicEditorWindow.OnSaveCustomMusic += onSaveMusicChanged;
+    }
+
+    void SetDefaultExp()
+    {
+        rankExp = defaultExp;
     }
 
     void onSaveMusicChanged(bool saveMusic)
@@ -217,6 +226,16 @@ public class GameplayPatchesWindow : IImGuiWindow
     {
         ImGui.BeginChild("Rank Thresholds", new Vector2(ImGui.GetContentRegionAvail().X / 4, ImGui.GetContentRegionAvail().Y));
         ImGui.Text("Rank Thresholds");
+
+        if (ImGui.Button("Reset to default exp values  "))
+        {
+            SetDefaultExp();
+        }
+
+        if (ImGui.Button("Recommended casual exp values"))
+        {
+            rankExp = casualFriendlyExp;
+        }
         if (ImGui.BeginTable("RankThreshold", 3,
                 ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Resizable))
         {
@@ -533,20 +552,12 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(
                 "If a deck leader that has the Terrain Change leader ability is strong on toon\nit will create toon for its ability instead");
-
-        if (ImGui.Checkbox("No DC requirements post game", ref bNoDcPostGame))
-        {
-            bNoDcAllGame = false;
-        }
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("After beating the campaign you can battle whoever regardless of your Deck Cost");
-
-        if (ImGui.Checkbox("No DC requirements at all", ref bNoDcAllGame))
-        {
-            bNoDcPostGame = false;
-        }
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Completely Removes DC requirements");
-
-        ImGui.Checkbox("Removes Card limit in deck ", ref bNineCardLimit);
+        
+        if (ImGui.Combo("DC rule changes", ref CurrentRule, ruleList, ruleList.Length))
+        { }
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change DC requirements");
+        
+            ImGui.Checkbox("Remove card limit in deck ", ref bNineCardLimit);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Changes the limit from 3 to 9 (max ownable copies)");
 
@@ -583,9 +594,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with copycat");
         ImGui.Checkbox("Fix Yugi Raigeki use", ref bYugiRaigeki);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug where Yugi swaps the comparison of cards when checking to using raigeki");
-
-
-
+        
         ImGui.Checkbox("Make Tea use insect imitation", ref bTeaInsectImitation);
 
         bFastIntro = IsUsingFastIntroMods();
@@ -595,7 +604,6 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     public void ReadGameplayPatchesFromIso()
     {
-
         bUserToggledFastIntro = new FastIntro().IsApplied();
         bAiDoubleTap = new AIFasterTurnPassing().IsApplied();
         bCameraFix = new EmulatorCameraFix().IsApplied();
@@ -603,8 +611,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bRemoveSlotRng = new RemoveRNGFromSlots().IsApplied();
         bAllCustomDuels = new AllowAllCustomDuels().IsApplied();
         bRemoveExpLoss = new NoNegativeXP().IsApplied();
-
-        bNoDcPostGame = new RemoveDCRequirementsPostGame().IsApplied();
+        CurrentRule = (int) new DcRuleChanges().GetRule();
         bKeepReincarnatedCard = new KeepReincarnatedCard().IsApplied();
         bUnlockFusions = dataAccess.CheckIfPatchApplied(Patcher.AllowAllHandFusions.Offset, Patcher.AllowAllHandFusions.Patch) ||
                          dataAccess.CheckIfPatchApplied(Patcher.AllowAllFieldFusions.Offset, Patcher.AllowAllFieldFusions.Patch);
@@ -612,8 +619,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bToonLeaderLandChange = new ToonLeadersMovePatch().IsApplied();
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
         bNineCardLimit = new ExtendedCardCopyLimitPatch().IsApplied();
-        bNoDcAllGame = new RemoveDCRequirementsGeneral().IsApplied();
-        bNoDcPostGame = new RemoveDCRequirementsPostGame().IsApplied();
+     
         ReadValuesFromIso();
         ReadAiPatches();
     }
@@ -692,7 +698,6 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (reincarnationAmount != 5)
         {
             bReincarnationCount = true;
-
         }
         else
         {
@@ -710,36 +715,36 @@ public class GameplayPatchesWindow : IImGuiWindow
             terrainBuffAmount = 500;
         }
 
-        bStartingLpRed = new ChangeStartingLp().IsApplied();
+        bStartingLpRed = new ChangeStartingLpRed().IsApplied();
         if (bStartingLpRed)
         {
-            startingLpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLp.patchLocationRed, 2), 0);
+            startingLpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLpRed.patchLocationRed, 2), 0);
         }
-        bStartingSpRed = new ChangeStartingSp().IsApplied();
+        bStartingSpRed = new ChangeStartingSpRed().IsApplied();
         if (bStartingSpRed)
         {
-            startingSpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSp.patchLocationRed, 2), 0);
+            startingSpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSpRed.patchLocationRed, 2), 0);
         }
-        bSpRecoveryRed = new ChangeSpRecovery().IsApplied();
+        bSpRecoveryRed = new ChangeSpRecoveryRed().IsApplied();
         if (bSpRecoveryRed)
         {
-            spRecoveryRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecovery.patchLocationRed, 2), 0);
+            spRecoveryRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecoveryRed.patchLocationRed, 2), 0);
         }
-        bSpRecoveryWhite = new ChangeSpRecovery().IsApplied();
+        bSpRecoveryWhite = new ChangeSpRecoveryWhite().IsApplied();
         if (bSpRecoveryWhite)
         {
-            spRecoveryWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecovery.patchLocationWhite, 2), 0);
+            spRecoveryWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecoveryWhite.patchLocationWhite, 2), 0);
         }
 
-        bStartingLpWhite = new ChangeStartingLp().IsApplied();
+        bStartingLpWhite = new ChangeStartingLpWhite().IsApplied();
         if (bStartingLpWhite)
         {
-            startingLpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLp.patchLocationWhite, 2), 0);
+            startingLpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLpWhite.patchLocationWhite, 2), 0);
         }
-        bStartingSpWhite = new ChangeStartingSp().IsApplied();
+        bStartingSpWhite = new ChangeStartingSpWhite().IsApplied();
         if (bStartingSpWhite)
         {
-            startingSpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSp.patchLocationWhite, 2), 0);
+            startingSpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSpWhite.patchLocationWhite, 2), 0);
         }
 
 
@@ -810,10 +815,9 @@ public class GameplayPatchesWindow : IImGuiWindow
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
         new ExtendedCardCopyLimitPatch().ApplyOrRemove(bNineCardLimit);
-        new RemoveDCRequirementsPostGame().ApplyOrRemove(bNoDcPostGame);
-        new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
-        new RemoveDCRequirementsGeneral().ApplyOrRemove(bNoDcAllGame);
 
+        new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
+        new DcRuleChanges().Apply((DcRules)CurrentRule);
         ApplyValuePatches();
 
         new AiFixDarkhole().ApplyOrRemove(bFixDarkHole);
@@ -998,14 +1002,14 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         new ChangeLpRecovery().ApplyOrRemove(bDeckLeaderRecovery, leaderRecovery);
 
-        new ChangeStartingLp().ApplyOrRemove(bStartingLpRed, (uint)startingLpRed, 0);
-        new ChangeStartingLp().ApplyOrRemove(bStartingLpWhite, (uint)startingLpWhite, 1);
+        new ChangeStartingLpRed().ApplyOrRemove(bStartingLpRed, (uint)startingLpRed);
+        new ChangeStartingLpWhite().ApplyOrRemove(bStartingLpWhite, (uint)startingLpWhite);
 
-        new ChangeSpRecovery().ApplyOrRemove(bSpRecoveryRed, (uint)spRecoveryRed, 0);
-        new ChangeSpRecovery().ApplyOrRemove(bSpRecoveryWhite, (uint)spRecoveryWhite, 1);
+        new ChangeSpRecoveryRed().ApplyOrRemove(bSpRecoveryRed, (uint)spRecoveryRed);
+        new ChangeSpRecoveryWhite().ApplyOrRemove(bSpRecoveryWhite, (uint)spRecoveryWhite);
 
-        new ChangeStartingSp().ApplyOrRemove(bStartingSpRed, (uint)startingSpRed, 0);
-        new ChangeStartingSp().ApplyOrRemove(bStartingSpWhite, (uint)startingSpWhite, 1);
+        new ChangeStartingSpRed().ApplyOrRemove(bStartingSpRed, (uint)startingSpRed);
+        new ChangeStartingSpWhite().ApplyOrRemove(bStartingSpWhite, (uint)startingSpWhite);
     }
 
     void NopTutorialsForOtherMods()
@@ -1419,7 +1423,15 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool IsUsingFastIntroMods()
     {
         return bSaveCustomSlotRewards || bAiDoubleTap || bAllCustomDuels ||
-               bNoDcPostGame || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
+               CurrentRule == 1 || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
                bUserToggledFastIntro;
     }
+}
+
+public enum DcRules
+{
+    Normal,
+    NoCheckPostGame,
+    NoCheckAll,
+    Unknown
 }

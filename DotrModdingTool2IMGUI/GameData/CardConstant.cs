@@ -53,7 +53,7 @@ public class CardConstant
     BitArray apWithFlags;
     ushort attack;
     bool hasAlternateArt;
-    bool isSlotRare;
+    bool _isRareDrop;
     bool appearsInSlotReels;
     BitArray dpWithFlags;
     ushort defense;
@@ -95,7 +95,7 @@ public class CardConstant
         dpWithFlags = new BitArray(new byte[] { bytes[10], bytes[11] });
         defense = CardConstant.GetAttackOrDefense(new byte[] { bytes[10], bytes[11] });
         appearsInSlotReels = dpWithFlags[dpWithFlags.Length - 3];
-        isSlotRare = dpWithFlags[dpWithFlags.Length - 2];
+        _isRareDrop = dpWithFlags[dpWithFlags.Length - 2];
         hasAlternateArt = dpWithFlags[dpWithFlags.Length - 1];
         passwordArray = new byte[] { bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19] };
         password = DecodePassword(DecryptPassword(passwordArray));
@@ -332,14 +332,14 @@ public class CardConstant
         return value;
     }
 
-    public bool IsSlotRare
+    public bool IsRareDrop
     {
-        get { return this.isSlotRare; }
+        get { return this._isRareDrop; }
 
         set
         {
-            this.isSlotRare = value;
-            this.dpWithFlags[dpWithFlags.Length - 2] = this.isSlotRare;
+            this._isRareDrop = value;
+            this.dpWithFlags[dpWithFlags.Length - 2] = this._isRareDrop;
         }
     }
 

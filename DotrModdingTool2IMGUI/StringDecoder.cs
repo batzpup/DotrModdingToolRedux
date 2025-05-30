@@ -31,7 +31,7 @@ public static class StringDecoder
         return offsets;
     }
 
-    private static List<ushort> ReadStringBlob(BinaryReader reader)
+    static List<ushort> ReadStringBlob(BinaryReader reader)
     {
         reader.BaseStream.Seek(0x2A4AD4, SeekOrigin.Begin);
         List<ushort> blob = new List<ushort>(74252);
@@ -42,7 +42,7 @@ public static class StringDecoder
         return blob;
     }
 
-    private static List<List<int>> RecursiveRead(List<int> offsets, List<ushort> blob, int blobIndex, int length)
+    static List<List<int>> RecursiveRead(List<int> offsets, List<ushort> blob, int blobIndex, int length)
     {
         List<List<int>> lines = new List<List<int>> { new List<int>() };
 

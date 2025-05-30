@@ -21,7 +21,7 @@ public class EditorWindow
 
     public static Vector2 AspectRatio
     {
-        get { return ImGui.GetWindowSize() / new Vector2(2560, 1440f); }
+        get { return ImGui.GetWindowSize() / new Vector2(2560, 1351f); }
     }
 
     float buttonWidthScaled = 200f;
@@ -61,7 +61,7 @@ public class EditorWindow
     public EditorWindow()
     {
         //PrintEmbeddedResources();
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
         ImGui.GetIO().Fonts.Build();
         rlImGui.ReloadFonts();
@@ -74,11 +74,15 @@ public class EditorWindow
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
+        //IS here so you can open an iso before the updater gives you a result
+        Disabled = true;
+        _modalPopup.Show($"Checking for updates",
+            "Updater", null, ImGuiModalPopup.ShowType.NoButton);
         Task.Run(async () =>
         {
-            Disabled = true;
             await Updater.CheckForUpdates(true);
             Disabled = false;
+            _modalPopup.Hide();
         });
 
     }
@@ -90,7 +94,7 @@ public class EditorWindow
             string output = string.Join("\n", changes.Split('\n').Select(line => "- " + line));
             _modalPopup.Show(
                 $"An update is available to {Updater.latestVersion} from {Updater.currentVersion}\nChanges:\n{output}\nWould you like to update?",
-                "Update", RequestDownload, true);
+                "Update", RequestDownload, ImGuiModalPopup.ShowType.YesNo);
         }
         else
         {
@@ -101,7 +105,6 @@ public class EditorWindow
 
     void RequestDownload()
     {
-
         Task.Run(async () =>
         {
             Disabled = true;
@@ -129,17 +132,16 @@ public class EditorWindow
     };
 
 
-
     public void Render()
     {
         rlImGui.Begin();
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10f, 10f));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10f, 10f));
         ImGui.Begin("Dotr Modding tool 2",
-            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse |
-            ImGuiWindowFlags.HorizontalScrollbar);
+            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
         ImGui.SetWindowPos(Vector2.Zero);
         ImGui.SetWindowSize(new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
+        //Console.WriteLine(ImGui.GetWindowSize());
         ImGui.PopStyleVar(2);
         buttonWidthScaled = Math.Max(200f * AspectRatio.X, 100);
         buttonHeightRatio = Math.Max(100f * AspectRatio.Y, 50);
@@ -281,10 +283,19 @@ public class EditorWindow
 
                 });
             }
-
-
+            ImGui.Spacing();
+            //if (ImGui.MenuItem("Encode Strings"))
+            //{
+            //    _modalPopup.Show("Encoding and compressing strings", "Text", null, ImGuiModalPopup.ShowType.NoButton);
+            //    Task.Run(async () =>
+            //    {
+            //        Disabled = true;
+            //        Disabled = false;
+            //        _modalPopup.Hide();
+            //    });
+            //}
+            
             ImGui.EndMenuBar();
-
             ImGui.PopFont();
 
         }
@@ -376,7 +387,7 @@ public class EditorWindow
         if (result.IsOk)
         {
             string isoPath = result.Path;
-            if (result.Path.EndsWith(".iso"))
+            if (result.Path.EndsWith(".iso") || result.Path.EndsWith(".ISO"))
             {
                 DataAccess.Instance.OpenIso(isoPath);
                 LoadDataFromIso();
@@ -460,7 +471,7 @@ public class EditorWindow
             foreach (var effect in monsterEffect.Effects)
             {
                 string effectData = effect.effectName;
-                string searchModeData = effect.searchModeName;
+                string searchModeData = effect.SearchModeName;
 
                 row.Add(effectData); // Effect Name column
                 row.Add(searchModeData); // Search Mode Name column
@@ -473,6 +484,4 @@ public class EditorWindow
         File.WriteAllText("MonsterEffects.csv", sb.ToString());
         Console.WriteLine("CSV file created successfully.");
     }
-
-    
 }

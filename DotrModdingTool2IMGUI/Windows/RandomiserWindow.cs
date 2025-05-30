@@ -1,7 +1,9 @@
 using System.Drawing;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using GameplayPatches;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
 
@@ -45,6 +47,12 @@ public class RandomiserWindow : IImGuiWindow
     bool randomiseStrongOnToon;
     bool randomiseMusic = false;
     bool SpBasedOnPower;
+    bool bRecommendedExp;
+    bool bRandomiseStartingSp;
+    bool bRandomiseSpRecovery;
+    bool bRandomiseHealth;
+    bool bRandomiseTerrainStatValues;
+    bool bRoundValuesTo50 = true;
 
     int strongOnToonChance = 20;
     int maxCrushTiles = 16;
@@ -85,6 +93,18 @@ public class RandomiserWindow : IImGuiWindow
     int levelCap = 12;
     int attackCap = 8000;
     int defenseCap = 8000;
+
+    bool bBreakDefaultLpCap;
+    int maxStartingLP = 9999;
+    int maxStartingSp = 12;
+    int maxSpRecovery = 12;
+    int minStartingSp = 0;
+    int minSpRecovery = 1;
+
+    int minimumTerrainValue = 100;
+    int maximumTerrainValue = 1000;
+    Random _random;
+    int _seed;
 
     List<int> bossDecks = new List<int>() { 27, 45, 46, 47 };
     List<(int index, float strength)> strongestMonsters = new List<(int index, float strength)>();
@@ -128,7 +148,12 @@ public class RandomiserWindow : IImGuiWindow
     EnemyEditorWindow _enemyEditorWindow;
     MusicEditorWindow _musicEditorWindow;
     Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
+    public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
+    bool ignoreConfirmation;
 
+    RandomiserChangeLog changeLog;
+
+    int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
 
     public RandomiserWindow(EnemyEditorWindow enemyEditorWindow, MusicEditorWindow musicEditorWindow)
     {
@@ -137,6 +162,7 @@ public class RandomiserWindow : IImGuiWindow
         _enemyEditorWindow = enemyEditorWindow;
         _musicEditorWindow = musicEditorWindow;
         CreateLeaderAbilityTooltips();
+
     }
 
     void CreateLeaderAbilityTooltips()
@@ -188,38 +214,88 @@ public class RandomiserWindow : IImGuiWindow
             return;
         }
 
-        ImGui.TextColored(new GuiColour(Color.Red).value,
+        ImGui.TextColored(new GuiColour(Color.Firebrick).value,
             @"Using the randomiser makes all AI's DMK if not you choose not randomise the AI, as this is the most versatile and least likely to brick
 Secondly Deck Cost will be meaningless when randomiser, this will make all battle available regardless of DC
 Not recommended to edit card effects as it will not update the text, but im not the law");
+        ImGui.Separator();
+        ImGui.Text("Press this button after selecting your settings");
         if (ImGui.Button("Randomise"))
         {
+            if (_seed == 0)
+            {
+                _seed = RandomNumberGenerator.GetInt32(0, int.MaxValue) + 1;
+            }
+            _random = new Random(_seed);
+            changeLog = new RandomiserChangeLog();
+            changeLog.Seed = _seed;
+
+            //Const must happen before Deck , Leader Ranks must happen after decks
+
+            //DO all cards editing together
             RandomiseCardConstData();
-            FixEquipTargets();
             RandomiseLeaderData();
+            //Required Second pass 
+            FixEquipTargets();
+            //Do deck iterator together
             RandomiseDecks();
             RandomiseLeaderRanks();
+            //Others
             RandomiseMaps();
             ChangeAllAi();
             RandomiseMusic();
             _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
+            ChangeStartingDuelStats();
+            SetRecommendedExpValues();
+            RandomiseTerrainStatValues();
+            foreach (var card in bannedCards)
+            {
+                changeLog.BannedCards.Add(Card.GetNameByIndex(card));
+            }
             hasRandomised = true;
             if (hasRandomised)
             {
-
-                if (GameplayPatchesWindow.Instance.bNoDcPostGame)
-                {
-                    GameplayPatchesWindow.Instance.bNoDcPostGame = false;
-                }
-                GameplayPatchesWindow.Instance.bNoDcAllGame = true;
+                GameplayPatchesWindow.Instance.CurrentRule = (int)DcRules.NoCheckAll;
                 GameplayPatchesWindow.Instance.bAllKindsExtraSlots = true;
                 GameplayPatchesWindow.Instance.bNineCardLimit = true;
+
             }
+            if (!ignoreConfirmation)
+            {
+                modalPopup.Show("Randomised Successful", "Randomiser");
+            }
+            if (!Directory.Exists("Logs"))
+            {
+                Directory.CreateDirectory("Logs");
+            }
+
+            var options = new JsonSerializerOptions {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            string changeLogText = JsonSerializer.Serialize(changeLog, options);
+            File.WriteAllText($"Logs/Changelog_{_seed}.json", changeLogText);
+            File.WriteAllText($"Logs/Changelog_{_seed}.txt", changeLog.ToReadableFormat());
         }
         ImGui.SameLine();
-        ImGui.Text("Press this button after selecting your settings");
-        ImGui.Separator();
+        ImGui.Checkbox("Hide randomise confirmation", ref ignoreConfirmation);
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize("2147483647 ").X);
+        if (ImGui.InputInt("Randomiser seed", ref _seed, 0, 0, ImGuiInputTextFlags.CharsDecimal))
+        {
+            _seed = Math.Clamp(_seed, 0, int.MaxValue);
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Reset"))
+        {
+            _seed = 0;
+        }
 
+        modalPopup.Draw();
+        ImGui.Separator();
+        ImGui.BeginChild("LeftHalfPanel", ImGui.GetContentRegionAvail(), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
+        ImGui.Checkbox("Round all random values", ref bRoundValuesTo50);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("All generated values should be divisible by 50");
         ImGui.Checkbox("Randomise decks", ref randomiseDecks);
         if (randomiseDecks)
         {
@@ -326,7 +402,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
         //Add boss random good cards only
 
         ImGui.Checkbox("Randomise AI", ref randomiseAI);
-
         ImGui.Checkbox("Randomise maps", ref randomiseMaps);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises which map is assigned to which duelist");
         if (randomiseMaps)
@@ -572,6 +647,87 @@ Not recommended to edit card effects as it will not update the text, but im not 
             bannedCardToRemove = null;
             ImGui.Unindent();
         }
+
+
+
+        ImGui.Checkbox("Randomise starting summoning power", ref bRandomiseStartingSp);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(@"Changes how much SP at the start of a duel");
+        if (bRandomiseStartingSp)
+        {
+            ImGui.SliderInt("min starting sp", ref minStartingSp, 0, 12);
+            ImGui.SliderInt("max starting sp", ref maxStartingSp, 0, 12);
+        }
+        ImGui.Checkbox("Randomise summoning power recovery", ref bRandomiseSpRecovery);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(@"Changes how much SP regained every turn");
+        if (bRandomiseSpRecovery)
+        {
+            ImGui.SliderInt("min sp recovery", ref minSpRecovery, 1, 12);
+            ImGui.SliderInt("max sp recovery", ref maxSpRecovery, 1, 12);
+
+        }
+
+        ImGui.Checkbox("Randomise starting health", ref bRandomiseHealth);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(@"Change starting health (Rounded to nearest 100 always)");
+        if (bRandomiseHealth)
+        {
+            ImGui.Indent();
+            if (ImGui.Checkbox("Break 9999 cap", ref bBreakDefaultLpCap))
+            {
+                if (!bBreakDefaultLpCap && maxStartingLP > 9999)
+                {
+                    maxStartingLP = 9999;
+                }
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(@"increases the potential cap to 32k");
+            if (ImGui.InputInt("max starting lp", ref maxStartingLP, 100, 500, ImGuiInputTextFlags.CharsDecimal))
+            {
+                if (bBreakDefaultLpCap)
+                {
+                    maxStartingLP = Math.Clamp(maxStartingLP, 1000, 32000);
+                }
+                else
+                {
+                    maxStartingLP = Math.Clamp(maxStartingLP, 1000, 9999);
+                }
+            }
+            ImGui.Unindent();
+        }
+        ImGui.Checkbox("Randomise terrain stat values", ref bRandomiseTerrainStatValues);
+        if (bRandomiseTerrainStatValues)
+        {
+            ImGui.Indent();
+            if (ImGui.InputInt("Min terrain value", ref minimumTerrainValue, 100, 100, ImGuiInputTextFlags.CharsDecimal))
+            {
+                minimumTerrainValue = Math.Clamp(minimumTerrainValue, 0, 9999);
+            }
+            if (ImGui.InputInt("Max terrain value", ref maximumTerrainValue, 100, 100, ImGuiInputTextFlags.CharsDecimal))
+            {
+                maximumTerrainValue = Math.Clamp(maximumTerrainValue, 0, 9999);
+            }
+            ImGui.Unindent();
+        }
+        ImGui.Checkbox("Use recommended randomiser exp values", ref bRecommendedExp);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(@"NCO:  0
+2LT:  100
+1LT:  200
+CPT:  300
+MAJ:  400
+LTC:  600
+COL:  800
+BG:   1000
+RADM: 1400
+VADM: 1800
+ADM:  2400
+SADM: 3400
+SD:   5000");
+
+
+
         ImGui.Separator();
         ImGui.TextColored(new GuiColour(Color.Red).value, "Not recommended due to lack of text changes");
         ImGui.Separator();
@@ -592,24 +748,98 @@ Not recommended to edit card effects as it will not update the text, but im not 
         }
         ImGui.Checkbox("Randomise enemy background music tracks", ref randomiseMusic);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Not recommended because it forces fast intro mod to work");
-
+        ImGui.EndChild();
         ImGui.PopFont();
+    }
+
+    void RandomiseTerrainStatValues()
+    {
+        if (bRandomiseTerrainStatValues)
+        {
+            GameplayPatchesWindow.Instance.bTerrainBuff = true;
+            if (bRoundValuesTo50)
+            {
+                GameplayPatchesWindow.Instance.terrainBuffAmount =
+                    (int)Math.Round(GetRandomValue(minimumTerrainValue, maximumTerrainValue + 1) / 50f) * 50;
+                changeLog.DuelChanges.TerrainBuff = GameplayPatchesWindow.Instance.terrainBuffAmount;
+            }
+            else
+            {
+                GameplayPatchesWindow.Instance.terrainBuffAmount = GetRandomValue(minimumTerrainValue, maximumTerrainValue + 1);
+                changeLog.DuelChanges.TerrainBuff = GameplayPatchesWindow.Instance.terrainBuffAmount;
+            }
+
+        }
+    }
+
+    void SetRecommendedExpValues()
+    {
+        if (bRecommendedExp)
+        {
+            GameplayPatchesWindow.rankExp = recommendedExpValues;
+            changeLog.DuelChanges.ExpChanges = recommendedExpValues.ToList();
+        }
+    }
+
+    void ChangeStartingDuelStats()
+    {
+        if (!bRandomiseStartingSp && !bRandomiseSpRecovery && !bRandomiseHealth)
+            return;
+        if (bRandomiseStartingSp)
+        {
+            int value = GetRandomValue(minStartingSp, maxStartingSp + 1);
+            GameplayPatchesWindow.Instance.startingSpRed = value;
+            GameplayPatchesWindow.Instance.startingSpWhite = value;
+            GameplayPatchesWindow.Instance.bStartingSpRed = true;
+            GameplayPatchesWindow.Instance.bStartingSpWhite = true;
+            changeLog.DuelChanges.StartingSp = value;
+
+        }
+        if (bRandomiseSpRecovery)
+        {
+            int value = GetRandomValue(minSpRecovery, maxSpRecovery + 1);
+            GameplayPatchesWindow.Instance.spRecoveryRed = value;
+            GameplayPatchesWindow.Instance.spRecoveryWhite = value;
+            GameplayPatchesWindow.Instance.bSpRecoveryRed = true;
+            GameplayPatchesWindow.Instance.bSpRecoveryWhite = true;
+            changeLog.DuelChanges.SpRecovery = value;
+        }
+        if (bRandomiseHealth)
+        {
+            int value = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
+            if (value > 9999)
+            {
+                GameplayPatchesWindow.Instance.lpCap = 32000;
+                GameplayPatchesWindow.Instance.bLpCap = true;
+            }
+
+            GameplayPatchesWindow.Instance.bStartingLpRed = true;
+            GameplayPatchesWindow.Instance.bStartingLpWhite = true;
+            GameplayPatchesWindow.Instance.startingLpRed = value;
+            GameplayPatchesWindow.Instance.startingLpWhite = value;
+            changeLog.DuelChanges.StartingLp = value;
+        }
+
     }
 
     void RandomiseMusic()
     {
         if (randomiseMusic)
         {
+
             HashSet<int> bannedMusic = new HashSet<int> { 1, 6, 23, 39, 42, 43 };
             foreach (var key in _musicEditorWindow.DuelistMusic.Keys)
             {
 
-                _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(2, 45);
+                _musicEditorWindow.DuelistMusic[key] = GetRandomValue(2, 45);
                 while (bannedMusic.Contains(_musicEditorWindow.DuelistMusic[key]))
                 {
-                    _musicEditorWindow.DuelistMusic[key] = RandomNumberGenerator.GetInt32(2, 45);
+                    _musicEditorWindow.DuelistMusic[key] = GetRandomValue(2, 45);
+
 
                 }
+                changeLog.MusicChanges.Add(new MusicChange(_musicEditorWindow.musicTargets[key],
+                    _musicEditorWindow.musicTracks[_musicEditorWindow.DuelistMusic[key] - 1]));
             }
             _musicEditorWindow.bSaveMusicChanges = true;
             GameplayPatchesWindow.Instance.bSaveMusic = true;
@@ -619,23 +849,31 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
     void ChangeAllAi()
     {
+
         if (randomiseAI)
         {
+
             foreach (var enemy in Enemies.EnemyList)
             {
-                int randomValue = RandomNumberGenerator.GetInt32(0, Enemies.EnemyList.Count);
+                int randomValue = GetRandomValue(0, Enemies.EnemyList.Count);
                 while (randomValue == 5 || randomValue == 16)
                 {
-                    randomValue = RandomNumberGenerator.GetInt32(0, Enemies.EnemyList.Count);
+                    randomValue = GetRandomValue(0, Enemies.EnemyList.Count);
                 }
                 enemy.AiId = Enemies.EnemyList[randomValue].AiId;
+                if (Enemies.nameList.Contains(enemy.Name))
+                {
+                    changeLog.AiChanges.Add(new AiChange(enemy.Name, Enemies.nameList[enemy.AiId]));
+                }
+
             }
         }
-        else
+        else if (randomiseDecks)
         {
             foreach (var enemy in Enemies.EnemyList)
             {
                 enemy.AiId = Enemies.EnemyList[22].AiId;
+                changeLog.AiChanges.Add(new AiChange(enemy.Name, Enemies.EnemyList[22].AiName));
             }
         }
     }
@@ -644,6 +882,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
     {
         if (!randomiseLeaderAbilities)
             return;
+
 
         var abilityValidations = new Dictionary<DeckLeaderAbilityType, Func<StartingDeckData.StarterDeckDataEnums.Kind, bool>> {
             { DeckLeaderAbilityType.TerrainChange, ValidForTerrainChange },
@@ -656,7 +895,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
         foreach (var deckLeaderAbilityInstance in CardDeckLeaderAbilities.MonsterAbilities)
         {
-
             int assignedAbilities = 0;
             StartingDeckData.StarterDeckDataEnums.Kind cardKind =
                 (StartingDeckData.StarterDeckDataEnums.Kind)CardConstant.Monsters[deckLeaderAbilityInstance.CardId].CardKind.Id + 1;
@@ -667,12 +905,18 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
             for (int i = 0; i < deckLeaderAbilityInstance.Abilities.Length && assignedAbilities < maxLeaderAbilities; i++)
             {
+                if (i == 3 || i == 16 || i > 17)
+                    continue;
                 DeckLeaderAbilityType currentAbility = (DeckLeaderAbilityType)i;
-                if (currentAbility == DeckLeaderAbilityType.HiddenCard)
+                if (currentAbility is DeckLeaderAbilityType.HiddenCard or DeckLeaderAbilityType.DestinyDraw)
                 {
                     deckLeaderAbilityInstance.Abilities[i].SetEnabled(true);
                     deckLeaderAbilityInstance.Abilities[i].RankRequired = 1;
                     assignedAbilities++;
+
+                    changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId)].LeaderAbilities.Add(new LeaderAbilityChange(
+                        currentAbility.ToString(),
+                        ((DeckLeaderRank)deckLeaderAbilityInstance.Abilities[i].RankRequired).ToString()));
                     continue;
                 }
                 bool isValid = true;
@@ -701,7 +945,10 @@ Not recommended to edit card effects as it will not update the text, but im not 
                     if (RandomBoolIn100(chanceToEnable))
                     {
                         deckLeaderAbilityInstance.Abilities[i].SetEnabled(true);
-                        deckLeaderAbilityInstance.Abilities[i].RankRequired = RandomNumberGenerator.GetInt32(1, 13);
+                        deckLeaderAbilityInstance.Abilities[i].RankRequired = GetRandomValue(1, 13);
+                        changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId)].LeaderAbilities.Add(new LeaderAbilityChange(
+                            currentAbility.ToString(),
+                            ((DeckLeaderRank)deckLeaderAbilityInstance.Abilities[i].RankRequired).ToString()));
                     }
                 }
             }
@@ -793,9 +1040,14 @@ Not recommended to edit card effects as it will not update the text, but im not 
         }
     }
 
+    public int GetRandomValue(int minValue, int maxValue)
+    {
+        return _random.Next(minValue, maxValue);
+    }
+
     bool RandomBoolIn100(int percentChanceTrue)
     {
-        return RandomNumberGenerator.GetInt32(1, 101) <= percentChanceTrue;
+        return GetRandomValue(1, 101) <= percentChanceTrue;
     }
 
     void RandomiseLeaderRanks()
@@ -806,18 +1058,26 @@ Not recommended to edit card effects as it will not update the text, but im not 
         {
             if (randomiseLeaderRanks && index < 17)
             {
-                Deck.DeckList[index].DeckLeader.Rank = (DeckLeaderRank)RandomNumberGenerator.GetInt32(1, 13);
+                Deck.DeckList[index].DeckLeader.Rank = (DeckLeaderRank)GetRandomValue(1, 13);
+                changeLog.DeckChanges.TryAdd(Deck.NamePrefix(index), new DeckChange());
+                DeckChange currentChange = changeLog.DeckChanges[Deck.NamePrefix(index)];
+                currentChange.LeaderRank = Deck.DeckList[index].DeckLeader.Rank.ToString();
             }
             else if (randomiseOpponentLeaderRanks && index >= 27)
             {
-
                 if (strongBossDeck && IsBossEnemy(index))
                 {
                     Deck.DeckList[index].DeckLeader.Rank = DeckLeaderRank.SD;
+                    changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[index], new DeckChange());
+                    DeckChange currentChange = changeLog.DeckChanges[Deck.NamePrefix(index)];
+                    currentChange.LeaderRank = Deck.DeckList[index].DeckLeader.Rank.ToString();
                 }
                 else
                 {
-                    Deck.DeckList[index].DeckLeader.Rank = (DeckLeaderRank)RandomNumberGenerator.GetInt32(1, 13);
+                    Deck.DeckList[index].DeckLeader.Rank = (DeckLeaderRank)GetRandomValue(1, 13);
+                    changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[index], new DeckChange());
+                    DeckChange currentChange = changeLog.DeckChanges[Deck.NamePrefix(index)];
+                    currentChange.LeaderRank = Deck.DeckList[index].DeckLeader.Rank.ToString();
                 }
 
             }
@@ -855,17 +1115,53 @@ Not recommended to edit card effects as it will not update the text, but im not 
                     int currentEquipCount = 0;
                     int currentTrapCount = 0;
                     int currentRitualCount = 0;
+                    bool isExodiaLeader = false;
                     Deck? deck = Deck.DeckList[deckIndex];
 
-                    //Still need to check for my than triples or disable it.
-                    for (var deckSlot = 0; deckSlot < deck.CardList.Count; deckSlot++)
+                    if (randomiseStartingDecks && deckIndex < 17)
+                    {
+                        deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
+                        if (deck.DeckLeader.CardConstant.Index == 58)
+                        {
+                            isExodiaLeader = true;
+                        }
+                        changeLog.DeckChanges.TryAdd(Deck.NamePrefix(deckIndex), new DeckChange());
+                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name;
+
+                    }
+                    else if (randomiseOpponentDecks && deckIndex >= 27)
+                    {
+                        deck.DeckLeader = CreateRandomCard("monster", false, leaderRanksOriginal[deckIndex]);
+                        if (deck.DeckLeader.CardConstant.Index == 58)
+                        {
+                            isExodiaLeader = true;
+                        }
+                        changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[deckIndex], new DeckChange());
+                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name;
+                    }
+                    int exodiaLimbsAdded = 0;
+                    if (isExodiaLeader)
+                    {
+                        int[] exodiaLimbs = { 54, 55, 56, 57 };
+                        for (int i = 0; i < exodiaLimbs.Length && exodiaLimbsAdded < 4; i++)
+                        {
+                            if (exodiaLimbsAdded + 1 < deck.CardList.Count)
+                            {
+                                deck.CardList[exodiaLimbsAdded + 1] = new DeckCard(CardConstant.List[exodiaLimbs[i]], 0);
+                                string deckName = deckIndex < 17 ? Deck.NamePrefix(deckIndex) : Deck.CharacterNameDictionary[deckIndex];
+                                changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name);
+                                exodiaLimbsAdded++;
+                                currentMonsterCount++;
+                            }
+                        }
+                    }
+                    for (var deckSlot = 1 + exodiaLimbsAdded; deckSlot < deck.CardList.Count; deckSlot++)
                     {
                         Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
                         if (randomiseStartingDecks)
                         {
                             if (deckIndex < 17)
                             {
-                                deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
                                 if (currentMonsterCount < monsterCount)
                                 {
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", true, deckIndex);
@@ -897,7 +1193,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                         {
                             if (deckIndex >= 27)
                             {
-                                deck.DeckLeader = CreateRandomCard("monster", false, leaderRanksOriginal[deckIndex]);
                                 if (currentMonsterCount < monsterCount)
                                 {
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", false, deckIndex);
@@ -934,13 +1229,26 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 {
                     Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
                     Deck? deck = Deck.DeckList[deckIndex];
+                    if (randomiseStartingDecks && deckIndex < 17)
+                    {
+                        deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
+                        changeLog.DeckChanges.TryAdd(Deck.NamePrefix(deckIndex), new DeckChange());
+                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name;
+
+
+                    }
+                    else if (randomiseOpponentDecks && deckIndex >= 27)
+                    {
+                        deck.DeckLeader = CreateRandomCard("monster", false, leaderRanksOriginal[deckIndex]);
+                        changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[deckIndex], new DeckChange());
+                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name;
+                    }
                     for (var deckSlot = 0; deckSlot < deck.CardList.Count; deckSlot++)
                     {
                         if (randomiseStartingDecks)
                         {
                             if (deckIndex < 17)
                             {
-                                deck.DeckLeader = CreateRandomCard("monster");
                                 FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false, deckIndex);
                             }
                         }
@@ -948,7 +1256,6 @@ Not recommended to edit card effects as it will not update the text, but im not 
                         {
                             if (deckIndex >= 27)
                             {
-                                deck.DeckLeader = CreateRandomCard("monster");
                                 FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "", false, deckIndex);
                             }
                         }
@@ -970,8 +1277,14 @@ Not recommended to edit card effects as it will not update the text, but im not 
             for (var i = 0; i < MonsterEnchantData.MonsterEnchantDataList.Count; i++)
             {
                 MonsterEnchantData? monsterEnchantData = MonsterEnchantData.MonsterEnchantDataList[i];
+                monsterEnchantData.Flags[28] = true;
+                monsterEnchantData.Flags[37] = true;
                 monsterEnchantData.Flags[43] = true;
                 monsterEnchantData.Flags[44] = true;
+                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(28));
+                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(37));
+                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(43));
+                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(44));
             }
         }
         else
@@ -1358,6 +1671,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                             else
                             {
                                 monsterEnchantData.Flags[flagIndex] = true;
+
                             }
                             break;
                         case 44: // 796 Cursebreaker
@@ -1416,8 +1730,9 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
                 if (!card.CardConstant.CardKind.isPowerUp())
                     continue;
-                int randomStrongEquipIndex = bestEquips[RandomNumberGenerator.GetInt32(0, bestEquips.Count)];
+                int randomStrongEquipIndex = bestEquips[GetRandomValue(0, bestEquips.Count)];
                 deck[index] = new DeckCard(CardConstant.List[randomStrongEquipIndex], 0);
+                changeLog.DeckChanges[Deck.CharacterNameDictionary[index]].CardsAdded.Add(Card.GetNameByIndex(randomStrongEquipIndex));
             }
         }
     }
@@ -1450,6 +1765,15 @@ Not recommended to edit card effects as it will not update the text, but im not 
             }
             deck.CardList[deckSlot] = card;
             cardAdded = true;
+            if (index < 17)
+            {
+                changeLog.DeckChanges[Deck.NamePrefix(index)].CardsAdded.Add(card.Name);
+
+            }
+            else if (index >= 27)
+            {
+                changeLog.DeckChanges[Deck.CharacterNameDictionary[index]].CardsAdded.Add(card.Name);
+            }
         }
     }
 
@@ -1486,9 +1810,9 @@ Not recommended to edit card effects as it will not update the text, but im not 
             case "equip":
                 return GiveDefaultEquip();
             case "ritual":
-                return RandomNumberGenerator.GetInt32(830, 854);
+                return GetRandomValue(830, 854);
             default:
-                int cardType = RandomNumberGenerator.GetInt32(0, 4);
+                int cardType = GetRandomValue(0, 4);
                 switch (cardType)
                 {
                     case 0:
@@ -1507,19 +1831,19 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
     int GetRandomStrongMonster()
     {
-        int randomIndex = RandomNumberGenerator.GetInt32(0, strongestMonsters.Count);
+        int randomIndex = GetRandomValue(0, strongestMonsters.Count);
         return strongestMonsters[randomIndex].index;
     }
 
     int GetRandomStrongSpell()
     {
-        int randomIndex = RandomNumberGenerator.GetInt32(0, strongestSpells.Count);
+        int randomIndex = GetRandomValue(0, strongestSpells.Count);
         return strongestSpells[randomIndex].index;
     }
 
     int GetRandomStrongTrap()
     {
-        int randomIndex = RandomNumberGenerator.GetInt32(0, strongestTraps.Count);
+        int randomIndex = GetRandomValue(0, strongestTraps.Count);
         return strongestTraps[randomIndex].index;
     }
 
@@ -1599,26 +1923,26 @@ Not recommended to edit card effects as it will not update the text, but im not 
             switch (type)
             {
                 case "monster":
-                    cardIndex = RandomNumberGenerator.GetInt32(0, 683);
+                    cardIndex = GetRandomValue(0, 683);
                     while (cardIndex == 671)
                     {
-                        cardIndex = RandomNumberGenerator.GetInt32(0, 683);
+                        cardIndex = GetRandomValue(0, 683);
                     }
                     break;
                 case "spell":
-                    cardIndex = RandomNumberGenerator.GetInt32(683, 752);
+                    cardIndex = GetRandomValue(683, 752);
                     break;
                 case "equip":
-                    cardIndex = RandomNumberGenerator.GetInt32(752, 801);
+                    cardIndex = GetRandomValue(752, 801);
                     break;
                 case "trap":
-                    cardIndex = RandomNumberGenerator.GetInt32(801, 830);
+                    cardIndex = GetRandomValue(801, 830);
                     break;
                 case "ritual":
-                    cardIndex = RandomNumberGenerator.GetInt32(830, 854);
+                    cardIndex = GetRandomValue(830, 854);
                     break;
                 default:
-                    cardIndex = RandomNumberGenerator.GetInt32(0, 854);
+                    cardIndex = GetRandomValue(0, 854);
                     break;
             }
             if (banSpecificCards)
@@ -1655,8 +1979,12 @@ Not recommended to edit card effects as it will not update the text, but im not 
 
     void RandomiseMaps()
     {
+        if (!randomiseMaps && !randomiseMapsTiles)
+            return;
+
         if (randomiseMaps)
         {
+
             DotrMap[] maps = DataAccess.Instance.maps;
             DotrMap[] newMapOrder = new DotrMap[maps.Length];
             Array.Copy(maps, newMapOrder, maps.Length);
@@ -1702,19 +2030,23 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 int j;
                 do
                 {
-                    j = RandomNumberGenerator.GetInt32(0, i + 1);
+                    j = GetRandomValue(0, i + 1);
                 } while (mapIndicesToSkip.Contains(j));
                 // ReSharper disable once SwapViaDeconstruction
                 DotrMap temp = newMapOrder[i];
                 newMapOrder[i] = newMapOrder[j];
                 newMapOrder[j] = temp;
+                changeLog.MapChanges.MapSwaps.Add(new MapSwap(_enemyEditorWindow.MapEditorWindow.duelistMaps[i],
+                    _enemyEditorWindow.MapEditorWindow.duelistMaps[j]));
             }
             Array.Copy(newMapOrder, DataAccess.Instance.maps, newMapOrder.Length);
         }
         if (randomiseMapsTiles)
         {
-            foreach (var map in DataAccess.Instance.maps)
+            int mapId = 0;
+            foreach (DotrMap map in DataAccess.Instance.maps)
             {
+
                 int currentCrushAmount = 0;
                 int currentLabAmount = 0;
                 if (!swapTiles)
@@ -1733,6 +2065,8 @@ Not recommended to edit card effects as it will not update the text, but im not 
                         Terrain originalTerrain = (Terrain)i;
                         Terrain newTerrain = GetRandomTerrain();
                         terrainSwapMap[originalTerrain] = newTerrain;
+                        changeLog.MapChanges.TerrainChanges.Add(new TerrainChange(_enemyEditorWindow.MapEditorWindow.duelistMaps[mapId],
+                            originalTerrain.ToString(), newTerrain.ToString()));
                     }
 
                     for (var index0 = 0; index0 < map.tiles.GetLength(0); index0++)
@@ -1793,67 +2127,120 @@ Not recommended to edit card effects as it will not update the text, but im not 
                     }
                 }
                 EnsureTraversableMap(map);
+                mapId++;
             }
         }
 
-        foreach (var treasureCard in TreasureCards.Instance.Treasures)
+        if (randomiseHiddenCardLocation || randomiseHiddenCardValue)
         {
-            if (randomiseHiddenCardLocation)
+
+            foreach (var treasureCard in TreasureCards.Instance.Treasures)
             {
-                treasureCard.Column = (byte)RandomNumberGenerator.GetInt32(0, 7);
-                treasureCard.Row = (byte)RandomNumberGenerator.GetInt32(0, 7);
-            }
-            if (randomiseHiddenCardValue)
-            {
-                treasureCard.CardIndex = CreateRandomCard("").CardConstant.Index;
+                changeLog.MapChanges.HiddenCardChanges.Add(treasureCard.EnemyName, new HiddenCardChange());
+                HiddenCardChange currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName];
+                if (randomiseHiddenCardValue)
+                {
+                    treasureCard.CardIndex = CreateRandomCard("").CardConstant.Index;
+                    currentCardChange.NewCard = treasureCard.CardName;
+
+                }
+                if (randomiseHiddenCardLocation)
+                {
+                    treasureCard.Column = (byte)GetRandomValue(0, 7);
+                    treasureCard.Row = (byte)GetRandomValue(0, 7);
+                    currentCardChange.NewLocation = $"{treasureCard.Column}, {treasureCard.Row}";
+                }
+
             }
         }
     }
 
     Terrain GetRandomTerrain()
     {
-        return (Terrain)RandomNumberGenerator.GetInt32(0, 10);
+        return (Terrain)GetRandomValue(0, 10);
     }
 
     void RandomiseCardConstData()
     {
+        //All cardChanges values are added here
         foreach (var cardConstant in CardConstant.List)
         {
-            if (randomiseSlots)
+            changeLog.CardChanges.TryAdd(cardConstant.Name, new CardChanges());
+            CardChanges cardChanges = changeLog.CardChanges[cardConstant.Name];
+            if (randomiseCardAcquisition)
             {
-                cardConstant.AppearsInSlotReels = RandomBoolIn100(slotChance);
+                cardChanges.Acquisition = new AcquisitionChanges();
+                if (randomiseSlots)
+                {
+                    cardConstant.AppearsInSlotReels = RandomBoolIn100(slotChance);
+                    cardChanges.Acquisition.AppearsInSlots = cardConstant.AppearsInSlotReels;
+                }
+                if (randomiseRareDrop)
+                {
+                    cardConstant.IsRareDrop = GetRandomBool();
+                    cardChanges.Acquisition.IsRareDrop = cardConstant.IsRareDrop;
+                }
+                if (randomiseReincarnation)
+                {
+                    cardConstant.AppearsInReincarnation = GetRandomBool();
+                    cardChanges.Acquisition.AppearsInReincarnation = cardConstant.AppearsInReincarnation;
+                }
+                if (!cardConstant.AppearsInSlotReels && !cardConstant.AppearsInReincarnation && !cardConstant.IsRareDrop)
+                {
+                    cardConstant.IsRareDrop = true;
+                    cardChanges.Acquisition.IsRareDrop = cardConstant.IsRareDrop;
+                }
             }
-            if (randomiseRareDrop)
-            {
-                cardConstant.IsSlotRare = GetRandomBool();
-            }
-            if (randomiseReincarnation)
-            {
-                cardConstant.AppearsInReincarnation = GetRandomBool();
-            }
-            if (!cardConstant.AppearsInSlotReels && !cardConstant.AppearsInReincarnation && !cardConstant.IsSlotRare)
-            {
-                cardConstant.IsSlotRare = true;
-            }
+
+
             if (cardConstant.CardKind.isMonster())
             {
                 if (randomiseCardATKDEF)
                 {
                     if (randomAtkDefRange)
                     {
-                        cardConstant.Attack = (ushort)Math.Clamp(
-                            Math.Round(GetRandomAroundTarget(cardConstant.Attack, attackDelta) / 50.0) * 50,
-                            0, 8000);
-                        cardConstant.Defense = (ushort)Math.Clamp(
-                            Math.Round(GetRandomAroundTarget(cardConstant.Defense, defenseDelta) / 50.0) * 50,
-                            0, 8000);
+                        if (bRoundValuesTo50)
+                        {
+                            cardConstant.Attack = (ushort)Math.Clamp(
+                                Math.Round(GetRandomAroundTarget(cardConstant.Attack, attackDelta) / 50.0) * 50,
+                                0, 8000);
+                            cardConstant.Defense = (ushort)Math.Clamp(
+                                Math.Round(GetRandomAroundTarget(cardConstant.Defense, defenseDelta) / 50.0) * 50,
+                                0, 8000);
+                            cardChanges.Stats.Attack = cardConstant.Attack;
+                            cardChanges.Stats.Defense = cardConstant.Defense;
+                        }
+                        else
+                        {
+                            cardConstant.Attack = (ushort)Math.Clamp(
+                                GetRandomAroundTarget(cardConstant.Attack, attackDelta),
+                                0, 8000);
+                            cardConstant.Attack = (ushort)Math.Clamp(
+                                GetRandomAroundTarget(cardConstant.Defense, defenseDelta),
+                                0, 8000);
+                            cardChanges.Stats.Attack = cardConstant.Attack;
+                            cardChanges.Stats.Defense = cardConstant.Defense;
+                        }
+
                     }
                     else
                     {
                         if (randomAtkDefCap)
                         {
-                            cardConstant.Attack = (ushort)(Math.Round(RandomNumberGenerator.GetInt32(0, attackCap + 1) / 50.0) * 50);
-                            cardConstant.Defense = (ushort)(Math.Round(RandomNumberGenerator.GetInt32(0, defenseCap + 1) / 50.0) * 50);
+                            if (bRoundValuesTo50)
+                            {
+                                cardConstant.Attack = (ushort)(Math.Round(GetRandomValue(0, attackCap + 1) / 50.0) * 50);
+                                cardConstant.Defense = (ushort)(Math.Round(GetRandomValue(0, defenseCap + 1) / 50.0) * 50);
+                                cardChanges.Stats.Attack = cardConstant.Attack;
+                                cardChanges.Stats.Defense = cardConstant.Defense;
+                            }
+                            else
+                            {
+                                cardConstant.Attack = (ushort)GetRandomValue(0, attackCap + 1);
+                                cardConstant.Defense = (ushort)GetRandomValue(0, defenseCap + 1);
+                                cardChanges.Stats.Attack = cardConstant.Attack;
+                                cardChanges.Stats.Defense = cardConstant.Defense;
+                            }
                         }
                     }
                 }
@@ -1861,54 +2248,74 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 {
                     if (randomSPCap)
                     {
-                        cardConstant.Level = (byte)RandomNumberGenerator.GetInt32(0, levelCap);
+                        cardConstant.Level = (byte)Math.Clamp(GetRandomValue(0, levelCap), 0, 12);
+                        cardChanges.Stats.Level = cardConstant.Level;
                     }
                     else if (randomSPRange)
                     {
-                        cardConstant.Level = (byte)GetRandomAroundTarget(cardConstant.Level, levelDelta);
-
+                        cardConstant.Level = (byte)Math.Clamp(GetRandomAroundTarget(cardConstant.Level, levelDelta), 0, 12);
+                        cardChanges.Stats.Level = cardConstant.Level;
                     }
+
                     else if (SpBasedOnPower)
                     {
                         cardConstant.Level = GetSpValue(cardConstant.Attack + cardConstant.Defense);
+                        cardChanges.Stats.Level = cardConstant.Level;
                     }
                 }
+
                 if (randomiseKinds)
                 {
-                    cardConstant.Kind = (byte)RandomNumberGenerator.GetInt32(0, 21);
+                    cardConstant.Kind = (byte)GetRandomValue(0, 21);
+                    cardChanges.Properties.Kind = ((CardKind.CardKindEnum)cardConstant.Kind).ToString();
                 }
                 if (randomiseAttributes)
                 {
-                    cardConstant.Attribute = (byte)RandomNumberGenerator.GetInt32(0, 6);
+                    cardConstant.Attribute = (byte)GetRandomValue(0, 6);
+                    cardChanges.Properties.Attribute = ((AttributeVisual)cardConstant.Attribute).ToString();
                 }
                 if (randomiseEquip)
                 {
+
                     for (int i = 0; i < 50; i++)
                     {
                         if (i == 45 || i == 46 || i == 47 || i == 48 || i == 49)
                         {
                             continue;
                         }
-                        MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[i] = RandomBoolIn100(EquipPercentChance);
+                        bool canEquip = RandomBoolIn100(EquipPercentChance);
+                        MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[i] = canEquip;
+                        if (canEquip)
+                        {
+                            cardChanges.Equipment.CanEquip.Add(MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].GetEquipName(i));
+                        }
+
                     }
                 }
+
                 if (randomiseStrongOnToon)
                 {
-                    MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[49] = RandomBoolIn100(strongOnToonChance);
+                    bool result = RandomBoolIn100(strongOnToonChance);
+                    MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[49] = result;
+                    cardChanges.Properties.StrongOnToon = result;
                 }
                 if (randomiseMonsterEffects)
                 {
+
                     cardConstant.EffectId = UInt16.MaxValue;
                     if (RandomBoolIn100(randomEffectChance))
                     {
-                        cardConstant.EffectId = (ushort)RandomNumberGenerator.GetInt32(0, Effects.MonsterEffectsList.Count);
+                        cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MonsterEffectsList.Count);
+                        cardChanges.Properties.Effect = Effects.MonsterEffectOwnerNames[cardConstant.EffectId];
                     }
                     cardConstant.setCardColor();
                 }
             }
+
             else if (cardConstant.CardKind.isMagic() && randomiseMagicEffects)
             {
-                cardConstant.EffectId = (ushort)RandomNumberGenerator.GetInt32(0, Effects.MagicEffectsList.Count);
+                cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MagicEffectsList.Count);
+                cardChanges.Properties.Effect = Effects.MagicEffectOwnerNames[cardConstant.EffectId];
                 cardConstant.setCardColor();
             }
         }
@@ -1923,9 +2330,18 @@ Not recommended to edit card effects as it will not update the text, but im not 
                     {
                         continue;
                     }
-                    EnchantData.EnchantScores[i] = (ushort)Math.Clamp(
-                        Math.Round(GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta) / 50.0) * 50,
-                        50, 8000);
+                    if (bRoundValuesTo50)
+                    {
+                        EnchantData.EnchantScores[i] = (ushort)Math.Clamp(
+                            Math.Round(GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta) / 50.0) * 50,
+                            0, 9999);
+                    }
+                    else
+                    {
+                        EnchantData.EnchantScores[i] = (ushort)Math.Clamp(
+                            GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta), 0, 9999);
+                    }
+                    changeLog.CardChanges[EnchantData.GetEquipName(i)].PowerUpValue = EnchantData.EnchantScores[i];
                 }
             }
         }
@@ -1937,18 +2353,18 @@ Not recommended to edit card effects as it will not update the text, but im not 
         if (updown)
         {
             int lowerBound = targetNumber - Delta;
-            return RandomNumberGenerator.GetInt32(Math.Max(lowerBound, 0), targetNumber + Delta + 1);
+            return GetRandomValue(Math.Max(lowerBound, 0), targetNumber + Delta + 1);
         }
         else
         {
-            return RandomNumberGenerator.GetInt32(targetNumber, targetNumber + Delta + 1);
+            return GetRandomValue(targetNumber, targetNumber + Delta + 1);
         }
     }
 
-    static bool GetRandomBool()
+    bool GetRandomBool()
     {
 
-        return RandomNumberGenerator.GetInt32(0, 2) == 1;
+        return GetRandomValue(0, 2) == 1;
     }
 
     byte GetSpValue(int combinedPower)
