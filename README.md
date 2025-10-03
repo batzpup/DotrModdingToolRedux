@@ -4,11 +4,11 @@ A new and improved set of modding tools for Yu-Gi-Oh! The Duelists of the Roses 
 This should be cross platform but requires .NET 8
 
 ## Credits
-Wouldnt be possible without: 
+Wouldnt be possible without:  
 [Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
 [Generic Mad Scientist](https://github.com/GenericMadScientist)  
 [hippochan](https://github.com/rjoken)  
-[Clovis](https://www.youtube.com/@ClovissenpaiDotR)
+[Clovis](https://www.youtube.com/@ClovissenpaiDotR)  
 [LordMewtwo73](https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor) for the text compression
 
 ## Requirements
