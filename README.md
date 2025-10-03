@@ -9,7 +9,7 @@ Wouldnt be possible without:
 [Generic Mad Scientist](https://github.com/GenericMadScientist)  
 [hippochan](https://github.com/rjoken)  
 [Clovis](https://www.youtube.com/@ClovissenpaiDotR)  
-[LordMewtwo73](https://github.com/LordMewtwo73) for the [text editing](https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor)
+[LordMewtwo73](https://github.com/LordMewtwo73) for the [text editing](https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor) capability
 
 ## Requirements
 
