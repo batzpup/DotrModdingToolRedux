@@ -5,7 +5,7 @@ namespace DotrModdingTool2IMGUI;
 public class CardConstant
 {
     public static List<CardConstant> List = new List<CardConstant> { };
-    public static Dictionary<string, CardConstant> CardLookup;
+    public static Dictionary<ModdedStringName, CardConstant> CardLookup;
 
     public static void LoadFromBytes(byte[][] bytes)
     {
@@ -211,7 +211,7 @@ public class CardConstant
 
     public ushort Index { get; }
 
-    public string Name { get; }
+    public ModdedStringName Name { get; set; }
 
     public byte DeckCost { get; set; }
 
@@ -228,11 +228,13 @@ public class CardConstant
     public CardKind CardKind
     {
         get { return this._cardKind; }
+        set { _cardKind = value; }
     }
 
     public string? Type
     {
         get { return this._cardKind.Name; }
+     
     }
 
 
@@ -388,6 +390,6 @@ public class CardConstant
 
     public override string ToString()
     {
-        return Name;
+        return Name.Edited;
     }
 }

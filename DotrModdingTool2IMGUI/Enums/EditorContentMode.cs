@@ -8,5 +8,6 @@ public enum EditorContentMode
     MechanicsEditor,
     MusicEditor,
     Misc,
-    Randomiser
+    Randomiser,
+    StringEditor
 }

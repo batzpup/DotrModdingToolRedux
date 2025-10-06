@@ -10,13 +10,15 @@ public class GlobalImgui
     {
         if (!UserSettings.ToggleImageTooltips)
             return;
+        if (!GlobalImages.Instance.Cards.TryGetValue(cardName, out var texture))
+            return; 
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
         ImGui.BeginTooltip();
         ImGui.Text("Card Preview");
         float tooltipWidth = ImGui.GetWindowSize().X;
 
         ImGui.SetCursorPosX((tooltipWidth - 128) * 0.5f);
-        ImGui.Image(GlobalImages.Instance.Cards[cardName], new Vector2(128, 128));
+        ImGui.Image(texture, new Vector2(128, 128));
         ImGui.EndTooltip();
         ImGui.PopStyleColor();
 
@@ -54,7 +56,7 @@ public class GlobalImgui
     {
         string previewText = (currentIndex >= 0 && currentIndex < values.Length)
             ? values[currentIndex]?.ToString()
-            : values[values.Length-1].ToString();
+            : values[values.Length - 1].ToString();
         if (ImGui.BeginCombo(label, previewText))
         {
             for (int i = 0; i < values.Length; i++)

@@ -2,8 +2,13 @@
 
 public class Enemies
 {
-    public static string[] nameList = new string[] {
-        "Simon McMooran?",
+    public static ModdedStringName[] EnemyNameList;
+    static string[] currentEnemyNameCache;
+    static string[] defaultEnemyNameCache;
+    public static Action OnStringRebuilt;
+
+    static string[] defaultNameList = new string[26] {
+        "Simon McMooran",
         "Seto",
         "Weevil Underwood",
         "Rex Raptor",
@@ -15,11 +20,11 @@ public class Enemies
         "Pegasus Crawford",
         "Richard Slysheen of York",
         "Tea",
-        "T. Tristan Grey",
+        "T.Tristan Grey",
         "Margaret Mai Beaufort",
         "Mako",
         "Joey",
-        "J. Shadi Morton",
+        "J.Shadi Morton",
         "Jasper Dice Tudor",
         "Bakura",
         "Yugi",
@@ -30,16 +35,63 @@ public class Enemies
         "Deck Master T",
         "Deck Master S"
     };
-    public static void LoadEnemies(byte[] bytes)
+
+
+    public static void ReloadStrings()
     {
-        for (int  bi = 0; bi < bytes.Length;  bi += DataAccess.EnemyAiByteLength)
+        EnemyNameList = new ModdedStringName[defaultNameList.Length];
+        for (int i = 0; i < defaultNameList.Length; i++)
         {
-            byte[] aiBytes = new byte[] { bytes[bi], bytes[bi + 1], bytes[bi + 2], bytes[bi + 3] };
-            EnemyList.Add(new Enemy(bi/4, aiBytes));
+            if (i < 22)
+            {
+                EnemyNameList[i] = new ModdedStringName("", "") {
+                    Default = defaultNameList[i],
+                    Edited = StringEditor.StringTable[i + StringEditor.DuelistNameOffsetStart]
+                };
+
+            }
+            else
+            {
+                EnemyNameList[i] = new ModdedStringName("", "") {
+                    Default = defaultNameList[i],
+                    Edited = StringEditor.StringTable[i - 22 + StringEditor.CustomDuelistNameStart]
+                };
+            }
         }
+        RebuildStringCache();
     }
 
-  
+    public static void RebuildStringCache(bool both = false)
+    {
+        currentEnemyNameCache = EnemyNameList.Select(c => c.Current ?? "").ToArray();
+        if (both)
+        {
+            defaultEnemyNameCache = EnemyNameList.Select(c => c.Default ?? "").ToArray();
+        }
+
+    }
+
+    public static string[] GetEnemyNameArray(bool getDef = false)
+    {
+        if (UserSettings.UseDefaultNames || getDef)
+        {
+            return defaultEnemyNameCache;
+        }
+        return currentEnemyNameCache;
+
+    }
+
+    public static void LoadEnemies(byte[] bytes)
+    {
+        ReloadStrings();
+        for (int bi = 0; bi < bytes.Length; bi += DataAccess.EnemyAiByteLength)
+        {
+            byte[] aiBytes = new byte[] { bytes[bi], bytes[bi + 1], bytes[bi + 2], bytes[bi + 3] };
+            EnemyList.Add(new Enemy(bi / 4, aiBytes));
+        }
+        RebuildStringCache(true);
+    }
+
 
     public static byte[] AiBytes
     {
@@ -53,21 +105,25 @@ public class Enemies
 public class Enemy
 {
     public int Index { get; }
-    public string Name { get; }
+
+    public ModdedStringName Name
+    {
+        get { return GetEnemyNameByIndex(Index); }
+    }
+
     public Ai AI { get; set; }
 
-    
 
     public Enemy(int index, byte[] aiBytes)
     {
         Index = index;
-        Name = GetEnemyNameByIndex(index);
         AI = new Ai(aiBytes);
     }
 
-    public static string GetEnemyNameByIndex(int index)
+    public static ModdedStringName GetEnemyNameByIndex(int index)
     {
-        return Enemies.nameList.ElementAtOrDefault(index) == null ? "???" : Enemies.nameList[index];
+        return Enemies.EnemyNameList.ElementAtOrDefault(index) == null ? new ModdedStringName("???", "???") : Enemies.EnemyNameList[index];
+
     }
 
     public int AiId

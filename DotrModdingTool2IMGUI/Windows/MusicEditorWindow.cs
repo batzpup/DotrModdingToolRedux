@@ -30,25 +30,27 @@ public class MusicEditorWindow : IImGuiWindow
 
     #region StringsArrays
 
-    public string[] musicTargets = new[] {
+    public static ModdedStringName[] MusicTargets;
+
+    static string[] defaultMusicTargets = new[] {
         "Tutorial",
         "Seto",
-        "Weevil",
-        "Rex",
+        "Weevil Underwood",
+        "Rex Raptor",
         "Keith",
         "Ishtar",
         "Necromancer",
         "Darkness-ruler",
         "Labyrinth-ruler",
-        "Pegasus",
-        "Richard",
+        "Pegasus Crawford",
+        "Richard Slysheen of York",
         "Tea",
-        "Tristan",
-        "Mai",
+        "T.Tristan Grey",
+        "Margaret Mai Beaufort",
         "Mako",
         "Joey",
-        "Shadi",
-        "Jasper",
+        "J.Shadi Morton",
+        "Jasper Dice Tudor",
         "Bakura",
         "Yugi",
         "MFL Skull Knight",
@@ -115,6 +117,12 @@ public class MusicEditorWindow : IImGuiWindow
         waveOut = new WaveOutEvent();
         waveOut.Volume = 0.1f;
         monoSpaceFont = Fonts.MonoSpace;
+        
+    }
+
+    static MusicEditorWindow()
+    {
+        MusicTargets = new ModdedStringName[defaultMusicTargets.Length];
     }
 
     public void LoadMusicFromIso()
@@ -133,6 +141,28 @@ public class MusicEditorWindow : IImGuiWindow
         }
         currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
         currentSlotMusicIndex = dataAccess.ReadBytes(SlotMusicPatch.SlotTrackPtr, 1)[0] - 1;
+        ReloadStrings();
+    }
+
+    public static void ReloadStrings()
+    {
+        for (int i = 0; i < MusicTargets.Length; i++)
+        {
+            if (i > 0 && i < 20)
+            {
+                MusicTargets[i] = new ModdedStringName(defaultMusicTargets[i], Enemies.EnemyNameList[i].Current);
+            }
+            else if (i == 20 || i == 21)
+            {
+                MusicTargets[i] = new ModdedStringName(defaultMusicTargets[i], $"{StringEditor.StringTable[i + StringEditor.DuelistNameOffsetStart]} ({Deck.DeckList[i + 26].DeckLeader.Name.Current})");
+            }
+            else
+            {
+                MusicTargets[i] = new ModdedStringName(defaultMusicTargets[i], defaultMusicTargets[i]);
+            }
+
+        }
+        
     }
 
     public void Render()
@@ -162,10 +192,23 @@ public class MusicEditorWindow : IImGuiWindow
         ImGui.PushFont(monoSpaceFont);
         ImGui.Text("Duelist Music");
         ImGui.PushItemWidth(windowSize.X / 3f);
-        if (ImGui.ListBox("DuelistMusic", ref currentDuelistSelected, musicTargets, musicTargets.Length, musicTargets.Length))
+        if (ImGui.BeginListBox("##DuelistMusic", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * MusicTargets.Length)))
         {
-            currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
-            PlaySelectedTrack(currentTrackIndex);
+            for (int i = 0; i < MusicTargets.Length; i++)
+            {
+                bool isSelected = (currentDuelistSelected == i);
+                if (ImGui.Selectable(MusicTargets[i].Current, isSelected))
+                {
+                    currentDuelistSelected = i;
+                    currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
+                    PlaySelectedTrack(currentTrackIndex);
+                }
+                if (isSelected)
+                {
+                    ImGui.SetItemDefaultFocus();
+                }
+            }
+            ImGui.EndListBox();
         }
         ImGui.EndChild();
 
@@ -208,8 +251,8 @@ public class MusicEditorWindow : IImGuiWindow
         }
         if (ImGui.Button("Extract Music", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
-            
-            
+
+
             Task.Run(async () => await StartMusicTask());
 
         }

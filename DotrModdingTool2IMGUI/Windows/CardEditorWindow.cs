@@ -27,10 +27,10 @@ class CardEditorWindow : IImGuiWindow
     CardConstant currentCardConst;
     string cardEditorSearchSortField = "ID";
     bool cardEditorSearchAscending = true;
-    HashSet<string> selectedCards = new HashSet<string>();
+    HashSet<ModdedStringName> selectedCards = new();
     bool showHelpText = true;
 
-    List<string> filteredList = new List<string>();
+    List<ModdedStringName> filteredList = new();
     CardColourType currentCardType = CardColourType.NormalMonster;
     IntPtr cardImage;
     IntPtr cardFrame;
@@ -82,14 +82,15 @@ class CardEditorWindow : IImGuiWindow
         innerTextBoxSizeInPixelsScaled = new Vector2(218, 26) * imageScale;
         EditorWindow.OnIsoLoaded += updateCardChanges;
         EditorWindow.OnIsoLoaded += FilterAndSort;
-
+        selectedCards.Add(Card.cardNameList[currentCardIndex]);
         currentCardIndex = 0;
-        selectedCards.Add("Blue-Eyes White Dragon");
+
+
     }
 
-    public void SetCurrentCard(string name)
-    {
 
+    public void SetCurrentCard(ModdedStringName name)
+    {
         selectedCards.Clear();
         currentCardIndex = currentCardIndex = Array.IndexOf(Card.cardNameList, name);
         updateCardChanges();
@@ -100,9 +101,9 @@ class CardEditorWindow : IImGuiWindow
     void updateCardChanges()
     {
         currentCardConst = CardConstant.List[currentCardIndex];
-        cardImage = GlobalImages.Instance.Cards[Card.cardNameList[currentCardIndex]];
+        cardImage = GlobalImages.Instance.Cards[Card.cardNameList[currentCardIndex].Default];
         cardFrame = GlobalImages.Instance.CardFrames[currentCardConst.CardColor];
-        cardName = currentCardConst.Name;
+        cardName = StringEditor.StringTable[currentCardIndex + StringEditor.CardNamesOffsetStart];
         currentMonsterAttack = currentCardConst.Attack;
         currentMonsterDefense = currentCardConst.Defense;
         currentMonsterStatString = currentMonsterAttack.ToString();
@@ -121,7 +122,7 @@ class CardEditorWindow : IImGuiWindow
         }
 
     }
-    
+
     public void Render()
     {
         ImGui.PushFont(font);
@@ -298,7 +299,7 @@ class CardEditorWindow : IImGuiWindow
         ImGui.PushItemWidth(windowSize.X / 3f);
 
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
-    ;
+        ;
 
         if (ImGui.BeginListBox("##Cards", new Vector2(0, availableHeight)))
         {
@@ -309,7 +310,7 @@ class CardEditorWindow : IImGuiWindow
                 FilterAndSort();
             }
 
-            foreach (string filteredName in filteredList)
+            foreach (ModdedStringName filteredName in filteredList)
             {
                 bool isSelected = selectedCards.Contains(filteredName);
 
@@ -318,7 +319,7 @@ class CardEditorWindow : IImGuiWindow
 
                     if (ImGui.GetIO().KeyShift)
                     {
-                        int startIndex = filteredList.IndexOf(Card.cardNameList[currentCardIndex]);
+                        int startIndex = filteredList.IndexOf(Card.GetNameByIndex(currentCardIndex));
                         int endIndex = filteredList.IndexOf(filteredName);
                         if (startIndex != -1 && endIndex != -1)
                         {
@@ -332,7 +333,15 @@ class CardEditorWindow : IImGuiWindow
                             }
                             if (CanSelectCard(CardConstant.CardLookup[filteredName]))
                             {
-                                currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
+                                if (UserSettings.UseDefaultNames)
+                                {
+                                    currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
+                                }
+                                else
+                                {
+                                    currentCardIndex = Array.IndexOf(StringEditor.StringTable.Values.ToArray(), filteredName) - StringEditor.CardNamesOffsetStart;
+                                }
+
                             }
                         }
                     }
@@ -361,12 +370,13 @@ class CardEditorWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipCardImage(filteredName);
+                    GlobalImgui.RenderTooltipCardImage(filteredName.Default);
                 }
             }
             ImGui.EndListBox();
         }
         ImGui.PopStyleVar(1);
+        
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
@@ -395,7 +405,7 @@ class CardEditorWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(new Vector4(0, 0, 0, 1)));
         ImGui.SetCursorPos(InnerTextBoxPos);
         ImGui.PushFont(font);
-        ImGui.Text(cardName);
+        ImGui.Text(Card.cardNameList[currentCardIndex].Edited);
         ImGui.PopFont();
 
         if (currentCardConst.CardKind.isMonster())
@@ -510,9 +520,20 @@ class CardEditorWindow : IImGuiWindow
     void FilterAndSort()
     {
 
-        filteredList = Card.cardNameList
-            .Where(cardName => cardName.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        if (UserSettings.UseDefaultNames)
+        {
+            filteredList = Card.cardNameList
+                .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        else
+        {
+            //TODO FIX
+            filteredList = Card.cardNameList 
+                .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
 
         filteredList.Sort((a, b) =>
         {
@@ -523,7 +544,7 @@ class CardEditorWindow : IImGuiWindow
             switch (cardEditorSearchSortField)
             {
                 case "Name":
-                    result = string.Compare(cardA.Name, cardB.Name, StringComparison.OrdinalIgnoreCase);
+                    result = string.Compare(cardA.Name.Current, cardB.Name.Current, StringComparison.OrdinalIgnoreCase);
                     break;
                 case "ID":
                     result = cardA.Index.CompareTo(cardB.Index);
@@ -659,12 +680,22 @@ class CardEditorWindow : IImGuiWindow
     void RenderCardText()
     {
         ImGui.Text("Card Name: ");
-        ImGui.Text("(Read only,highlightable for copy paste purposes)");
-        string name = StringDecoder.StringTable[StringDecoder.CardNamesOffset + currentCardIndex];
-        ImGui.InputText("##NameText", ref name, 32, ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.AutoSelectAll);
+        string name = Card.cardNameList[currentCardIndex].Edited;
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if (ImGui.InputText("##NameText", ref name, 32))
+        {
+            Card.cardNameList[currentCardIndex].Edited = name;
+        }
         ImGui.Spacing();
+        
         ImGui.Text("Card Text: ");
-        ImGui.Text(StringDecoder.StringTable[StringDecoder.CardEffectTextOffset + currentCardIndex]);
+        string text = StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + currentCardIndex];
+        ImGui.InputTextMultiline("##EffectText", ref text, 200, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 15));
+        if (ImGui.Button("Reset"))
+        {
+            text = "~";
+        }
+        StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + currentCardIndex] = text;
     }
 
     void RenderEffects()
@@ -686,7 +717,7 @@ class CardEditorWindow : IImGuiWindow
             {
                 if (currentCardIndex >= 683)
                 {
-                    ImGui.Text($"Original effect ({Effects.MagicEffectOwnerNames[currentCardConst.EffectId]})");
+                    ImGui.Text($"Original effect ({Effects.MagicEffectOwnerNames.ElementAt(magicEffectTableEditorIndex)})");
                     ImGui.Text($"Magic Effect Id: {currentCardConst.EffectId}");
                     for (int j = 0; j < effectsTableHorizontalHeaders.Length; j++)
                     {
@@ -729,7 +760,7 @@ class CardEditorWindow : IImGuiWindow
                 {
                     if (currentCardConst.EffectId != 65535)
                     {
-                        ImGui.Text($"Original effect ({Effects.MonsterEffectOwnerNames[currentCardConst.EffectId]})");
+                        ImGui.Text($"Original effect ({Effects.MonsterEffectOwners.ElementAt(currentCardConst.EffectId).Value.Current})");
                     }
                     else
                     {
@@ -825,7 +856,7 @@ class CardEditorWindow : IImGuiWindow
                     "Note:\nThis changes all monster cards that reference this id, you cannot change an individual monster effect you must change the effect in this table and then change the effect id on the monster to match the effect you want");
                 ImGui.PopStyleColor();
                 ImGui.Separator();
-                ImGui.Text($"Original: ({Effects.MonsterEffectOwnerNames[monsterEffectTableEditorIndex]})");
+                ImGui.Text($"Original: ({Effects.MonsterEffectOwners.ElementAt(monsterEffectTableEditorIndex).Value.Current})");
                 ImGui.SetNextItemWidth(200);
 
                 if (ImGui.InputInt("Current monster effect index", ref monsterEffectTableEditorIndex))
@@ -965,7 +996,7 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.PopStyleColor();
                 ImGui.Separator();
 
-                ImGui.Text($"Original: ({Effects.MagicEffectOwnerNames[magicEffectTableEditorIndex]})");
+                ImGui.Text($"Original: ({Effects.MagicEffectOwnerNames.ElementAt(magicEffectTableEditorIndex)})");
                 ImGui.SetNextItemWidth(200);
                 if (ImGui.InputInt("Current Magic effect index", ref magicEffectTableEditorIndex))
                 {
@@ -1097,6 +1128,7 @@ class CardEditorWindow : IImGuiWindow
         if (currentCardIndex < 683)
         {
 
+            int count = selectedCards.Count;
             ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Attribute), () =>
             {
                 GlobalImgui.CardEditorCombo("##Attribute", ref currentCardAttribute, CardAttribute.AttributeNames, (newValue) =>
@@ -1536,6 +1568,66 @@ class CardEditorWindow : IImGuiWindow
         }
     }
 
+    public static void ExportMonstersToCSV(string filePath)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(
+            "Name,Type,Level,Deck Cost,Password,Password Works,in Reincarnation,in Slots,effectID,text");
+
+        foreach (var card in CardConstant.List)
+        {
+            var row = new List<string>();
+            row.Add(card.Name.Current);
+            row.Add(card.Type.ToString());
+            row.Add(card.Level.ToString());
+            row.Add(card.DeckCost.ToString());
+            row.Add(card.Password.ToString());
+            row.Add(card.PasswordWorks.ToString());
+            row.Add(card.AppearsInReincarnation.ToString());
+            row.Add(card.AppearsInSlotReels.ToString());
+            row.Add(card.EffectId.ToString());
+            row.Add(StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + card.Index].Replace("\n", "\\n"));
+            sb.AppendLine(string.Join(",", row.Select(v => $"\"{v.Replace("\"", "\"\"")}\"")));
+            //sb.AppendLine(string.Join(",", row));
+        }
+        File.WriteAllText(filePath, sb.ToString());
+
+    }
+
+    public static void ImportMonstersFromCSV(string filePath)
+    {
+        var lines = File.ReadAllLines(filePath);
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            string[] csvLine = ParseCsvLine(line);
+            if (csvLine.Length < 9)
+            {
+                throw new Exception($"Malformed CSV line {i}: {line}");
+                continue;
+            }
+            CardConstant card = CardConstant.List[i-1];
+            card.Name = new ModdedStringName(Card.cardNameList[i-1].Default, csvLine[0]);
+            card.CardKind = new CardKind(CardKind.Kinds.FirstOrDefault(x => x.Value == csvLine[1]).Key);
+            card.Level = byte.Parse(csvLine[2]);
+            card.DeckCost = byte.Parse(csvLine[3]);
+            card.Password = csvLine[4];
+            card.PasswordWorks = bool.Parse(csvLine[5]);
+            card.AppearsInReincarnation = bool.Parse(csvLine[6]);
+            card.AppearsInSlotReels = bool.Parse(csvLine[7]);
+            card.EffectId = ushort.Parse(csvLine[8]);
+            
+            string effectText = csvLine[9].Replace("\\n", "\n");
+            StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + card.Index] = effectText;
+            CardConstant.List[i-1] = card;
+
+        }
+        StringEditor.ReloadStrings();
+    }
+
 
     public void Free()
     {
@@ -1545,5 +1637,43 @@ class CardEditorWindow : IImGuiWindow
     public void SaveCardChanges()
     {
         DataAccess.Instance.WriteCardConstantData(CardConstant.AllBytes);
+    }
+
+    static string[] ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        var sb = new StringBuilder();
+        bool inQuotes = false;
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+
+            if (c == '"')
+            {
+                // If inside quotes and next char is another quote → it's an escaped quote
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    sb.Append('"');
+                    i++; // skip next char
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                result.Add(sb.ToString());
+                sb.Clear();
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
+
+        result.Add(sb.ToString());
+        return result.ToArray();
     }
 }

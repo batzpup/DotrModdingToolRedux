@@ -40,9 +40,16 @@ public class TreasureCards
 
     public void InitTreasureData(byte[] treasureData)
     {
-        //string byteArrayString = "new byte[] { " + string.Join(", ", treasureData.Select(b => $"0x{b:X2}")) + " }";
-        //Console.WriteLine(byteArrayString);
+
         Treasures.Clear();
+        //Resets default treasures
+        for (int i = 0, bi = 0; i < DataAccess.TreasureCardCount; i++, bi += DataAccess.TreasureCardByteSize)
+        {
+            TreasureCard defaultTreasureCards = new TreasureCard(new byte[]
+                { defaultTreasureBytes[bi], defaultTreasureBytes[bi + 1], defaultTreasureBytes[bi + 2], defaultTreasureBytes[bi + 3] });
+            this.DefaultTreasures.Add(defaultTreasureCards);
+        }
+        
         for (int i = 0, bi = 0; i < DataAccess.TreasureCardCount; i++, bi += DataAccess.TreasureCardByteSize)
         {
             TreasureCard treasureCard = new TreasureCard(new byte[]
@@ -64,9 +71,9 @@ public class TreasureCard
     byte[] treasureData;
     byte duelIndex;
     public BitArray gridLocationBitArray;
-    string enemyName;
+    //string enemyName;
     ushort cardIndex;
-    string cardName;
+    //string cardName;
 
     public byte Row { get; set; }
     public byte Column { get; set; }
@@ -78,13 +85,13 @@ public class TreasureCard
         set
         {
             this.cardIndex = value;
-            this.cardName = Card.GetNameByIndex(this.cardIndex);
+           // this.cardName = Card.GetNameByIndex(this.cardIndex);
         }
     }
 
-    public string CardName
+    public ModdedStringName CardName
     {
-        get { return this.cardName; }
+        get { return Card.GetNameByIndex(this.cardIndex); }
     }
 
     public byte EnemyIndex
@@ -94,13 +101,13 @@ public class TreasureCard
         set
         {
             this.duelIndex = value;
-            this.enemyName = Enemy.GetEnemyNameByIndex(this.duelIndex);
+          //  this.enemyName = Enemy.GetEnemyNameByIndex(this.duelIndex);
         }
     }
 
-    public string EnemyName
+    public ModdedStringName EnemyName
     {
-        get { return this.enemyName; }
+        get { return Enemy.GetEnemyNameByIndex(this.duelIndex); }
     }
 
     public TreasureCard(byte[] treasureData)

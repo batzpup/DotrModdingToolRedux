@@ -7,7 +7,7 @@ namespace DotrModdingTool2IMGUI;
 class FusionEditorWindow : IImGuiWindow
 {
     ImFontPtr font = Fonts.MonoSpace;
-    List<KeyValuePair<int, FusionData>> sortedData;
+    public List<KeyValuePair<int, FusionData>> sortedData;
     string filter1Text = "";
     string filter2Text = "";
     string filter3Text = "";
@@ -29,7 +29,7 @@ class FusionEditorWindow : IImGuiWindow
         sortedData = FusionData.FusionTableData.ToList();
     }
 
-  
+
     public void Render()
     {
         DrawFusionTable();
@@ -89,7 +89,7 @@ class FusionEditorWindow : IImGuiWindow
             DialogResult result = Dialog.FileSave("csv");
             if (result.IsOk)
             {
-                string isoPath = result.Path + ".csv";
+                string isoPath = result.Path;
                 FusionData.ExportToCSV(isoPath);
             }
         }
@@ -127,16 +127,16 @@ class FusionEditorWindow : IImGuiWindow
                         case 0: return ascending ? keyA.CompareTo(keyB) : keyB.CompareTo(keyA);
                         case 1:
                             return ascending
-                                ? string.CompareOrdinal(a.lowerCardName, b.lowerCardName)
-                                : string.CompareOrdinal(b.lowerCardName, a.lowerCardName);
+                                ? string.CompareOrdinal(a.lowerCardName.Current, b.lowerCardName.Current)
+                                : string.CompareOrdinal(b.lowerCardName.Current, a.lowerCardName.Current);
                         case 2:
                             return ascending
-                                ? string.CompareOrdinal(a.higherCardName, b.higherCardName)
-                                : string.CompareOrdinal(b.higherCardName, a.higherCardName);
+                                ? string.CompareOrdinal(a.higherCardName.Current, b.higherCardName.Current)
+                                : string.CompareOrdinal(b.higherCardName.Current, a.higherCardName.Current);
                         case 3:
                             return ascending
-                                ? string.CompareOrdinal(a.cardResultName, b.cardResultName)
-                                : string.CompareOrdinal(b.cardResultName, a.cardResultName);
+                                ? string.CompareOrdinal(a.cardResultName.Current, b.cardResultName.Current)
+                                : string.CompareOrdinal(b.cardResultName.Current, a.cardResultName.Current);
                         default: return 0;
                     }
                 });
@@ -147,9 +147,9 @@ class FusionEditorWindow : IImGuiWindow
             List<KeyValuePair<int, FusionData>> filteredData = sortedData.Where(entry =>
             {
                 var fusion = entry.Value;
-                bool matchesLower = fusion.lowerCardName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
-                bool matchesHigher = fusion.higherCardName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
-                bool matchesResult = fusion.cardResultName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                bool matchesLower = fusion.lowerCardName.Current.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                bool matchesHigher = fusion.higherCardName.Current.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+                bool matchesResult = fusion.cardResultName.Current.Contains(searchText, StringComparison.OrdinalIgnoreCase);
 
                 return matchesLower || matchesHigher || matchesResult;
             }).ToList();
@@ -173,7 +173,7 @@ class FusionEditorWindow : IImGuiWindow
                     ImGui.TableSetColumnIndex(1);
                     ImGui.SetNextItemWidth(columnWidth);
                     int selected1 = fusion.lowerCardId;
-                    if (ImGui.BeginCombo($"##lower_{id}", Card.cardNameList[selected1]))
+                    if (ImGui.BeginCombo($"##lower_{id}", Card.cardNameList[selected1].Current))
                     {
                         if (lowerFocusInput)
                         {
@@ -184,15 +184,15 @@ class FusionEditorWindow : IImGuiWindow
                         ImGui.InputText($"##searchInputLower_{id}", ref filter1Text, 64);
                         ImGui.PopStyleColor();
 
-                        List<string> filteredList = Card.cardNameList
-                            .Where(cardName => cardName.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
+                        List<ModdedStringName> filteredList = Card.cardNameList
+                            .Where(cardName => cardName.Current.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
                         bool anyVisible = false;
                         foreach (var cardName in filteredList)
                         {
                             int index = Array.IndexOf(Card.cardNameList, cardName);
                             bool isSelected = selected1 == index;
-                            if (ImGui.Selectable(cardName, isSelected))
+                            if (ImGui.Selectable(cardName.Current, isSelected))
                             {
                                 selected1 = index;
                                 fusion.lowerCardId = (ushort)selected1;
@@ -205,10 +205,14 @@ class FusionEditorWindow : IImGuiWindow
                             }
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.BeginTooltip();
-                                ImGui.Text("Card Preview");
-                                ImGui.Image(GlobalImages.Instance.Cards[cardName], new Vector2(128, 128));
-                                ImGui.EndTooltip();
+                                if (UserSettings.ToggleImageTooltips)
+                                {
+                                    ImGui.BeginTooltip();
+                                    ImGui.Text("Card Preview");
+                                    ImGui.Image(GlobalImages.Instance.Cards[cardName.Default], new Vector2(128, 128));
+                                    ImGui.EndTooltip();
+                                }
+
                             }
                         }
                         if (!anyVisible)
@@ -221,14 +225,14 @@ class FusionEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        GlobalImgui.RenderTooltipCardImage(fusion.lowerCardName);
+                        GlobalImgui.RenderTooltipCardImage(fusion.lowerCardName.Default);
                     }
 
 
                     ImGui.TableSetColumnIndex(2);
                     ImGui.SetNextItemWidth(columnWidth);
                     int selected2 = fusion.higherCardId;
-                    if (ImGui.BeginCombo($"##higher{id}", Card.cardNameList[selected2]))
+                    if (ImGui.BeginCombo($"##higher{id}", Card.cardNameList[selected2].Current))
                     {
                         if (higherFocusInput)
                         {
@@ -236,15 +240,15 @@ class FusionEditorWindow : IImGuiWindow
                             higherFocusInput = false;
                         }
                         ImGui.InputText($"##searchInputHigher_{id}", ref filter2Text, 64);
-                        List<string> filteredList = Card.cardNameList
-                            .Where(cardName => cardName.Contains(filter2Text, StringComparison.OrdinalIgnoreCase))
+                        List<ModdedStringName> filteredList = Card.cardNameList
+                            .Where(cardName => cardName.Current.Contains(filter2Text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
                         bool anyVisible = false;
                         foreach (var cardName in filteredList)
                         {
                             int index = Array.IndexOf(Card.cardNameList, cardName);
                             bool isSelected = selected2 == index;
-                            if (ImGui.Selectable(cardName, isSelected))
+                            if (ImGui.Selectable(cardName.Current, isSelected))
                             {
                                 selected2 = index;
                                 fusion.higherCardId = (ushort)selected2;
@@ -256,7 +260,7 @@ class FusionEditorWindow : IImGuiWindow
                             }
                             if (ImGui.IsItemHovered())
                             {
-                                GlobalImgui.RenderTooltipCardImage(cardName);
+                                GlobalImgui.RenderTooltipCardImage(cardName.Default);
                             }
                         }
                         if (!anyVisible)
@@ -269,13 +273,13 @@ class FusionEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        GlobalImgui.RenderTooltipCardImage(fusion.higherCardName);
+                        GlobalImgui.RenderTooltipCardImage(fusion.higherCardName.Default);
                     }
 
                     ImGui.TableSetColumnIndex(3);
                     ImGui.SetNextItemWidth(columnWidth);
                     int selectedResult = fusion.resultId;
-                    if (ImGui.BeginCombo($"##result{id}", Card.cardNameList[selectedResult]))
+                    if (ImGui.BeginCombo($"##result{id}", Card.cardNameList[selectedResult].Current))
                     {
                         if (resultFocusInput)
                         {
@@ -283,15 +287,15 @@ class FusionEditorWindow : IImGuiWindow
                             resultFocusInput = false;
                         }
                         ImGui.InputText($"##searchInputResult_{id}", ref filter3Text, 64);
-                        List<string> filteredList = Card.cardNameList
-                            .Where(cardName => cardName.Contains(filter3Text, StringComparison.OrdinalIgnoreCase))
+                        List<ModdedStringName> filteredList = Card.cardNameList
+                            .Where(cardName => cardName.Current.Contains(filter3Text, StringComparison.OrdinalIgnoreCase))
                             .ToList();
                         bool anyVisible = false;
                         foreach (var cardName in filteredList)
                         {
                             int index = Array.IndexOf(Card.cardNameList, cardName);
                             bool isSelected = selectedResult == index;
-                            if (ImGui.Selectable(cardName, isSelected))
+                            if (ImGui.Selectable(cardName.Current, isSelected))
                             {
                                 selectedResult = index;
                                 fusion.resultId = (ushort)selectedResult;
@@ -304,7 +308,7 @@ class FusionEditorWindow : IImGuiWindow
                             }
                             if (ImGui.IsItemHovered())
                             {
-                                GlobalImgui.RenderTooltipCardImage(cardName);
+                                GlobalImgui.RenderTooltipCardImage(cardName.Default);
                             }
                         }
                         if (!anyVisible)
@@ -317,7 +321,7 @@ class FusionEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        GlobalImgui.RenderTooltipCardImage(fusion.cardResultName);
+                        GlobalImgui.RenderTooltipCardImage(fusion.cardResultName.Default);
                     }
                 }
 

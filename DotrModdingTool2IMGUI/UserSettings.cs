@@ -5,6 +5,7 @@ namespace DotrModdingTool2IMGUI;
 
 public static class UserSettings
 {
+    public static bool UseDefaultNames = false;
     public static bool deckEditorUseColours { get; set; } = false;
     public static bool performanceMode = false;
     public static bool ToggleImageTooltips = true;
@@ -15,6 +16,9 @@ public static class UserSettings
     public static Vector4 CustomSlotTableBgColour = new Vector4(0, 0, 0, 0);
     public static Vector4 CustomSlotDropdownColour = new GuiColour(Color.DimGray).value;
     public static Vector4 CardEditorDifferenceHighlightColour = new GuiColour(Color.Orange).value;
+    public static Vector4 StringDropDownColour { get; set; }
+    public static string? LastIsoPath { get; set; }
+    
 
     public static void SaveSettings()
     {
@@ -24,6 +28,8 @@ public static class UserSettings
         sb.AppendLine($"deckEditorUseColours={deckEditorUseColours}");
         sb.AppendLine($"performanceMode={performanceMode}");
         sb.AppendLine($"ToggleImageTooltips={ToggleImageTooltips}");
+        sb.AppendLine($"UseDefaultNames={UseDefaultNames}");
+        sb.AppendLine($"LastIsoPath={LastIsoPath}");
 
         sb.AppendLine("[Colors]");
         sb.AppendLine(
@@ -58,9 +64,11 @@ public static class UserSettings
         }
 
 
+        if (config.TryGetValue("LastIsoPath", out var isoPath))
+            LastIsoPath = isoPath;
+        
         if (config.TryGetValue("deckEditorUseColours", out var useColors))
             deckEditorUseColours = bool.Parse(useColors);
-
 
         if (config.TryGetValue("performanceMode", out var pMode))
             performanceMode = bool.Parse(pMode);
@@ -68,6 +76,8 @@ public static class UserSettings
         if (config.TryGetValue("ToggleImageTooltips", out var toolTipImages))
             ToggleImageTooltips = bool.Parse(toolTipImages);
 
+        if (config.TryGetValue("UseDefaultNames", out var UseDefaultNames))
+            ToggleImageTooltips = bool.Parse(UseDefaultNames);
 
         if (config.TryGetValue("DeckEditorHighlightcolour", out var deckHighlight))
             DeckEditorHighlightcolour = ParseColor(deckHighlight);

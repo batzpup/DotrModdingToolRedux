@@ -11,7 +11,7 @@ public  class MonsterEnchantData
         Flags = flags;
     }
     
-    public string GetEquipName(int flagIndex)
+    public ModdedStringName GetEquipName(int flagIndex)
     {
        return Card.GetNameByIndex(Card.EquipCardStartIndex + flagIndex);
     }

@@ -17,58 +17,10 @@ public class MapEditorWindow : IImGuiWindow
     uint treasureHighlightColour = ImGui.ColorConvertFloat4ToU32(new Vector4(0.0f, 0.8f, 0.0f, 0.4f));
     IntPtr currentMapPaletteImage;
     Terrain currentPaletteTerrain = Terrain.Normal;
-    bool isIsoLoaded = false;
+    
     Vector2 paletteImageSize = new Vector2(128, 128);
     TreasureCard currentTreasureCard;
 
-    public string[] duelistMaps = new string[] {
-        "Tutorial",
-        "Seto",
-        "Weevil",
-        "Rex",
-        "Keith",
-        "Ishtar",
-        "Necromancer",
-        "Darkness-ruler",
-        "Labyrinth-ruler",
-        "Pegasus",
-        "Richard",
-        "Tea",
-        "Tristan",
-        "Mai",
-        "Mako",
-        "Joey",
-        "Shadi",
-        "Jasper",
-        "Bakura",
-        "Yugi",
-        "Skull Knight",
-        "Chakra",
-        "Default Map 00",
-        "Default Map 01",
-        "Default Map 02",
-        "Default Map 03",
-        "Default Map 04",
-        "Default Map 05",
-        "Default Map 06",
-        "Default Map 07",
-        "Default Map 08",
-        "Default Map 09",
-        "Default Map 10",
-        "Default Map 11",
-        "Default Map 12",
-        "Default Map 13",
-        "Default Map 14",
-        "Default Map 15",
-        "Default Map 16",
-        "Default Map 17",
-        "Default Map 18",
-        "Default Map 19",
-        "Default Map 20",
-        "Default Map 21",
-        "Default Map 22",
-        "Default Map 23",
-    };
 
     public MapEditorWindow(ImFontPtr fontPtr)
     {
@@ -77,13 +29,22 @@ public class MapEditorWindow : IImGuiWindow
         LoadDefaultMapsAll();
         currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Normal];
 
+        EditorWindow.OnIsoLoaded += onIsoLoaded;
+
+
 
     }
+
+    void onIsoLoaded()
+    {
+
+
+    }
+
 
     public void Render()
     {
         Vector2 availableSpace = new Vector2(ImGui.GetWindowSize().X / 3, ImGui.GetContentRegionAvail().Y);
-
         ImGui.BeginChild("leftPanel", availableSpace);
         DrawMapExtras();
         DrawTreasureDetails();
@@ -91,8 +52,6 @@ public class MapEditorWindow : IImGuiWindow
         ImGui.EndChild();
         ImGui.SameLine();
         DrawMap();
-
-
     }
 
     public void LoadTreasureCardData()
@@ -127,16 +86,16 @@ public class MapEditorWindow : IImGuiWindow
             {
                 ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().X / 32, 0));
                 ImGui.SameLine();
-                ImGui.Image(GlobalImages.Instance.Cards[currentTreasureCard.CardName], new Vector2(128, 128));
+                ImGui.Image(GlobalImages.Instance.Cards[currentTreasureCard.CardName.Default], new Vector2(128, 128));
             }
             ImGui.Text($"{currentTreasureCard.EnemyName}'s Treasure:");
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if (ImGui.BeginCombo("##Hidden Card", currentTreasureCard.CardName, ImGuiComboFlags.HeightLarge))
+            if (ImGui.BeginCombo("##Hidden Card", currentTreasureCard.CardName.Current, ImGuiComboFlags.HeightLarge))
             {
                 foreach (var card in CardConstant.List)
                 {
                     bool isSelected = TreasureCards.Instance.Treasures[treasureComboIndex].CardIndex == card.Index;
-                    if (ImGui.Selectable(card.Name, isSelected))
+                    if (ImGui.Selectable(card.Name.Current, isSelected))
                     {
                         currentTreasureCard.CardIndex = card.Index;
                     }
@@ -146,7 +105,7 @@ public class MapEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        GlobalImgui.RenderTooltipCardImage(card.Name);
+                        GlobalImgui.RenderTooltipCardImage(card.Name.Default);
                     }
                 }
                 ImGui.EndCombo();
@@ -168,7 +127,6 @@ public class MapEditorWindow : IImGuiWindow
         float cellSize = availableWidth / ImGui.GetStyle().CellPadding.X - 20;
         Vector2 imageSize = new Vector2(cellSize, cellSize);
 
-
         Vector2 textSize = ImGui.CalcTextSize($"Current tile:\n{currentPaletteTerrain}");
         float textX = (availableWidth - textSize.X) * 0.5f + ImGui.GetStyle().CellPadding.X * 3;
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + textX);
@@ -186,10 +144,7 @@ public class MapEditorWindow : IImGuiWindow
         ImGui.TableNextColumn();
         ImGui.TableNextColumn();
         ImGui.Image(currentMapPaletteImage, imageSize);
-
         ImGui.TableNextColumn();
-
-
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         if (ImGui.ImageButton("Forest_Image", GlobalImages.Instance.Terrain[ETerrainImages.Forest], imageSize))
@@ -269,35 +224,45 @@ public class MapEditorWindow : IImGuiWindow
 
     void DrawMapExtras()
     {
-
         ImGui.Indent(ImGui.GetContentRegionAvail().X / 32);
         ImGui.Text("Maps");
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        string[] maps = Map.DuelistMaps.Select(c => c.Current ?? "").ToArray();
 
-
-        if (ImGui.BeginListBox("##Maps", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * 8)))
+        if (ImGui.ListBox("##Maps", ref currentMapIndex, maps, maps.Length))
         {
-            for (int i = 0; i < duelistMaps.Length; i++)
-            {
-                bool isSelected = (currentMapIndex == i);
-                if (ImGui.Selectable(duelistMaps[i], isSelected))
-                {
-                    currentMapIndex = i;
-                }
-                if (isSelected)
-                {
-                    ImGui.SetItemDefaultFocus();
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.BeginTooltip();
-                    DrawMiniMap(i, 256, 256);
-                    ImGui.EndTooltip();
-                }
 
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                DrawMiniMap(currentMapIndex, 256, 256);
+                ImGui.EndTooltip();
             }
-            ImGui.EndListBox();
         }
+        //if (ImGui.BeginListBox("##Maps", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * 8)))
+        //{
+        //    for (int i = 0; i < DuelistMaps.Length; i++)
+        //    {
+        //        bool isSelected = (currentMapIndex == i);
+        //        if (ImGui.Selectable(DuelistMaps[i].Current, isSelected))
+        //        {
+        //            currentMapIndex = i;
+        //        }
+        //        if (isSelected)
+        //        {
+        //            ImGui.SetItemDefaultFocus();
+        //        }
+        //        if (ImGui.IsItemHovered())
+        //        {
+        //            ImGui.BeginTooltip();
+        //            DrawMiniMap(currentMapIndex, 256, 256);
+        //            ImGui.EndTooltip();
+        //        }
+//
+        //    }
+        //    ImGui.EndListBox();
+        //}
+
         ImGui.Dummy(new Vector2(0, ImGui.GetContentRegionAvail().Y / 128));
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3);
         if (ImGui.Button("Load Default Maps"))
@@ -312,10 +277,18 @@ public class MapEditorWindow : IImGuiWindow
         }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3);
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.BeginDisabled();
+        }
         if (ImGui.Button("Save Current Map"))
         {
             Console.WriteLine("Saving current Maps");
             SaveCurrentMap();
+        }
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.EndDisabled();
         }
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3);
         if (ImGui.Button("Save all maps to file"))
@@ -451,7 +424,6 @@ public class MapEditorWindow : IImGuiWindow
 
     void LoadDefaultMapsAll()
     {
-
         for (int i = 0; i < dataAccess.maps.Length; i++)
         {
             dataAccess.maps[i] = new DotrMap(VanillaMapBytes.Maps[i]);
@@ -494,10 +466,12 @@ public class MapEditorWindow : IImGuiWindow
 
     public void SaveCurrentMap()
     {
+
         dataAccess.SaveMap(currentMapIndex);
         if (currentMapIndex < DataAccess.TreasureCardCount)
         {
             dataAccess.SaveTreasureCard(currentMapIndex, currentTreasureCard.Bytes);
         }
+
     }
 }

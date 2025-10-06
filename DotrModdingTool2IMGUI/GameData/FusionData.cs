@@ -16,9 +16,9 @@ public class FusionData
     public ushort higherCardId;
     public ushort resultId;
     public uint fusionData;
-    public string lowerCardName;
-    public string higherCardName;
-    public string cardResultName;
+    public ModdedStringName lowerCardName;
+    public ModdedStringName higherCardName;
+    public ModdedStringName cardResultName;
 
 
     public FusionData()
@@ -75,9 +75,9 @@ public class FusionData
             row.Add(fusionData.higherCardId.ToString());
             row.Add(fusionData.resultId.ToString());
             
-            row.Add(fusionData.lowerCardName.Replace(',',' '));
-            row.Add(fusionData.higherCardName.Replace(',',' '));
-            row.Add(fusionData.cardResultName.Replace(',',' '));
+            row.Add(fusionData.lowerCardName.Current.Replace(',',' '));
+            row.Add(fusionData.higherCardName.Current.Replace(',',' '));
+            row.Add(fusionData.cardResultName.Current.Replace(',',' '));
             sb.AppendLine(string.Join(",", row));
         }
         File.WriteAllText(filePath, sb.ToString());
@@ -105,9 +105,9 @@ public class FusionData
                     higherCardId = higherId,
                     resultId = resultId,
                     fusionData = 0, //updated in updateFusion
-                    lowerCardName = Card.cardNameList.Length > lowerId ? Card.cardNameList[lowerId] : $"Card_{lowerId}",
-                    higherCardName = Card.cardNameList.Length > higherId ? Card.cardNameList[higherId] : $"Card_{higherId}",
-                    cardResultName = Card.cardNameList.Length > resultId ? Card.cardNameList[resultId] : $"Card_{resultId}"
+                    lowerCardName = Card.cardNameList.Length > lowerId ? Card.cardNameList[lowerId] :new ModdedStringName($"Card_{lowerId}",$"Card_{lowerId}") ,
+                    higherCardName = Card.cardNameList.Length > higherId ? Card.cardNameList[higherId] : new ModdedStringName($"Card_{higherId}",$"Card_{higherId}"),
+                    cardResultName = Card.cardNameList.Length > resultId ? Card.cardNameList[resultId] : new ModdedStringName($"Card_{resultId}",$"Card_{resultId}")
                 };
                 data.UpdateFusion();
                 FusionTableData[index] = data;

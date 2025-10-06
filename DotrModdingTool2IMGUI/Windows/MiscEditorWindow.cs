@@ -21,7 +21,7 @@ class MiscEditorWindow : IImGuiWindow
         ImGui.SetCursorPos(ImGui.GetContentRegionAvail() / 2f);
         ImGui.ListBox("PreloadedImages", ref currentPreloadedImageIndex, preloadedImagesArray, 223);
         ImGui.SetCursorPos(ImGui.GetContentRegionAvail() / 2f);
-        ImGui.ListBox("CardImage", ref currentPreloadedImageIndex, Card.cardNameList, Card.cardNameList.Length);
+        ImGui.ListBox("CardImage", ref currentPreloadedImageIndex, Card.GetCardStringArray(), Card.GetCardStringArray().Length);
         ImGui.PopFont();
     }
 
@@ -31,7 +31,7 @@ class MiscEditorWindow : IImGuiWindow
 
         for (int i = 0; i < 223; i++)
         {
-            preloadedImages.Add(Card.cardNameList[PreLoadImageEditor.GetPicNumber(PreLoadImageEditor.PreloadCardArtBytes[i])]);
+            preloadedImages.Add(Card.cardNameList[PreLoadImageEditor.GetPicNumber(PreLoadImageEditor.PreloadCardArtBytes[i])].Current);
         }
 
     }

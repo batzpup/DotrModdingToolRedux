@@ -102,7 +102,7 @@ public class CardKind
             
         }
     }
-    public string? Name { get; private set; }
+    public string? Name { get; set; }
 }
 
 public class CardKindMap

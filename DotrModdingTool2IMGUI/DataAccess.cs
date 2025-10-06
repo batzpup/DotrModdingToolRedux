@@ -55,6 +55,17 @@ public class DataAccess
     public const int PickPackOffset = 0xe9b800;
     public const IntPtr picPackArtsSLUSArray = 0x29eafc;
 
+
+    public static int OffsetTable = 0x2A1AD0;
+    public static int TextDataTable = 0x2A4AD4;
+
+    public static int EnglishOffsetStart = 0x2A1B48;
+    public static int EnglishTextStart = 0x2A4F0C;
+
+    public static int TotalStringCount = 3073;
+    public static int TotalTextLength = 74252 * 2;
+
+
     public DotrMap[] maps = new DotrMap[46];
     private static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
@@ -456,7 +467,28 @@ public class DataAccess
             Effects.MagicEffectsList.Add(new Effect(effectByteSpan.ToArray()));
         }
 
+        Effects.ReloadStrings();
+    }
 
+    public void SaveStringData()
+    {
+        lock (FileStreamLock)
+        {
+            fileStream.Position = EnglishOffsetStart;
+            foreach (byte b in StringEditor.OffsetBytes)
+                fileStream.WriteByte(b);
+            //fileStream.Seek(EnglishOffsetStart, SeekOrigin.Begin);
+            //fileStream.Write(StringEditor.OffsetBytes.ToArray(), 0, StringEditor.OffsetBytes.Count);
+            fileStream.Flush();
+
+
+            fileStream.Position = EnglishTextStart;
+            foreach (byte b in StringEditor.StringBytes)
+                fileStream.WriteByte(b);
+            //fileStream.Seek(EnglishTextStart, SeekOrigin.Begin);
+            //fileStream.Write(StringEditor.StringBytes.ToArray(), 0, StringEditor.StringBytes.Count);
+            fileStream.Flush();
+        }
     }
 
     public void SaveEffectData(byte[] monsterEffectBytes, byte[] magicEffectsBytes)

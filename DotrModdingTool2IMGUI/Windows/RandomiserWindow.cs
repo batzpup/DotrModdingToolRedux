@@ -138,8 +138,8 @@ public class RandomiserWindow : IImGuiWindow
     string strongLeaderAbilitiesTooltip = null;
     string opLeaderAbilitiesTooltip = null;
     HashSet<int> bannedCards = new HashSet<int>();
-    List<string> bannedCardFilteredList = new List<string>();
-    HashSet<string> selectedCards = new HashSet<string>();
+    List<ModdedStringName> bannedCardFilteredList = new List<ModdedStringName>();
+    HashSet<ModdedStringName> selectedCards = new HashSet<ModdedStringName>();
     int currentBannedCardIndex = 0;
     string cardSearch = "";
     int? bannedCardToRemove = null;
@@ -151,6 +151,9 @@ public class RandomiserWindow : IImGuiWindow
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
     bool ignoreConfirmation;
 
+    Dictionary<int, string> originalEffectTexts = new Dictionary<int, string>();
+
+    const string toonText = "<SPECIAL POWER UP>\nStrong in TOON terrain!\n";
     RandomiserChangeLog changeLog;
 
     int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
@@ -216,8 +219,7 @@ public class RandomiserWindow : IImGuiWindow
 
         ImGui.TextColored(new GuiColour(Color.Firebrick).value,
             @"Using the randomiser makes all AI's DMK if not you choose not randomise the AI, as this is the most versatile and least likely to brick
-Secondly Deck Cost will be meaningless when randomiser, this will make all battle available regardless of DC
-Not recommended to edit card effects as it will not update the text, but im not the law");
+Secondly Deck Cost will be meaningless when randomiser, this will make all battle available regardless of DC");
         ImGui.Separator();
         ImGui.Text("Press this button after selecting your settings");
         if (ImGui.Button("Randomise"))
@@ -250,7 +252,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
             RandomiseTerrainStatValues();
             foreach (var card in bannedCards)
             {
-                changeLog.BannedCards.Add(Card.GetNameByIndex(card));
+                changeLog.BannedCards.Add(Card.GetNameByIndex(card).Current);
             }
             hasRandomised = true;
             if (hasRandomised)
@@ -630,7 +632,7 @@ Not recommended to edit card effects as it will not update the text, but im not 
                 foreach (var cardID in bannedCards)
                 {
                     ImGui.PushID(cardID);
-                    ImGui.Text(Card.GetNameByIndex(cardID));
+                    ImGui.Text(Card.GetNameByIndex(cardID).Current);
                     ImGui.SameLine();
                     if (ImGui.Button("X"))
                     {
@@ -728,9 +730,11 @@ SD:   5000");
 
 
 
+
         ImGui.Separator();
-        ImGui.TextColored(new GuiColour(Color.Red).value, "Not recommended due to lack of text changes");
+        ImGui.TextColored(new GuiColour(Color.Red).value, "Use a fresh ISO everytime when using these\notherwise strings become incorrect");
         ImGui.Separator();
+        
         ImGui.Checkbox("Randomise monster effects", ref randomiseMonsterEffects);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(@"Will give monsters a X/100 chance top be assigned a random monster effect. ");
@@ -746,6 +750,7 @@ SD:   5000");
         {
             ImGui.SliderInt("Strong on toon chance", ref strongOnToonChance, 0, 100);
         }
+
         ImGui.Checkbox("Randomise enemy background music tracks", ref randomiseMusic);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Not recommended because it forces fast intro mod to work");
         ImGui.EndChild();
@@ -809,8 +814,9 @@ SD:   5000");
             int value = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
             if (value > 9999)
             {
-                GameplayPatchesWindow.Instance.lpCap = 32000;
+
                 GameplayPatchesWindow.Instance.bLpCap = true;
+                GameplayPatchesWindow.Instance.lpCap = 32000;
             }
 
             GameplayPatchesWindow.Instance.bStartingLpRed = true;
@@ -838,7 +844,7 @@ SD:   5000");
 
 
                 }
-                changeLog.MusicChanges.Add(new MusicChange(_musicEditorWindow.musicTargets[key],
+                changeLog.MusicChanges.Add(new MusicChange(MusicEditorWindow.MusicTargets[key].Current,
                     _musicEditorWindow.musicTracks[_musicEditorWindow.DuelistMusic[key] - 1]));
             }
             _musicEditorWindow.bSaveMusicChanges = true;
@@ -861,9 +867,10 @@ SD:   5000");
                     randomValue = GetRandomValue(0, Enemies.EnemyList.Count);
                 }
                 enemy.AiId = Enemies.EnemyList[randomValue].AiId;
-                if (Enemies.nameList.Contains(enemy.Name))
+
+                if (Enemies.EnemyNameList.Contains(enemy.Name))
                 {
-                    changeLog.AiChanges.Add(new AiChange(enemy.Name, Enemies.nameList[enemy.AiId]));
+                    changeLog.AiChanges.Add(new AiChange(enemy.Name.Default, Enemies.EnemyNameList[enemy.AiId].Default));
                 }
 
             }
@@ -873,7 +880,7 @@ SD:   5000");
             foreach (var enemy in Enemies.EnemyList)
             {
                 enemy.AiId = Enemies.EnemyList[22].AiId;
-                changeLog.AiChanges.Add(new AiChange(enemy.Name, Enemies.EnemyList[22].AiName));
+                changeLog.AiChanges.Add(new AiChange(enemy.Name.Default, Enemies.EnemyList[22].AiName));
             }
         }
     }
@@ -914,7 +921,7 @@ SD:   5000");
                     deckLeaderAbilityInstance.Abilities[i].RankRequired = 1;
                     assignedAbilities++;
 
-                    changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId)].LeaderAbilities.Add(new LeaderAbilityChange(
+                    changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId).Current].LeaderAbilities.Add(new LeaderAbilityChange(
                         currentAbility.ToString(),
                         ((DeckLeaderRank)deckLeaderAbilityInstance.Abilities[i].RankRequired).ToString()));
                     continue;
@@ -946,7 +953,7 @@ SD:   5000");
                     {
                         deckLeaderAbilityInstance.Abilities[i].SetEnabled(true);
                         deckLeaderAbilityInstance.Abilities[i].RankRequired = GetRandomValue(1, 13);
-                        changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId)].LeaderAbilities.Add(new LeaderAbilityChange(
+                        changeLog.CardChanges[Card.GetNameByIndex(deckLeaderAbilityInstance.CardId).Current].LeaderAbilities.Add(new LeaderAbilityChange(
                             currentAbility.ToString(),
                             ((DeckLeaderRank)deckLeaderAbilityInstance.Abilities[i].RankRequired).ToString()));
                     }
@@ -1126,7 +1133,7 @@ SD:   5000");
                             isExodiaLeader = true;
                         }
                         changeLog.DeckChanges.TryAdd(Deck.NamePrefix(deckIndex), new DeckChange());
-                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name;
+                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name.Current;
 
                     }
                     else if (randomiseOpponentDecks && deckIndex >= 27)
@@ -1137,7 +1144,7 @@ SD:   5000");
                             isExodiaLeader = true;
                         }
                         changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[deckIndex], new DeckChange());
-                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name;
+                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name.Current;
                     }
                     int exodiaLimbsAdded = 0;
                     if (isExodiaLeader)
@@ -1149,7 +1156,7 @@ SD:   5000");
                             {
                                 deck.CardList[exodiaLimbsAdded + 1] = new DeckCard(CardConstant.List[exodiaLimbs[i]], 0);
                                 string deckName = deckIndex < 17 ? Deck.NamePrefix(deckIndex) : Deck.CharacterNameDictionary[deckIndex];
-                                changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name);
+                                changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name.Current);
                                 exodiaLimbsAdded++;
                                 currentMonsterCount++;
                             }
@@ -1233,7 +1240,7 @@ SD:   5000");
                     {
                         deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
                         changeLog.DeckChanges.TryAdd(Deck.NamePrefix(deckIndex), new DeckChange());
-                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name;
+                        changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name.Current;
 
 
                     }
@@ -1241,7 +1248,7 @@ SD:   5000");
                     {
                         deck.DeckLeader = CreateRandomCard("monster", false, leaderRanksOriginal[deckIndex]);
                         changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[deckIndex], new DeckChange());
-                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name;
+                        changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name.Current;
                     }
                     for (var deckSlot = 0; deckSlot < deck.CardList.Count; deckSlot++)
                     {
@@ -1281,10 +1288,10 @@ SD:   5000");
                 monsterEnchantData.Flags[37] = true;
                 monsterEnchantData.Flags[43] = true;
                 monsterEnchantData.Flags[44] = true;
-                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(28));
-                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(37));
-                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(43));
-                changeLog.CardChanges[Card.GetNameByIndex(i)].Equipment.CanEquip.Add(EnchantData.GetEquipName(44));
+                changeLog.CardChanges[Card.GetNameByIndex(i).Current].Equipment.CanEquip.Add(EnchantData.GetEquipName(28).Current);
+                changeLog.CardChanges[Card.GetNameByIndex(i).Current].Equipment.CanEquip.Add(EnchantData.GetEquipName(37).Current);
+                changeLog.CardChanges[Card.GetNameByIndex(i).Current].Equipment.CanEquip.Add(EnchantData.GetEquipName(43).Current);
+                changeLog.CardChanges[Card.GetNameByIndex(i).Current].Equipment.CanEquip.Add(EnchantData.GetEquipName(44).Current);
             }
         }
         else
@@ -1360,7 +1367,7 @@ SD:   5000");
                             }
                             break;
                         case 6: // 758 Elf's Light
-                            if (CardConstant.List[i].Name.ToLower().Contains("elf"))
+                            if (CardConstant.List[i].Name.Current.ToLower().Contains("elf"))
                             {
                                 monsterEnchantData.Flags[flagIndex] = true;
                             }
@@ -1732,7 +1739,7 @@ SD:   5000");
                     continue;
                 int randomStrongEquipIndex = bestEquips[GetRandomValue(0, bestEquips.Count)];
                 deck[index] = new DeckCard(CardConstant.List[randomStrongEquipIndex], 0);
-                changeLog.DeckChanges[Deck.CharacterNameDictionary[index]].CardsAdded.Add(Card.GetNameByIndex(randomStrongEquipIndex));
+                changeLog.DeckChanges[Deck.CharacterNameDictionary[bossDeckIndex]].CardsAdded.Add(Card.GetNameByIndex(randomStrongEquipIndex).Current);
             }
         }
     }
@@ -1767,12 +1774,12 @@ SD:   5000");
             cardAdded = true;
             if (index < 17)
             {
-                changeLog.DeckChanges[Deck.NamePrefix(index)].CardsAdded.Add(card.Name);
+                changeLog.DeckChanges[Deck.NamePrefix(index)].CardsAdded.Add(card.Name.Current);
 
             }
             else if (index >= 27)
             {
-                changeLog.DeckChanges[Deck.CharacterNameDictionary[index]].CardsAdded.Add(card.Name);
+                changeLog.DeckChanges[Deck.CharacterNameDictionary[index]].CardsAdded.Add(card.Name.Current);
             }
         }
     }
@@ -2036,8 +2043,8 @@ SD:   5000");
                 DotrMap temp = newMapOrder[i];
                 newMapOrder[i] = newMapOrder[j];
                 newMapOrder[j] = temp;
-                changeLog.MapChanges.MapSwaps.Add(new MapSwap(_enemyEditorWindow.MapEditorWindow.duelistMaps[i],
-                    _enemyEditorWindow.MapEditorWindow.duelistMaps[j]));
+                changeLog.MapChanges.MapSwaps.Add(new MapSwap(Map.DuelistMaps[i].Current,
+                    Map.DuelistMaps[j].Current));
             }
             Array.Copy(newMapOrder, DataAccess.Instance.maps, newMapOrder.Length);
         }
@@ -2065,7 +2072,7 @@ SD:   5000");
                         Terrain originalTerrain = (Terrain)i;
                         Terrain newTerrain = GetRandomTerrain();
                         terrainSwapMap[originalTerrain] = newTerrain;
-                        changeLog.MapChanges.TerrainChanges.Add(new TerrainChange(_enemyEditorWindow.MapEditorWindow.duelistMaps[mapId],
+                        changeLog.MapChanges.TerrainChanges.Add(new TerrainChange(Map.DuelistMaps[mapId].Current,
                             originalTerrain.ToString(), newTerrain.ToString()));
                     }
 
@@ -2133,15 +2140,23 @@ SD:   5000");
 
         if (randomiseHiddenCardLocation || randomiseHiddenCardValue)
         {
-
             foreach (var treasureCard in TreasureCards.Instance.Treasures)
             {
-                changeLog.MapChanges.HiddenCardChanges.Add(treasureCard.EnemyName, new HiddenCardChange());
-                HiddenCardChange currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName];
+                HiddenCardChange currentCardChange;
+                if (changeLog.MapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Current, new HiddenCardChange()))
+                {
+                    currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName.Current];
+                }
+                else
+                {
+                    changeLog.MapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Default, new HiddenCardChange());
+                    currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName.Default];
+                }
+
                 if (randomiseHiddenCardValue)
                 {
                     treasureCard.CardIndex = CreateRandomCard("").CardConstant.Index;
-                    currentCardChange.NewCard = treasureCard.CardName;
+                    currentCardChange.NewCard = treasureCard.CardName.Current;
 
                 }
                 if (randomiseHiddenCardLocation)
@@ -2162,11 +2177,19 @@ SD:   5000");
 
     void RandomiseCardConstData()
     {
+        if (randomiseMagicEffects || randomiseMonsterEffects)
+        {
+            for (int i = StringEditor.CardEffectTextOffsetStart; i < StringEditor.CardEffectTextOffsetEnd; i++)
+            {
+                originalEffectTexts[i] = StringEditor.StringTable[i];
+            }
+        }
+
         //All cardChanges values are added here
         foreach (var cardConstant in CardConstant.List)
         {
-            changeLog.CardChanges.TryAdd(cardConstant.Name, new CardChanges());
-            CardChanges cardChanges = changeLog.CardChanges[cardConstant.Name];
+            changeLog.CardChanges.TryAdd(cardConstant.Name.Current, new CardChanges());
+            CardChanges cardChanges = changeLog.CardChanges[cardConstant.Name.Current];
             if (randomiseCardAcquisition)
             {
                 cardChanges.Acquisition = new AcquisitionChanges();
@@ -2287,35 +2310,54 @@ SD:   5000");
                         MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[i] = canEquip;
                         if (canEquip)
                         {
-                            cardChanges.Equipment.CanEquip.Add(MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].GetEquipName(i));
+                            cardChanges.Equipment.CanEquip.Add(MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].GetEquipName(i).Current);
                         }
 
                     }
                 }
 
+                if (randomiseMonsterEffects)
+                {
+                    cardConstant.EffectId = UInt16.MaxValue;
+                    int index = cardConstant.Index + StringEditor.CardEffectTextOffsetStart;
+                    if (RandomBoolIn100(randomEffectChance))
+                    {
+                        cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MonsterEffectsList.Count);
+                        cardChanges.Properties.Effect = Effects.MonsterEffectOwners.ElementAt(cardConstant.EffectId).Value.Current;
+                        StringEditor.StringTable[index] = originalEffectTexts[Effects.MonsterEffectOwners.ElementAt(cardConstant.EffectId).Key + StringEditor.CardEffectTextOffsetStart];
+                    }
+                    else
+                    {
+                        StringEditor.StringTable[index] = "~";
+                    }
+                    cardConstant.setCardColor();
+                }
                 if (randomiseStrongOnToon)
                 {
                     bool result = RandomBoolIn100(strongOnToonChance);
                     MonsterEnchantData.MonsterEnchantDataList[cardConstant.Index].Flags[49] = result;
                     cardChanges.Properties.StrongOnToon = result;
-                }
-                if (randomiseMonsterEffects)
-                {
 
-                    cardConstant.EffectId = UInt16.MaxValue;
-                    if (RandomBoolIn100(randomEffectChance))
+                    if (StringEditor.StringTable[cardConstant.Index + StringEditor.CardEffectTextOffsetStart].Contains(toonText))
                     {
-                        cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MonsterEffectsList.Count);
-                        cardChanges.Properties.Effect = Effects.MonsterEffectOwnerNames[cardConstant.EffectId];
+                        StringEditor.StringTable[cardConstant.Index + StringEditor.CardEffectTextOffsetStart] = StringEditor.StringTable[cardConstant.Index + StringEditor.CardEffectTextOffsetStart].Replace(toonText, "");
                     }
-                    cardConstant.setCardColor();
+                    if (result)
+                    {
+                        StringEditor.StringTable[cardConstant.Index + StringEditor.CardEffectTextOffsetStart] = toonText + StringEditor.StringTable[cardConstant.Index + StringEditor.CardEffectTextOffsetStart];
+                    }
+
                 }
+
             }
 
             else if (cardConstant.CardKind.isMagic() && randomiseMagicEffects)
             {
                 cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MagicEffectsList.Count);
-                cardChanges.Properties.Effect = Effects.MagicEffectOwnerNames[cardConstant.EffectId];
+                cardChanges.Properties.Effect = Effects.MagicEffectOwnerNames.ElementAt(cardConstant.EffectId).Value.Current;
+
+                int index = cardConstant.Index + StringEditor.CardEffectTextOffsetStart;
+                StringEditor.StringTable[index] = originalEffectTexts[Effects.MagicEffectOwnerNames.ElementAt(cardConstant.EffectId).Key + StringEditor.CardEffectTextOffsetStart];
                 cardConstant.setCardColor();
             }
         }
@@ -2341,10 +2383,11 @@ SD:   5000");
                         EnchantData.EnchantScores[i] = (ushort)Math.Clamp(
                             GetRandomAroundTarget(EnchantData.EnchantScores[i], powerUpDelta), 0, 9999);
                     }
-                    changeLog.CardChanges[EnchantData.GetEquipName(i)].PowerUpValue = EnchantData.EnchantScores[i];
+                    changeLog.CardChanges[EnchantData.GetEquipName(i).Current].PowerUpValue = EnchantData.EnchantScores[i];
                 }
             }
         }
+        StringEditor.ReloadStrings();
     }
 
 
@@ -2558,9 +2601,9 @@ SD:   5000");
                 FilterAndSort();
             }
 
-            foreach (string filteredName in bannedCardFilteredList)
+            foreach (var filteredName in bannedCardFilteredList)
             {
-                ImGui.PushID(filteredName);
+                ImGui.PushID(filteredName.Current);
                 bool isSelected = selectedCards.Contains(filteredName);
 
                 ImGui.SetNextItemWidth(ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X);
@@ -2601,7 +2644,7 @@ SD:   5000");
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipCardImage(filteredName);
+                    GlobalImgui.RenderTooltipCardImage(filteredName.Default);
                 }
 
                 ImGui.SameLine();
@@ -2629,7 +2672,7 @@ SD:   5000");
     void FilterAndSort()
     {
         bannedCardFilteredList = Card.cardNameList
-            .Where(cardName => cardName.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+            .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         bannedCardFilteredList.Sort((a, b) =>
@@ -2641,7 +2684,7 @@ SD:   5000");
             switch (SearchSortField)
             {
                 case "Name":
-                    result = string.Compare(cardA.Name, cardB.Name, StringComparison.OrdinalIgnoreCase);
+                    result = string.Compare(cardA.Name.Current, cardB.Name.Current, StringComparison.OrdinalIgnoreCase);
                     break;
                 case "ID":
                     result = cardA.Index.CompareTo(cardB.Index);

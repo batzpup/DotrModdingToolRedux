@@ -8,6 +8,7 @@ using ImGuiNET;
 using NativeFileDialogSharp;
 using Raylib_cs;
 using rlImGui_cs;
+using Color = System.Drawing.Color;
 
 namespace DotrModdingTool2IMGUI;
 
@@ -35,6 +36,7 @@ public class EditorWindow
     MiscEditorWindow _miscEditorWindow;
     RandomiserWindow _randomiserWindow;
     MusicEditorWindow _musicEditorWindow;
+    StringEditorWindow _stringEditorWindow;
 
     bool isCreditsOpen = false;
 
@@ -42,6 +44,7 @@ public class EditorWindow
     DataAccess dataAccess = DataAccess.Instance;
     public static ImGuiModalPopup _modalPopup = new ImGuiModalPopup();
     public static Action OnIsoLoaded;
+    bool reloadStrings = false;
 
 
     public static void PrintEmbeddedResources()
@@ -71,6 +74,7 @@ public class EditorWindow
         _musicEditorWindow = new MusicEditorWindow();
         _fusionEditorWindow = new FusionEditorWindow();
         _randomiserWindow = new RandomiserWindow(_enemyEditorWindow, _musicEditorWindow);
+        _stringEditorWindow = new StringEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
@@ -84,6 +88,7 @@ public class EditorWindow
             Disabled = false;
             _modalPopup.Hide();
         });
+
 
     }
 
@@ -116,7 +121,7 @@ public class EditorWindow
 
     }
 
-    void ViewCardInEditor(string name)
+    void ViewCardInEditor(ModdedStringName name)
     {
         currentMode = EditorContentMode.CardEditor;
         _cardEditorWindow.SetCurrentCard(name);
@@ -127,6 +132,7 @@ public class EditorWindow
         { EditorContentMode.CardEditor, "Card Editor" },
         { EditorContentMode.FusionEditor, "Fusion Editor" },
         { EditorContentMode.MechanicsEditor, "Mechanics Editor" },
+        { EditorContentMode.StringEditor, "String Editor" },
         { EditorContentMode.MusicEditor, "Music Editor" },
         { EditorContentMode.Randomiser, "Randomiser" },
     };
@@ -142,6 +148,7 @@ public class EditorWindow
         ImGui.SetWindowPos(Vector2.Zero);
         ImGui.SetWindowSize(new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
         //Console.WriteLine(ImGui.GetWindowSize());
+        CheckForHotkeys();
         ImGui.PopStyleVar(2);
         buttonWidthScaled = Math.Max(200f * AspectRatio.X, 100);
         buttonHeightRatio = Math.Max(100f * AspectRatio.Y, 50);
@@ -155,41 +162,186 @@ public class EditorWindow
         ImGui.PushFont(menuBarFont);
         if (ImGui.BeginMenuBar())
         {
-            ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.O);
-            if (ImGui.MenuItem("Open Iso"))
+            if (ImGui.BeginMenu("File"))
             {
-                OpenIso();
-            }
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Ctrl + O");
-                ImGui.EndTooltip();
-
-            }
-            ImGui.Spacing();
-            ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.S);
-            if (ImGui.MenuItem("Save"))
-            {
-                if (dataAccess.IsIsoLoaded)
+                if (ImGui.MenuItem("Open Iso"))
                 {
-                    SaveChanges();
+                    OpenIso();
                 }
-                else
+                if (ImGui.IsItemHovered())
                 {
-                    _modalPopup.Show("No ISO open to save to");
-                }
-            }
-            ImGui.Spacing();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Saves All data");
-                ImGui.Text("Ctrl + S");
-                ImGui.EndTooltip();
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Ctrl + O");
+                    ImGui.EndTooltip();
 
+                }
+                ImGui.Spacing();
+
+                if (!dataAccess.IsIsoLoaded)
+                {
+                    ImGui.BeginDisabled();
+                }
+
+                if (ImGui.MenuItem("Save"))
+                {
+                    if (dataAccess.IsIsoLoaded)
+                    {
+                        SaveChanges();
+                    }
+                    else
+                    {
+                        _modalPopup.Show("No ISO open to save to");
+                    }
+                }
+                ImGui.Spacing();
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Saves All data");
+                    ImGui.Text("Ctrl + S");
+                    ImGui.EndTooltip();
+                }
+                if (ImGui.MenuItem("Save Strings"))
+                {
+                    if (dataAccess.IsIsoLoaded)
+                    {
+                        SaveStringAsync();
+                    }
+                    else
+                    {
+                        _modalPopup.Show("No ISO open to save to");
+                    }
+                }
+                ImGui.Spacing();
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Saves string changes");
+                    ImGui.EndTooltip();
+                }
+                if (ImGui.BeginMenu("Import"))
+                {
+                    if (ImGui.MenuItem("Import Strings"))
+                    {
+                        DialogResult result = Dialog.FileOpen("json");
+                        if (result.IsOk)
+                        {
+                            if (StringEditor.ImportStringsToJSON(result.Path))
+                            {
+                                _modalPopup.Show("Successfully imported json", "String Import");
+
+                            }
+                            else
+                            {
+                                _modalPopup.Show("Failed to import json file");
+                            }
+                        }
+                    }
+                    if (ImGui.MenuItem("Import Card Data"))
+                    {
+                        DialogResult result = Dialog.FileOpen("csv");
+                        if (result.IsOk)
+                        {
+                            CardEditorWindow.ImportMonstersFromCSV(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to card data");
+                        }
+                    }
+                    if (ImGui.MenuItem("Import Fusion Data"))
+                    {
+                        DialogResult result = Dialog.FileOpen("csv");
+                        if (result.IsOk)
+                        {
+                            string isoPath = result.Path;
+                            if (result.Path.EndsWith(".csv"))
+                            {
+                                FusionData.ImportFromCSV(isoPath);
+                                _fusionEditorWindow.sortedData = FusionData.FusionTableData.ToList();
+                            }
+                            else
+                            {
+                                _modalPopup.Show("Failed to import fusion csv");
+                            }
+                        }
+                    }
+                    if (ImGui.MenuItem("Import maps"))
+                    {
+                        var result = Dialog.FileOpen("txt");
+                        if (result.IsOk)
+                        {
+                            Map.ImportMapFile(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to import map txt file");
+                        }
+                    }
+                    ImGui.EndMenu();
+                }
+                if (ImGui.BeginMenu("Export"))
+                {
+                    if (ImGui.MenuItem("Export Strings"))
+                    {
+                        DialogResult result = Dialog.FileSave("json");
+                        if (result.IsOk)
+                        {
+                            string isoPath = result.Path + ".json";
+                            StringEditor.ExportStringsToJSON(isoPath);
+                        }
+                        else
+                        {
+                             _modalPopup.Show("Failed to export strings");
+                        }
+                    }
+                    if (ImGui.MenuItem("Export Card Data"))
+                    {
+                        DialogResult result = Dialog.FileSave("csv");
+                        if (result.IsOk)
+                        {
+                            string isoPath = result.Path;
+                            CardEditorWindow.ExportMonstersToCSV(isoPath);
+                        }
+                        else
+                        {
+                             _modalPopup.Show("Failed to export card data ");
+                        }
+                    }
+                    if (ImGui.MenuItem("Export Fusion Data"))
+                    {
+                        DialogResult result = Dialog.FileSave("csv");
+                        if (result.IsOk)
+                        {
+                            string isoPath = result.Path;
+                            FusionData.ExportToCSV(isoPath);
+                        }
+                        else
+                        {
+                             _modalPopup.Show("Failed to export fusion csv");
+                        }
+                    }
+                    if (ImGui.MenuItem("Export Maps"))
+                    {
+                        var result = Dialog.FileSave("txt");
+                        if (result.IsOk)
+                        {
+                            Map.ExportMapsToFile(result.Path);
+                        }
+                        else
+                        {
+                             _modalPopup.Show("Failed to export map text file");
+                        }
+                    }
+                    ImGui.EndMenu();
+                }
+
+                if (!dataAccess.IsIsoLoaded)
+                {
+                    ImGui.EndDisabled();
+                }
+                ImGui.EndMenu();
             }
-            ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.T);
             if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
             {
 
@@ -204,7 +356,6 @@ public class EditorWindow
 
             }
 
-            ImGui.SetNextItemShortcut(ImGuiKey.ModCtrl | ImGuiKey.P);
             ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode);
             if (ImGui.IsItemHovered())
             {
@@ -212,6 +363,20 @@ public class EditorWindow
                 ImGui.Text("Caps the framerate to 30fps when the window isnt focused\nor an item isnt hovered");
                 ImGui.Text("Ctrl + P");
                 ImGui.EndTooltip();
+            }
+            ImGui.Spacing();
+            if (ImGui.MenuItem("Use original strings", null, ref UserSettings.UseDefaultNames))
+            {
+
+            }
+            ImGui.Spacing();
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("Show the games default text for cards and characters");
+                ImGui.Text("Ctrl + D");
+                ImGui.EndTooltip();
+
             }
 
             ImGui.Spacing();
@@ -227,9 +392,12 @@ public class EditorWindow
             if (ImGui.BeginPopupModal("Credits", ref isCreditsOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.PushFont(Fonts.MonoSpace);
-                ImGui.Text("Credits: \n");
+                CustomImguiTypes.RenderRainbowTextPerChar_Sine("Credits:");
 
-                if (ImGui.Selectable("Batzpup: I made this", false, ImGuiSelectableFlags.AllowDoubleClick))
+                if (CustomImguiTypes.RenderGradientSelectable
+                    ("Batzpup: I made this", false, new GuiColour(Color.BlueViolet).value,
+                        new GuiColour(Color.CornflowerBlue).value,
+                        ImGuiSelectableFlags.AllowDoubleClick, 0, 7))
                 {
                     OpenUrl("https://github.com/batzpup");
                 }
@@ -262,11 +430,18 @@ public class EditorWindow
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
+                if (ImGui.Selectable("LordMewTwo73 for the text editing capability", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor");
+                }
+
+                ImGui.TextColored(new GuiColour(Color.Cyan).value, "Code Contributors:");
+                ImGui.Text("MonoCh");
 
                 ImGui.Spacing();
                 if (ImGui.Button("Close"))
                 {
-                    isCreditsOpen = false; // Close the modal
+                    isCreditsOpen = false;
                 }
 
                 ImGui.EndPopup();
@@ -284,27 +459,28 @@ public class EditorWindow
                 });
             }
             ImGui.Spacing();
-            //if (ImGui.MenuItem("Encode Strings"))
-            //{
-            //    _modalPopup.Show("Encoding and compressing strings", "Text", null, ImGuiModalPopup.ShowType.NoButton);
-            //    Task.Run(async () =>
-            //    {
-            //        Disabled = true;
-            //        Disabled = false;
-            //        _modalPopup.Hide();
-            //    });
-            //}
-            
             ImGui.EndMenuBar();
             ImGui.PopFont();
 
         }
-
+        if (isSavingStrings)
+        {
+            _modalPopup.Show("Compressing strings", "Saving strings", null, ImGuiModalPopup.ShowType.NoButton);
+        }
 
         DrawLeftPanel();
         ImGui.SameLine();
         ImGui.BeginChild("MainContent", new Vector2(0, 0), ImGuiChildFlags.None);
+
+        if (reloadStrings)
+        {
+            StringEditor.ReloadFromISO();
+            reloadStrings = false;
+        }
+
         RenderMainContent();
+
+
         ImGui.EndChild();
         ImGui.Columns(0);
         if (Disabled)
@@ -316,6 +492,66 @@ public class EditorWindow
 
         ImGui.End();
         rlImGui.End();
+    }
+
+    
+
+
+    void SaveStringAsync(Action onComplete = null, bool showMessage = true)
+    {
+        if (!isSavingStrings)
+        {
+            Task.Run(() =>
+            {
+                isSavingStrings = true;
+                Disabled = true;
+                SaveStrings(showMessage);
+                isSavingStrings = false;
+                reloadStrings = true;
+                Disabled = false;
+                onComplete?.Invoke();
+            });
+        }
+
+    }
+
+    void CheckForHotkeys()
+    {
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.S, ImGuiInputFlags.RouteGlobal))
+        {
+            SaveChanges();
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.O, ImGuiInputFlags.RouteGlobal))
+        {
+            OpenIso();
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.T, ImGuiInputFlags.RouteGlobal))
+        {
+            UserSettings.ToggleImageTooltips = !UserSettings.ToggleImageTooltips;
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.P, ImGuiInputFlags.RouteGlobal))
+        {
+            UserSettings.performanceMode = !UserSettings.performanceMode;
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.D, ImGuiInputFlags.RouteGlobal))
+        {
+            UserSettings.UseDefaultNames = !UserSettings.UseDefaultNames;
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.U, ImGuiInputFlags.RouteGlobal))
+        {
+            Task.Run(async () =>
+            {
+                Disabled = true;
+                await Updater.CheckForUpdates(false);
+                Disabled = false;
+
+            });
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.C, ImGuiInputFlags.RouteGlobal))
+        {
+            isCreditsOpen = true;
+        }
+
     }
 
     void DrawLeftPanel()
@@ -371,19 +607,32 @@ public class EditorWindow
             case EditorContentMode.MusicEditor:
                 _musicEditorWindow.Render();
                 break;
+            case EditorContentMode.StringEditor:
+                _stringEditorWindow.Render();
+                break;
             case EditorContentMode.Misc:
                 _miscEditorWindow.Render();
                 break;
             case EditorContentMode.Randomiser:
                 _randomiserWindow.Render();
                 break;
+
         }
     }
 
 
     void OpenIso()
     {
-        DialogResult result = Dialog.FileOpen("iso");
+        DialogResult result;
+        if (string.IsNullOrEmpty(UserSettings.LastIsoPath))
+        {
+            result = Dialog.FileOpen("iso");
+        }
+        else
+        {
+            result = Dialog.FileOpen("iso", UserSettings.LastIsoPath);
+
+        }
         if (result.IsOk)
         {
             string isoPath = result.Path;
@@ -391,6 +640,7 @@ public class EditorWindow
             {
                 DataAccess.Instance.OpenIso(isoPath);
                 LoadDataFromIso();
+                UserSettings.LastIsoPath = Path.GetDirectoryName(isoPath);
             }
             else
             {
@@ -400,9 +650,16 @@ public class EditorWindow
         }
     }
 
+    bool isSavingStrings = false;
+    int stringCompressionProgress;
 
-    void SaveChanges()
+    public void SaveChanges()
     {
+        if (!dataAccess.IsIsoLoaded)
+        {
+            _modalPopup.Show("No ISO loaded to save");
+            return;
+        }
         _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
@@ -416,15 +673,50 @@ public class EditorWindow
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
         UserSettings.SaveSettings();
+        SaveStringAsync(printComplete, false);
+        //StringEditor.ReloadFromISO();
+
+
+    }
+
+    void printComplete()
+    {
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
             _modalPopup.Show("Changes have been saved", "Save successful");
         }
     }
 
+    public bool SaveStrings(bool showMessage = true)
+    {
+        Card.RebuildStringCache();
+        for (int i = 0; i < Card.cardNameList.Length; i++)
+        {
+            StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart] = Card.cardNameList[i].Edited;
+        }
+        stringCompressionProgress = 0;
+        StringEditor.StringEncoder.CompressStrings(StringEditor.StringTable.Values.ToList(), ref stringCompressionProgress);
+        StringEditor.StringEncoder.ExportToBytes();
+        if (StringEditor.StringBytes.Count > DataAccess.TotalTextLength)
+        {
+            _modalPopup.Show("Too many bytes to save. Reduce string count or length", "Save failed");
+            return false;
+        }
+        dataAccess.SaveStringData();
+        if (showMessage)
+        {
+            _modalPopup.Show("Strings saved successfully", "Save success");
+        }
+
+        return true;
+    }
+
+
     void LoadDataFromIso()
     {
+        StringEditor.Run();
         CardConstant.LoadFromBytes(dataAccess.LoadCardConstantData());
+        dataAccess.LoadEnemyAIData();
         dataAccess.LoadDecksData();
         _enemyEditorWindow.MapEditorWindow.LoadMapData();
         _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
@@ -435,12 +727,11 @@ public class EditorWindow
         dataAccess.LoadEffectData();
         dataAccess.LoadLeaderThresholdData();
         dataAccess.LoadFusionData();
-        dataAccess.LoadEnemyAIData();
         dataAccess.LoadEnchantData();
-
-        StringDecoder.Run();
-        //CreateCSVFromMonsterEffects(Effects.MonsterEffectsList);
+        Map.Initialise();
         OnIsoLoaded?.Invoke();
+        StringEditor.ReloadStrings();
+
     }
 
     void OpenUrl(string url)
@@ -476,8 +767,6 @@ public class EditorWindow
                 row.Add(effectData); // Effect Name column
                 row.Add(searchModeData); // Search Mode Name column
             }
-
-
             sb.AppendLine(string.Join(",", row));
         }
 

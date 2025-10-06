@@ -13,7 +13,7 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    public static readonly string currentVersion = "v1.2.2-beta";
+    public static readonly string currentVersion = "v1.2.4-beta";
     static readonly string updaterFile = "Updater.exe";
     public static string latestVersion;
     static string downloadUrl;

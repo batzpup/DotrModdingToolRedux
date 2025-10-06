@@ -1859,6 +1859,8 @@
       <EmbeddedResource Include="Images\deckLeaderRanks\SD.png" />
       <None Remove="Images\deckLeaderRanks\VADM.png" />
       <EmbeddedResource Include="Images\deckLeaderRanks\VADM.png" />
+      <None Remove="Fonts\NotoSansJP-Regular.ttf" />
+      <EmbeddedResource Include="Fonts\NotoSansJP-Regular.ttf" />
       
     </ItemGroup>
 

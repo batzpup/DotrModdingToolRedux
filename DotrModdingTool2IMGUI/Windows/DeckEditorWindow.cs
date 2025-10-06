@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using ImGuiNET;
+using NativeFileDialogSharp;
 using Raylib_cs;
 namespace DotrModdingTool2IMGUI;
 
@@ -32,7 +33,7 @@ public class DeckEditorWindow : IImGuiWindow
 
     Vector4 highlightColour = new GuiColour(8, 153, 154, 155).value;
 
-    public Action<string> ViewCardInEditor;
+    public Action<ModdedStringName> ViewCardInEditor;
 
     public DeckEditorWindow(ImFontPtr fontPtr)
     {
@@ -86,12 +87,12 @@ public class DeckEditorWindow : IImGuiWindow
         }
 
         ImGui.PushFont(fontToUse);
-        if (ImGui.BeginCombo("Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name}", ImGuiComboFlags.HeightLarge))
+        if (ImGui.BeginCombo("Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name.Current}", ImGuiComboFlags.HeightLarge))
         {
             for (var index = 0; index < Deck.DeckList.Count; index++)
             {
                 bool isSelected = Deck.DeckList[index] == currentDeck;
-                if (ImGui.Selectable($"{Deck.NamePrefix(index)} - {Deck.DeckList[index].DeckLeader.Name}", isSelected))
+                if (ImGui.Selectable($"{Deck.NamePrefix(index)} - {Deck.DeckList[index].DeckLeader.Name.Current}", isSelected))
                 {
                     currentDeckListIndex = index;
                 }
@@ -105,7 +106,7 @@ public class DeckEditorWindow : IImGuiWindow
                     {
                         GlobalImgui.RenderTooltipOpponentImage((EEnemyImages)index - 26);
                     }
-                    GlobalImgui.RenderTooltipCardImage(Deck.DeckList[index].DeckLeader.Name);
+                    GlobalImgui.RenderTooltipCardImage(Deck.DeckList[index].DeckLeader.Name.Default);
                 }
             }
             ImGui.EndCombo();
@@ -115,7 +116,7 @@ public class DeckEditorWindow : IImGuiWindow
             foreach (var monster in CardConstant.Monsters)
             {
                 bool isSelected = currentDeck.DeckLeader.CardConstant.Index == monster.Index;
-                if (ImGui.Selectable(monster.Name, isSelected))
+                if (ImGui.Selectable(monster.Name.Current, isSelected))
                 {
                     currentDeck.DeckLeader = new DeckCard(monster, currentDeck.DeckLeader.Rank);
                 }
@@ -125,7 +126,7 @@ public class DeckEditorWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipCardImage(monster.Name);
+                    GlobalImgui.RenderTooltipCardImage(monster.Name.Default);
                 }
             }
             ImGui.EndCombo();
@@ -179,8 +180,30 @@ public class DeckEditorWindow : IImGuiWindow
             }
 
         }
-        ImGui.Image(GlobalImages.Instance.Cards[currentDeck.DeckLeader.Name], new Vector2(128, 128));
+        ImGui.Image(GlobalImages.Instance.Cards[currentDeck.DeckLeader.Name.Default], new Vector2(128, 128));
+        ImGui.SameLine();
+        if (ImGui.Button("Print Decks to File"))
+        {
+            DialogResult result = Dialog.FileSave(".txt");
+            if (result.IsOk)
+            {
+                string logPath = result.Path + ".txt";
+                StringBuilder decklistString = new StringBuilder();
 
+                foreach (var deck in Deck.DeckList)
+                {
+                    decklistString.AppendLine(deck.ToString());
+                    decklistString.AppendLine("-------------------------");
+                    foreach (var card in deck.CardList)
+                    {
+                        decklistString.AppendLine(card.Name.Current);
+                    }
+                    decklistString.AppendLine("-------------------------");
+                }
+                File.WriteAllText(logPath, decklistString.ToString());
+            }
+
+        }
         if (sortedDeckList.Count == 40)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, ImageHelper.ColorToVec4Normalised(Color.Green));
@@ -234,12 +257,14 @@ public class DeckEditorWindow : IImGuiWindow
 
                         switch (sortSpecifications.Specs.ColumnIndex)
                         {
-                            case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name, cardB.Name, ascending);
-                            case 1: return CompareWithFallback(cardA.Name, cardB.Name, cardA.Index, cardB.Index, ascending);
+                            case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name.Current, cardB.Name.Current, ascending);
+                            case 1: return CompareWithFallback(cardA.Name.Current, cardB.Name.Current, cardA.Index, cardB.Index, ascending);
                             case 2: return CompareWithFallback(cardA.Attack, cardB.Attack, cardA.Index, cardB.Index, ascending);
                             case 3: return CompareWithFallback(cardA.Defense, cardB.Defense, cardA.Index, cardB.Index, ascending);
                             case 4: return CompareWithFallback(cardA.Level, cardB.Level, cardA.Index, cardB.Index, ascending);
-                            case 5: return CompareWithFallback( CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB), cardA.Index, cardB.Index, ascending);
+                            case 5:
+                                return CompareWithFallback(CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB),
+                                    cardA.Index, cardB.Index, ascending);
                             case 6: return CompareWithFallback(cardA.Type, cardB.Type, cardA.Index, cardB.Index, ascending);
                             case 7: return CompareWithFallback(cardA.DeckCost, cardB.DeckCost, cardA.Index, cardB.Index, ascending);
                             default: return 0;
@@ -268,7 +293,7 @@ public class DeckEditorWindow : IImGuiWindow
                     ImGui.TextUnformatted(cardConstant.Index.ToString());
 
                     ImGui.TableSetColumnIndex(1);
-                    ImGui.Text(cardConstant.Name);
+                    ImGui.Text(cardConstant.Name.Current);
 
                     ImGui.TableSetColumnIndex(2);
                     ImGui.Text(cardConstant.Attack.ToString());
@@ -291,9 +316,9 @@ public class DeckEditorWindow : IImGuiWindow
                     ImGui.TableSetColumnIndex(8);
                     if (ImGui.Button("Remove"))
                     {
-                        currentDeck.CardList.Remove(currentDeck.CardList.Find(card => card.Name == cardConstant.Name));
+                        currentDeck.CardList.Remove(currentDeck.CardList.Find(card => card.Name.Current == cardConstant.Name.Current));
                         sortedDeckList.RemoveAt(index);
-                        Console.WriteLine($"Removing {cardConstant.Name} from deck");
+                        Console.WriteLine($"Removing {cardConstant.Name.Current} from deck");
                     }
 
                     ImGui.TableSetColumnIndex(0);
@@ -303,7 +328,7 @@ public class DeckEditorWindow : IImGuiWindow
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        GlobalImgui.RenderTooltipCardImage(cardConstant.Name);
+                        GlobalImgui.RenderTooltipCardImage(cardConstant.Name.Default);
                     }
                 }
                 ImGui.EndTable();
@@ -364,25 +389,25 @@ public class DeckEditorWindow : IImGuiWindow
             {
                 sortedTrunkList.Sort((cardA, cardB) =>
                 {
-                    
-                              switch (sortSpecifications.Specs.ColumnIndex)
-                        {
-                            case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name, cardB.Name, ascending);
-                            case 1: return CompareWithFallback(cardA.Name, cardB.Name, cardA.Index, cardB.Index, ascending);
-                            case 2: return CompareWithFallback(cardA.Attack, cardB.Attack, cardA.Index, cardB.Index, ascending);
-                            case 3: return CompareWithFallback(cardA.Defense, cardB.Defense, cardA.Index, cardB.Index, ascending);
-                            case 4: return CompareWithFallback(cardA.Level, cardB.Level, cardA.Index, cardB.Index, ascending);
-                            case 5: return CompareWithFallback( CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB), cardA.Index, cardB.Index, ascending);
-                            case 6: return CompareWithFallback(cardA.Type, cardB.Type, cardA.Index, cardB.Index, ascending);
-                            case 7: return CompareWithFallback(cardA.DeckCost, cardB.DeckCost, cardA.Index, cardB.Index, ascending);
-                            default: return 0;
-                        }
+
+                    switch (sortSpecifications.Specs.ColumnIndex)
+                    {
+                        case 0: return CompareWithFallback(cardA.Index, cardB.Index, cardA.Name.Current, cardB.Name.Current, ascending);
+                        case 1: return CompareWithFallback(cardA.Name.Current, cardB.Name.Current, cardA.Index, cardB.Index, ascending);
+                        case 2: return CompareWithFallback(cardA.Attack, cardB.Attack, cardA.Index, cardB.Index, ascending);
+                        case 3: return CompareWithFallback(cardA.Defense, cardB.Defense, cardA.Index, cardB.Index, ascending);
+                        case 4: return CompareWithFallback(cardA.Level, cardB.Level, cardA.Index, cardB.Index, ascending);
+                        case 5: return CompareWithFallback(CardAttribute.GetAttributeVisual(cardA), CardAttribute.GetAttributeVisual(cardB), cardA.Index, cardB.Index, ascending);
+                        case 6: return CompareWithFallback(cardA.Type, cardB.Type, cardA.Index, cardB.Index, ascending);
+                        case 7: return CompareWithFallback(cardA.DeckCost, cardB.DeckCost, cardA.Index, cardB.Index, ascending);
+                        default: return 0;
+                    }
                 });
                 sortSpecifications.SpecsDirty = false;
             }
 
             List<CardConstant> filteredList =
-                sortedTrunkList.Where(card => card.Name.Contains(trunkSearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+                sortedTrunkList.Where(card => card.Name.Current.Contains(trunkSearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
 
             ImGui.PushStyleColor(ImGuiCol.Header, highlightColour);
 
@@ -412,7 +437,7 @@ public class DeckEditorWindow : IImGuiWindow
                 ImGui.TextUnformatted(cardConstant.Index.ToString());
 
                 ImGui.TableSetColumnIndex(1);
-                ImGui.Text(cardConstant.Name);
+                ImGui.Text(cardConstant.Name.Current);
 
                 ImGui.TableSetColumnIndex(2);
                 ImGui.Text(cardConstant.Attack.ToString());
@@ -439,12 +464,12 @@ public class DeckEditorWindow : IImGuiWindow
                     {
                         currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
                         sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
-                        Console.WriteLine($"Adding {filteredList[index].Name} to deck");
+                        Console.WriteLine($"Adding {filteredList[index].Name.Current} to deck");
 
                     }
                     else
                     {
-                        Console.WriteLine($"You already have 3 copies {filteredList[index].Name} in the deck (Single)");
+                        Console.WriteLine($"You already have 3 copies {filteredList[index].Name.Current} in the deck (Single)");
                     }
 
                     foreach (var i in trunkSelection)
@@ -456,11 +481,11 @@ public class DeckEditorWindow : IImGuiWindow
                             {
                                 sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
                                 currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
-                                Console.WriteLine($"Adding {newCardConst.Name} to deck");
+                                Console.WriteLine($"Adding {newCardConst.Name.Current} to deck");
                             }
                             else
                             {
-                                Console.WriteLine($"You already have 3 copies {newCardConst.Name} in the deck (Loop)");
+                                Console.WriteLine($"You already have 3 copies {newCardConst.Name.Current} in the deck (Loop)");
                             }
                         }
                     }
@@ -512,7 +537,7 @@ public class DeckEditorWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipCardImage(cardConstant.Name);
+                    GlobalImgui.RenderTooltipCardImage(cardConstant.Name.Default);
                     if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
                     {
                         ViewCardInEditor?.Invoke(cardConstant.Name);
@@ -568,7 +593,7 @@ public class DeckEditorWindow : IImGuiWindow
             }
             else
             {
-                failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name}");
+                failedToSaveDecks.Add($"Deck: {Deck.NamePrefix(index)} - {deck.DeckLeader.Name.Current}");
             }
         }
         UpdateDeckData();

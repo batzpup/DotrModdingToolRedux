@@ -6,7 +6,9 @@ namespace DotrModdingTool2IMGUI;
 public static class Fonts
 {
     public static ImFontPtr MonoSpace = LoadCustomFont();
-     public static ImFontPtr LoadCustomFont(string fontPath = "SpaceMonoRegular-JRrmm.ttf",int pixelSize = 32)
+    public static ImFontPtr JapaneseFont = LoadCustomFont("NotoSansJP-Regular.ttf", 32, ImGui.GetIO().Fonts.GetGlyphRangesJapanese());
+
+    public static ImFontPtr LoadCustomFont(string fontPath = "SpaceMonoRegular-JRrmm.ttf", int pixelSize = 32, IntPtr? glyphRanges = null)
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
         string resourceName = $"{assembly.GetName().Name}.Fonts.{fontPath}";
@@ -14,7 +16,7 @@ public static class Fonts
         ImFontPtr font;
         using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
         {
-            
+
             if (stream is null)
             {
                 Console.Error.WriteLine($"No resource exists with the name {resourceName}");
@@ -31,7 +33,10 @@ public static class Fonts
                     fixed (byte* p = fontData)
                     {
                         IntPtr ptr = (IntPtr)p;
-                        font = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(ptr, bytesRead, pixelSize);
+                        if (glyphRanges.HasValue)
+                            font = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(ptr, bytesRead, pixelSize, null, glyphRanges.Value);
+                        else
+                            font = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(ptr, bytesRead, pixelSize);
                     }
                 }
             }

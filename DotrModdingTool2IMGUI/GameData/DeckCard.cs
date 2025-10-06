@@ -45,7 +45,7 @@ public class DeckCard
         }
     }
 
-    public string Name
+    public ModdedStringName Name
     {
         get { return CardConstant.Name; }
     }
@@ -87,7 +87,7 @@ public class DeckCard
 
     public override string ToString()
     {
-        return CardConstant.Name;
+        return CardConstant.Name.Current;
     }
 
     private static byte[] calculateBytes(CardConstant cardConstant, DeckLeaderRank Rank)

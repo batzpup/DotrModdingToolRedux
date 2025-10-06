@@ -58,9 +58,9 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bToonLeaderLandChange;
     public bool bAllKindsExtraSlots;
     public bool bSaveMusic;
-    
+
     public int CurrentRule;
-    string[] ruleList = new []{"Normal","No requirements post game","No requirements"};
+    string[] ruleList = new[] { "Normal", "No requirements post game", "No requirements" };
 
     #endregion
 
@@ -266,9 +266,9 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.EndChild();
         ImGui.SameLine();
         ImGui.BeginChild("Exp Per Action/Event", ImGui.GetContentRegionAvail());
-
-        ImGui.Text("Exp Per Action/Event");
-        ImGui.TextColored(new GuiColour(Color.Orange).value, "Coming soon");
+        //TODO eventually needs research
+        //ImGui.Text("Exp Per Action/Event");
+        //ImGui.TextColored(new GuiColour(Color.Orange).value, "Coming soon");
         ImGui.EndChild();
 
     }
@@ -319,9 +319,9 @@ public class GameplayPatchesWindow : IImGuiWindow
                 ImGui.Text(i.ToString());
                 ImGui.TableSetColumnIndex(1);
                 ImGui.PushItemWidth(-1);
-                List<string> filteredListThree = Card.cardNameList.Where(s => s.Contains(filteredStringThreeInARow, StringComparison.OrdinalIgnoreCase))
+                List<ModdedStringName> filteredListThree = Card.cardNameList.Where(s => s.Current.Contains(filteredStringThreeInARow, StringComparison.OrdinalIgnoreCase))
                     .ToList();
-                if (ImGui.BeginCombo($"##ThreeInARow{i}", Card.cardNameList[SpecialThreeInARows[i]], ImGuiComboFlags.HeightLarge))
+                if (ImGui.BeginCombo($"##ThreeInARow{i}", Card.cardNameList[SpecialThreeInARows[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
                     ImGui.PushItemWidth(-1);
                     ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
@@ -331,30 +331,28 @@ public class GameplayPatchesWindow : IImGuiWindow
                     {
                         int index = Array.IndexOf(Card.cardNameList, cardName);
                         bool isSelected = SpecialThreeInARows[i] == index;
-                        if (ImGui.Selectable(cardName, isSelected))
+                        if (ImGui.Selectable(cardName.Current, isSelected))
                         {
                             SpecialThreeInARows[i] = index;
                             filteredStringThreeInARow = "";
                         }
                         if (ImGui.IsItemHovered())
                         {
-                            ImGui.BeginTooltip();
-                            GlobalImgui.RenderTooltipCardImage(cardName);
-                            ImGui.EndTooltip();
+                            GlobalImgui.RenderTooltipCardImage(cardName.Default);
                         }
                     }
                     ImGui.EndCombo();
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialThreeInARows[i]]);
+                    GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialThreeInARows[i]].Default);
 
                 }
                 ImGui.TableSetColumnIndex(2);
                 ImGui.PushItemWidth(-1);
 
-                List<string> filteredList = Card.cardNameList.Where(s => s.Contains(filteredStringReward, StringComparison.OrdinalIgnoreCase)).ToList();
-                if (ImGui.BeginCombo($"##Reward{i}", Card.cardNameList[SpecialSlotRewards[i]], ImGuiComboFlags.HeightLarge))
+                List<ModdedStringName> filteredList = Card.cardNameList.Where(s => s.Current.Contains(filteredStringReward, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (ImGui.BeginCombo($"##Reward{i}", Card.cardNameList[SpecialSlotRewards[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
                     ImGui.PushItemWidth(-1);
                     ImGui.InputText($"##RewardSearch{i}", ref filteredStringReward, 32);
@@ -362,25 +360,25 @@ public class GameplayPatchesWindow : IImGuiWindow
                     {
                         int index = Array.IndexOf(Card.cardNameList, cardName);
                         bool isSelected = SpecialSlotRewards[i] == index;
-                        if (ImGui.Selectable(cardName, isSelected))
+                        if (ImGui.Selectable(cardName.Current, isSelected))
                         {
                             SpecialSlotRewards[i] = index;
                             filteredStringReward = "";
                         }
                         if (ImGui.IsItemHovered())
                         {
-                            ImGui.BeginTooltip();
-                            GlobalImgui.RenderTooltipCardImage(cardName);
-                            ImGui.EndTooltip();
+                           
+                            GlobalImgui.RenderTooltipCardImage(cardName.Default);
+                        
                         }
                     }
                     ImGui.EndCombo();
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.BeginTooltip();
-                    ImGui.Image(GlobalImages.Instance.Cards[Card.cardNameList[SpecialSlotRewards[i]]], new Vector2(128, 128));
-                    ImGui.EndTooltip();
+                    
+                    GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialSlotRewards[i]].Default);
+                   
                 }
             }
             ImGui.EndTable();
@@ -552,12 +550,13 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(
                 "If a deck leader that has the Terrain Change leader ability is strong on toon\nit will create toon for its ability instead");
-        
+
         if (ImGui.Combo("DC rule changes", ref CurrentRule, ruleList, ruleList.Length))
-        { }
+        {
+        }
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change DC requirements");
-        
-            ImGui.Checkbox("Remove card limit in deck ", ref bNineCardLimit);
+
+        ImGui.Checkbox("Remove card limit in deck ", ref bNineCardLimit);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Changes the limit from 3 to 9 (max ownable copies)");
 
@@ -594,7 +593,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with copycat");
         ImGui.Checkbox("Fix Yugi Raigeki use", ref bYugiRaigeki);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug where Yugi swaps the comparison of cards when checking to using raigeki");
-        
+
         ImGui.Checkbox("Make Tea use insect imitation", ref bTeaInsectImitation);
 
         bFastIntro = IsUsingFastIntroMods();
@@ -611,7 +610,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bRemoveSlotRng = new RemoveRNGFromSlots().IsApplied();
         bAllCustomDuels = new AllowAllCustomDuels().IsApplied();
         bRemoveExpLoss = new NoNegativeXP().IsApplied();
-        CurrentRule = (int) new DcRuleChanges().GetRule();
+        CurrentRule = (int)new DcRuleChanges().GetRule();
         bKeepReincarnatedCard = new KeepReincarnatedCard().IsApplied();
         bUnlockFusions = dataAccess.CheckIfPatchApplied(Patcher.AllowAllHandFusions.Offset, Patcher.AllowAllHandFusions.Patch) ||
                          dataAccess.CheckIfPatchApplied(Patcher.AllowAllFieldFusions.Offset, Patcher.AllowAllFieldFusions.Patch);
@@ -619,7 +618,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bToonLeaderLandChange = new ToonLeadersMovePatch().IsApplied();
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
         bNineCardLimit = new ExtendedCardCopyLimitPatch().IsApplied();
-     
+
         ReadValuesFromIso();
         ReadAiPatches();
     }

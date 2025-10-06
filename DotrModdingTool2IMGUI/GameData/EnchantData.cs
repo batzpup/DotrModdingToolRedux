@@ -6,7 +6,7 @@ public static class EnchantData
     public static List<ushort> EnchantScores = new List<ushort>();
     public static byte[] EquipScoreBytes => EnchantScores.SelectMany(BitConverter.GetBytes).ToArray();
 
-     public static string GetEquipName(int flagIndex)
+     public static ModdedStringName GetEquipName(int flagIndex)
     {
        return Card.GetNameByIndex(Card.EquipCardStartIndex + flagIndex);
     }
