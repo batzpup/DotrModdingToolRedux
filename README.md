@@ -3,6 +3,14 @@
 A new and improved set of modding tools for Yu-Gi-Oh! The Duelists of the Roses NTSC-U / USA.
 This should be cross platform but requires .NET 8
 
+## Credits
+Wouldnt be possible without:  
+[Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
+[Generic Mad Scientist](https://github.com/GenericMadScientist)  
+[hippochan](https://github.com/rjoken)  
+[Clovis](https://www.youtube.com/@ClovissenpaiDotR)  
+[LordMewtwo73](https://github.com/LordMewtwo73) for the [text editing](https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor) capability
+
 ## Requirements
 
 - **.NET 8**: Ensure that you have .NET 8 installed on your system. You can download it from the official Microsoft website: [dotnet.microsoft.com](https://dotnet.microsoft.com/en-us/download/dotnet/8.0?)
@@ -33,16 +41,9 @@ you can even see the cards text in the tool!
 
 
 ## License
-
-
 This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/master/LICENSE)
 
-## Credits
-Wouldnt be possible without:
-[Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
-[Generic Mad Scientist](https://github.com/GenericMadScientist)  
-[hippochan](https://github.com/rjoken)  
-[Clovis](https://www.youtube.com/@ClovissenpaiDotR)
+
 
 Special thanks for testing early prototypes  
 [DMWScorp](https://www.youtube.com/@DMWScorpian)  
