@@ -54,7 +54,7 @@ public class StringEncoder
         int offset = 0;
         for (int i = 0; i < substring.SubString.Length; i++)
         {
-            if (substring.SubString[i] >= '\uE000' & substring.SubString[i] < '\uFF00')
+            if (substring.SubString[i] >= '\uE000' && substring.SubString[i] < '\uFF00')
                 length += 2;
             else
                 length++;
@@ -65,7 +65,7 @@ public class StringEncoder
         {
             if (i < substring.Offset)
             {
-                if (modStrings[substring.Index][i] >= '\uE000' & modStrings[substring.Index][i] < '\uFF00')
+                if (modStrings[substring.Index][i] >= '\uE000' && modStrings[substring.Index][i] < '\uFF00')
                     offset += 2;
                 else
                     offset++;
@@ -121,7 +121,7 @@ public class StringEncoder
                 int trueOffset = 0;
                 for (int k = 0; k < foundchars[i][j]; k++)
                 {
-                    if (inthis[k] >= '\uE000' & inthis[k] < '\uFF00')
+                    if (inthis[k] >= '\uE000' && inthis[k] < '\uFF00')
                         trueOffset += 2;
                     else
                         trueOffset++;
@@ -151,7 +151,7 @@ public class StringEncoder
                         break;
                 }
 
-                if (currCount > 1 & currCount > longestLength)
+                if (currCount > 1 && currCount > longestLength)
                 {
                     longestLength = currCount;
                     longestStart = foundchars[i][j];
@@ -181,9 +181,7 @@ public class StringEncoder
         List<char> keychars = new List<char>(PointerDictionary.Keys);
         for (int i = 0; i < keychars.Count; i++)
         {
-            if (modStrings[2182].Contains(keychars[i]))
-            {
-            }
+          
             Pointer2 point = PointerDictionary[keychars[i]];
             int len = point.Length;
             int off = point.Offset;
@@ -194,16 +192,17 @@ public class StringEncoder
             // length is K->P
             // B high = pointer
             // next two bytes -> C->P is index of pointer
-            int b12 = off << 6;
-            b12 += len;
-            b12 += 0x4000;
+            int b12 = (off << 6) | len; // lower 14 bits: offset + length
+            b12 &= 0x1FFF; // just to be safe, clear upper 3 bits
+            b12 |= 0x2000; // small spacing
+            b12 |= 0x4000; // pointer flag
             int b34 = index;
 
-            byte[] pbytes = new byte[4] {
-                (byte)(b34 / 256), (byte)(b34 % 256),
-                (byte)(b12 / 256), (byte)(b12 % 256)
-            };
-
+            byte[] pbytes = new byte[4];
+            pbytes[0] = (byte)((b34 >> 8) & 0xFF); // index high
+            pbytes[1] = (byte)(b34 & 0xFF); // index low
+            pbytes[2] = (byte)((b12 >> 8) & 0xFF); // pointer info high
+            pbytes[3] = (byte)(b12 & 0xFF); // pointer info low
             CharByteDictionary.Add(keychars[i], pbytes);
         }
     }
@@ -211,7 +210,8 @@ public class StringEncoder
     void DefaultCharByteDictionary()
     {
         CharByteDictionary = new Dictionary<char, byte[]> {
-            { '\n', new byte[2] { 0x00, 0x00 } }, { '\uFFF2', new byte[2] { 0x00, 0x01 } }, { '@', new byte[2] { 0x00, 0x01 } }, { ',', new byte[2] { 0x00, 0x02 } }, { '\u25CF', new byte[2] { 0x00, 0x03 } },
+                                                                                                    //Clashes with PLAYER_NAME_CHAR is it meant to be here?
+            { '\n', new byte[2] { 0x00, 0x00 } }, { '\uFFF2', new byte[2] { 0x00, 0x01 } }, /*{ '@', new byte[2] { 0x00, 0x01 } },*/ { ',', new byte[2] { 0x00, 0x02 } }, { '\u25CF', new byte[2] { 0x00, 0x03 } },
             { '~', new byte[2] { 0x00, 0x1E } }, { '\uFF3B', new byte[2] { 0x00, 0x1F } }, { '\uFF3D', new byte[2] { 0x00, 0x20 } }, { '\uFF08', new byte[2] { 0x00, 0x3B } },
             { '\uFF09', new byte[2] { 0x00, 0x3C } }, { '\uFF10', new byte[2] { 0x00, 0x46 } }, { '\uFF01', new byte[2] { 0x00, 0x47 } }, { '\uFF02', new byte[2] { 0x00, 0x48 } },
             { '\uFF03', new byte[2] { 0x00, 0x49 } }, { '\uFF04', new byte[2] { 0x00, 0x4A } }, { '\uFF05', new byte[2] { 0x00, 0x4B } }, { '\uFF06', new byte[2] { 0x00, 0x4C } },
@@ -241,17 +241,23 @@ public class StringEncoder
             CharByteDictionary.Add((char)(0xFF11 + i), new byte[2] { 0x00, (byte)(0x3D + i) });
         }
 
+        //What are these
         for (int i = 0; i < 194; i++)
         {
-            if (i == 168 | (i >= 170 & i <= 172))
+            if (i == 168 | (i >= 170 && i <= 172))
             {
             }
             else
+            {                                                                           // Shouldl this be + i?
                 CharByteDictionary.Add((char)(0xD0A7 + i), new byte[2] { 0x00, (byte)(0xA7 + 1) });
+            }
+
         }
 
     }
 
+    
+    // String 2053 PROBABLY OVERWRITING THIS WITH SOMETHING WRONG
 
     public void ExportToBytes()
     {
@@ -260,8 +266,6 @@ public class StringEncoder
 
         // start of offset for index 30
         int currentoffset = StringEditor.FirstEnglishOffset;
-
-        int total = 0;
         CreateCharByteDictionary();
 
         for (int index = 30; index < modStrings.Count; index++)
@@ -270,32 +274,34 @@ public class StringEncoder
 
             for (int c = 0; c < modStrings[index].Length; c++)
             {
-                if (index == 35)
-                {
-                }
+                byte[] characterBytes = new byte[CharByteDictionary[modStrings[index][c]].Length];
+                Array.Copy(CharByteDictionary[modStrings[index][c]], characterBytes, characterBytes.Length);
+                
+                bool isPointer = modStrings[index][c] >= '\uE000' && modStrings[index][c] < '\uF000';
+                bool isEnglish = characterBytes.Length == 2 && !isPointer;
 
-                byte[] savethis = new byte[CharByteDictionary[modStrings[index][c]].Length];
-                Array.Copy(CharByteDictionary[modStrings[index][c]], savethis, savethis.Length);
-
-                total += savethis.Length;
-
-                // end of string -> add 0x80 to first byte
+                // end of string -> or with 0x80 to first byte
                 if (c == modStrings[index].Length - 1)
-                    savethis[0] += 0x80;
-                // i don't know what this value indicates, but pretty much each non-pointer has this bit high
-                else if (savethis.Length == 2)
-                    savethis[0] += 0x20;
-
-                Array.Reverse(savethis);
-
-                if (modStrings[index][c] == '\uE000')
+                    characterBytes[0] |= 0x80;
+                // english spacing
+                if (isEnglish)
                 {
+                    if(!characterBytes.SequenceEqual(CharByteDictionary['\uFFF2']))
+                    {
+                        characterBytes[0] |= 0x20;
+                    }
+                    else
+                    {
+                         characterBytes[0] |= 0x00;
+                    }
+                    
                 }
-
-                foreach (byte b in savethis)
+                
+                Array.Reverse(characterBytes);
+                foreach (byte b in characterBytes)
                     StringEditor.StringBytes.Add(b);
 
-                currentoffset += (savethis.Length / 2);
+                currentoffset += (characterBytes.Length / 2);
             }
         }
 
