@@ -37,6 +37,7 @@ class Program
             File.AppendAllText(LogFile, fullMessage + Environment.NewLine);
             Console.WriteLine(fullMessage);
 
+
         }
         catch (Exception ex)
         {
@@ -77,8 +78,7 @@ class Program
         LogToFile("Updater started", tempLocation);
         LogToFile($"Current directory: {Environment.CurrentDirectory}", tempLocation);
         LogToFile($"BaseDirectory/Updater Directory: {AppDomain.CurrentDomain.BaseDirectory}", tempLocation);
-        LogToFile($"Target directory: {args[0]}", tempLocation);
-        LogToFile($"Main process ID: {args[1]}", tempLocation);
+
         if (args.Length < 2)
         {
             Console.WriteLine("Invalid arguments. Expected: <target_directory> <process_id>");
@@ -87,6 +87,7 @@ class Program
             Console.ReadKey();
             return;
         }
+
         if (args.Length > 2)
         {
             Console.WriteLine("Too many arguments. Expected: <target_directory> <process_id>");
@@ -101,6 +102,8 @@ class Program
             return;
         }
 
+        LogToFile($"Target directory: {args[0]}", tempLocation);
+        LogToFile($"Main process ID: {args[1]}", tempLocation);
         string targetDir;
         int mainProcessId;
         try
@@ -164,6 +167,7 @@ class Program
                 LogToFile($"Updated: {file} saved to  {destFile}");
             }
         }
+        File.Delete(tempLocation );
         string mainExe = Path.Combine(targetDir, "DotrModdingTool2IMGUI.exe");
         LogToFile($"Starting DotrModdingTool2IMGUI.exe ");
         Process.Start(new ProcessStartInfo {

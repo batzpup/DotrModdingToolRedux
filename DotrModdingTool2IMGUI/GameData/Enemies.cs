@@ -8,32 +8,32 @@ public class Enemies
     public static Action OnStringRebuilt;
 
     static string[] defaultNameList = new string[26] {
-        "Simon McMooran",
-        "Seto",
-        "Weevil Underwood",
-        "Rex Raptor",
-        "Keith",
-        "Ishtar",
-        "Necromancer",
-        "Darkness-ruler",
-        "Labyrinth-ruler",
-        "Pegasus Crawford",
-        "Richard Slysheen of York",
-        "Tea",
-        "T.Tristan Grey",
-        "Margaret Mai Beaufort",
-        "Mako",
-        "Joey",
-        "J.Shadi Morton",
-        "Jasper Dice Tudor",
-        "Bakura",
-        "Yugi",
-        "Manawyddan fab Llyr (vs. White Rose)",
-        "Manawyddan fab Llyr (vs. Red Rose)",
-        "Deck Master K",
-        "Deck Master I",
-        "Deck Master T",
-        "Deck Master S"
+        "Simon McMooran", // 0
+        "Seto", // 1
+        "Weevil Underwood", // 2
+        "Rex Raptor", // 3
+        "Keith", // 4
+        "Ishtar", // 5
+        "Necromancer", // 6
+        "Darkness-ruler", // 7
+        "Labyrinth-ruler", // 8
+        "Pegasus Crawford", // 9
+        "Richard Slysheen of York", // 10
+        "Tea", // 11
+        "T.Tristan Grey", // 12
+        "Margaret Mai Beaufort", // 13
+        "Mako", // 14
+        "Joey", // 15
+        "J.Shadi Morton", // 16
+        "Jasper Dice Tudor", // 17
+        "Bakura", // 18
+        "Yugi", // 19
+        "Manawyddan fab Llyr (vs. White Rose)", // 20
+        "Manawyddan fab Llyr (vs. Red Rose)", // 21
+        "Deck Master K", // 22
+        "Deck Master I", // 23
+        "Deck Master T", // 24
+        "Deck Master S" // 25
     };
 
 

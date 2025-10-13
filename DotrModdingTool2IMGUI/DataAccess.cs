@@ -2,7 +2,7 @@
 using DiscUtils.Iso9660;
 namespace DotrModdingTool2IMGUI;
 
-public class DataAccess
+public partial class DataAccess
 {
     public const int DeckLeaderRankThresholdsByteOffset = 0x2A0952;
     public const int DeckLeaderRankThresholdByteLength = 24;
@@ -73,6 +73,8 @@ public class DataAccess
     public bool IsIsoLoaded = false;
 
     static DataAccess instance;
+
+    public static int AdjustOffset(int offset) => offset - 0x2FF00;
 
     public static DataAccess Instance
     {
@@ -474,19 +476,19 @@ public class DataAccess
     {
         lock (FileStreamLock)
         {
-            fileStream.Position = EnglishOffsetStart;
-            foreach (byte b in StringEditor.OffsetBytes)
-                fileStream.WriteByte(b);
-            //fileStream.Seek(EnglishOffsetStart, SeekOrigin.Begin);
-            //fileStream.Write(StringEditor.OffsetBytes.ToArray(), 0, StringEditor.OffsetBytes.Count);
+            // fileStream.Position = EnglishOffsetStart;
+            //foreach (byte b in StringEditor.OffsetBytes)
+            //    fileStream.WriteByte(b);
+            fileStream.Seek(EnglishOffsetStart, SeekOrigin.Begin);
+            fileStream.Write(StringEditor.OffsetBytes.ToArray(), 0, StringEditor.OffsetBytes.Count);
             fileStream.Flush();
 
 
-            fileStream.Position = EnglishTextStart;
-            foreach (byte b in StringEditor.StringBytes)
-                fileStream.WriteByte(b);
-            //fileStream.Seek(EnglishTextStart, SeekOrigin.Begin);
-            //fileStream.Write(StringEditor.StringBytes.ToArray(), 0, StringEditor.StringBytes.Count);
+            // fileStream.Position = EnglishTextStart;
+            //foreach (byte b in StringEditor.StringBytes)
+            //    fileStream.WriteByte(b);
+            fileStream.Seek(EnglishTextStart, SeekOrigin.Begin);
+            fileStream.Write(StringEditor.StringBytes.ToArray(), 0, StringEditor.StringBytes.Count);
             fileStream.Flush();
         }
     }

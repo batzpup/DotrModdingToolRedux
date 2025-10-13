@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-namespace DotrModdingTool2IMGUI;
+﻿namespace DotrModdingTool2IMGUI;
 
 //Original code by  LordMewtwo73 https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor, cleaned up and adapted by batzpup
 public class StringEncoder
@@ -11,21 +10,41 @@ public class StringEncoder
     Dictionary<char, Pointer2> PointerDictionary = new Dictionary<char, Pointer2>();
     List<int> Offsets = new List<int>();
 
+    string nameString = new string(StringEditor.PNamePlaceholder, 12);
 
     //assumes strings before 30 cant be edited which is valid
+
     public void CompressStrings(List<string> strings, ref int progress)
     {
+
         modStrings = strings;
         for (int i = 0; i < modStrings.Count; i++)
         {
             modStrings[i] = modStrings[i]
                 .Replace("PNAME_CHAR", "\uFFF2")
                 .Replace("III", "\uFFF3");
+        }
+        for (int i = 0; i < modStrings.Count; i++)
+        {
             if (i >= 30)
             {
-                modStrings[i] = ReplacePiecesOfWords(modStrings[i], i);
+                if (modStrings[i].Contains(new string(StringEditor.PNamePlaceholder, 12)))
+                {
+                    // Mark the player name block temporarily with a unique placeholder
+                    string tempToken = "\uFFFC";
+                    modStrings[i] = modStrings[i].Replace(new string(StringEditor.PNamePlaceholder, 12), tempToken);
+
+                    // Compress the rest of the string
+                    modStrings[i] = ReplacePiecesOfWords(modStrings[i], i);
+
+                    // Restore the 12× PNAME_CHAR block
+                    modStrings[i] = modStrings[i].Replace(tempToken, new string(StringEditor.PNamePlaceholder, 12));
+                }
+                else
+                {
+                    modStrings[i] = ReplacePiecesOfWords(modStrings[i], i);
+                }
             }
-            progress = i + 1;
         }
     }
 
@@ -49,6 +68,11 @@ public class StringEncoder
         ReplacedStrings.Add(replaceChar, substring.SubString);
         ReplaceAll(substring.SubString, index, replaceChar);
         instring = instring.Replace(substring.SubString, (replaceChar).ToString());
+        if (substring.SubString == nameString)
+        {
+            Console.WriteLine("Foundname string");
+            return instring;
+        }
 
         int length = 0;
         int offset = 0;
@@ -75,7 +99,6 @@ public class StringEncoder
         Pointer2 newPointer = new Pointer2(index, pindex, offset, length, substring.SubString);
         PointerDictionary.Add(replaceChar, newPointer);
         PointerList.Add(newPointer);
-
         return instring;
     }
 
@@ -181,7 +204,7 @@ public class StringEncoder
         List<char> keychars = new List<char>(PointerDictionary.Keys);
         for (int i = 0; i < keychars.Count; i++)
         {
-          
+
             Pointer2 point = PointerDictionary[keychars[i]];
             int len = point.Length;
             int off = point.Offset;
@@ -194,7 +217,6 @@ public class StringEncoder
             // next two bytes -> C->P is index of pointer
             int b12 = (off << 6) | len; // lower 14 bits: offset + length
             b12 &= 0x1FFF; // just to be safe, clear upper 3 bits
-            b12 |= 0x2000; // small spacing
             b12 |= 0x4000; // pointer flag
             int b34 = index;
 
@@ -210,8 +232,8 @@ public class StringEncoder
     void DefaultCharByteDictionary()
     {
         CharByteDictionary = new Dictionary<char, byte[]> {
-                                                                                                    //Clashes with PLAYER_NAME_CHAR is it meant to be here?
-            { '\n', new byte[2] { 0x00, 0x00 } }, { '\uFFF2', new byte[2] { 0x00, 0x01 } }, /*{ '@', new byte[2] { 0x00, 0x01 } },*/ { ',', new byte[2] { 0x00, 0x02 } }, { '\u25CF', new byte[2] { 0x00, 0x03 } },
+            //Clashes with PLAYER_NAME_CHAR is it meant to be here?
+            { '\n', new byte[2] { 0x00, 0x00 } }, { StringEditor.PNamePlaceholder, new byte[2] { 0x00, 0x01 } }, /*{ '@', new byte[2] { 0x00, 0x01 } },*/ { ',', new byte[2] { 0x00, 0x02 } }, { '\u25CF', new byte[2] { 0x00, 0x03 } },
             { '~', new byte[2] { 0x00, 0x1E } }, { '\uFF3B', new byte[2] { 0x00, 0x1F } }, { '\uFF3D', new byte[2] { 0x00, 0x20 } }, { '\uFF08', new byte[2] { 0x00, 0x3B } },
             { '\uFF09', new byte[2] { 0x00, 0x3C } }, { '\uFF10', new byte[2] { 0x00, 0x46 } }, { '\uFF01', new byte[2] { 0x00, 0x47 } }, { '\uFF02', new byte[2] { 0x00, 0x48 } },
             { '\uFF03', new byte[2] { 0x00, 0x49 } }, { '\uFF04', new byte[2] { 0x00, 0x4A } }, { '\uFF05', new byte[2] { 0x00, 0x4B } }, { '\uFF06', new byte[2] { 0x00, 0x4C } },
@@ -248,7 +270,8 @@ public class StringEncoder
             {
             }
             else
-            {                                                                           // Shouldl this be + i?
+            {
+                // Shouldl this be + i?
                 CharByteDictionary.Add((char)(0xD0A7 + i), new byte[2] { 0x00, (byte)(0xA7 + 1) });
             }
 
@@ -256,50 +279,77 @@ public class StringEncoder
 
     }
 
-    
-    // String 2053 PROBABLY OVERWRITING THIS WITH SOMETHING WRONG
 
+    //Still causes (pointer corruption) issues for some text in the tutorial, maybe some pointer issues but no longer crashes and fixes player name usage
     public void ExportToBytes()
     {
         Offsets = new List<int>();
         StringEditor.StringBytes = new List<byte>();
-
-        // start of offset for index 30
+        // Start of offset for index 30
         int currentoffset = StringEditor.FirstEnglishOffset;
         CreateCharByteDictionary();
-
         for (int index = 30; index < modStrings.Count; index++)
         {
             Offsets.Add(currentoffset);
-
-            for (int c = 0; c < modStrings[index].Length; c++)
+            for (int i = 0; i < modStrings[index].Length; i++)
             {
-                byte[] characterBytes = new byte[CharByteDictionary[modStrings[index][c]].Length];
-                Array.Copy(CharByteDictionary[modStrings[index][c]], characterBytes, characterBytes.Length);
-                
-                bool isPointer = modStrings[index][c] >= '\uE000' && modStrings[index][c] < '\uF000';
+                if (modStrings[index][i] == StringEditor.PNamePlaceholder)
+                {
+                    bool isPlayerName = true;
+                    for (int j = 0; j < 12; j++)
+                    {
+                        int checkIndex = i + j;
+                        if (checkIndex >= modStrings[index].Length ||
+                            modStrings[index][checkIndex] != StringEditor.PNamePlaceholder)
+                        {
+                            isPlayerName = false;
+                            break;
+                        }
+                    }
+                    if (isPlayerName)
+                    {
+                        bool isEndOfString = (i + 12) == modStrings[index].Length;
+
+                        byte[] pnameBytes = isEndOfString
+                            ? new byte[4] { 0x8C, 0x40, 0x02, 0xC0 }
+                            : new byte[4] { 0x8C, 0x40, 0x02, 0x40 };
+
+                        foreach (byte b in pnameBytes)
+                        {
+                            StringEditor.StringBytes.Add(b);
+                        }
+                        currentoffset += (pnameBytes.Length / 2);
+                        i += 11;
+                        continue;
+                    }
+                }
+
+                if (!CharByteDictionary.TryGetValue(modStrings[index][i], out var charBytes))
+                {
+                    Console.WriteLine($" Unknown char U+{(int)modStrings[index][i]:X4} at string {index}");
+                    continue;
+                }
+
+                byte[] characterBytes = new byte[charBytes.Length];
+                Array.Copy(charBytes, characterBytes, charBytes.Length);
+
+                bool isPointer = modStrings[index][i] >= '\uE000' && modStrings[index][i] < '\uF000';
                 bool isEnglish = characterBytes.Length == 2 && !isPointer;
 
-                // end of string -> or with 0x80 to first byte
-                if (c == modStrings[index].Length - 1)
+                if (i == modStrings[index].Length - 1)
+                {
                     characterBytes[0] |= 0x80;
-                // english spacing
+                }
                 if (isEnglish)
                 {
-                    if(!characterBytes.SequenceEqual(CharByteDictionary['\uFFF2']))
-                    {
+                    if (!characterBytes.SequenceEqual(CharByteDictionary[StringEditor.PNamePlaceholder]))
                         characterBytes[0] |= 0x20;
-                    }
                     else
-                    {
-                         characterBytes[0] |= 0x00;
-                    }
-                    
+                        characterBytes[0] |= 0x00;
                 }
-                
+
                 Array.Reverse(characterBytes);
-                foreach (byte b in characterBytes)
-                    StringEditor.StringBytes.Add(b);
+                foreach (byte b in characterBytes) StringEditor.StringBytes.Add(b);
 
                 currentoffset += (characterBytes.Length / 2);
             }
@@ -307,6 +357,7 @@ public class StringEncoder
 
         ExportOffsetsToBytes();
     }
+
 
     void ExportOffsetsToBytes()
     {

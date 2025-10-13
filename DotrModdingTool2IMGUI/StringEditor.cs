@@ -13,6 +13,7 @@ public static class StringEditor
     public static List<byte> OffsetBytes = new List<byte>();
     public static List<byte> StringBytes = new List<byte>();
 
+    public const char PNamePlaceholder = '\uFFF2';
     // start of offset for index 30
     public const int StringTableSize = 3073;
     public static int FirstEnglishOffset = 540;
@@ -40,10 +41,13 @@ public static class StringEditor
     public const int CardNamesOffsetEnd = 1173;
     public const int CardEffectTextOffsetStart = 1174;
     public const int CardEffectTextOffsetEnd = 2027;
-    public const int IntroDialogueStart = 2029;
-    public const int EnemyDialogueRedStart = 2182;
-    public const int IntroDialogueWhiteStart = 2334;
-    public const int EnemyDialogueWhiteStart = 2357;
+    public const int LancasterIntroStart = 2029;
+    public const int YorkistsDuelistsDialogueStart = 2183;
+
+    public const int LancasterWinPassword = 2332;
+    public const int YorkistSideIntroStart = 2334;
+    public const int LancasterDuelistDialogueStart = 2357;
+    
     public const int MemoryCardStuffStart = 2482;
     public const int TutorialStart = 2524;
 

@@ -18,7 +18,7 @@ public static class Updater
     public static string latestVersion;
     static string downloadUrl;
     static string body;
-    public static Action<bool, string?> NeedsUpdate;
+    public static Action<bool, string?, bool> NeedsUpdate;
 
 
     static readonly string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
@@ -115,14 +115,13 @@ public static class Updater
             {
                 Console.WriteLine("Update Available");
                 LogToFile("Update Available");
-                NeedsUpdate?.Invoke(true, body);
+                NeedsUpdate?.Invoke(true, body, isStartup);
             }
             else
             {
-                if (!isStartup)
-                {
-                    NeedsUpdate.Invoke(false, string.Empty);
-                }
+
+                NeedsUpdate.Invoke(false, string.Empty, isStartup);
+
                 Console.WriteLine("Program is up to date");
                 LogToFile("Program is up to date");
             }
@@ -170,12 +169,12 @@ public static class Updater
             LogToFile($"Updater path = {updaterPath}");
             if (File.Exists(updaterPath))
             {
-                LogToFile(
-                    $"Starting new process with\nFilename {updaterPath}\nArguments:\n ModdingToolDirectory {AppDomain.CurrentDomain.BaseDirectory}\n Process Id: {Environment.ProcessId}");
+                LogToFile($"Starting new process with\nFilename {updaterPath}\nArguments:\n ModdingToolDirectory {AppDomain.CurrentDomain.BaseDirectory}\n Process Id: {Environment.ProcessId}");
                 //THIS STARTS THE DOWNLOADED UPDATER
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 Process.Start(new ProcessStartInfo() {
                     FileName = updaterPath,
-                      Arguments = $"\"{AppDomain.CurrentDomain.BaseDirectory}\" {Environment.ProcessId}",
+                    Arguments = $"\"{baseDir}\" {Environment.ProcessId}",
                     UseShellExecute = true
                 });
                 Environment.Exit(0);

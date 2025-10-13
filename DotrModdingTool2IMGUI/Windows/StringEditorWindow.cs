@@ -6,7 +6,7 @@ namespace DotrModdingTool2IMGUI;
 public class StringEditorWindow : IImGuiWindow
 {
     ImFontPtr font;
-    ImFontPtr japFont;
+    ImFontPtr jpFont;
     int currentStringIndex;
     int currentSectionIndex;
     int currentCardNameIndex;
@@ -16,7 +16,7 @@ public class StringEditorWindow : IImGuiWindow
     public static ModdedStringName[] ArenaNames;
 
     string cardSearchString = string.Empty;
-    
+
     string[] defaultArenaNames = new string[] {
         "Stonehenge",
         "Stonehenge",
@@ -64,19 +64,25 @@ public class StringEditorWindow : IImGuiWindow
         { "Debug Menu", StringEditor.DebugMenu },
         { "Card Names", StringEditor.CardNamesOffsetStart },
         { "Card Effect Text", StringEditor.CardEffectTextOffsetStart },
-        { "Intro Dialogue", StringEditor.IntroDialogueStart },
-        { "Enemy Dialogue Red", StringEditor.EnemyDialogueRedStart },
-        { "Intro Dialogue White", StringEditor.IntroDialogueWhiteStart },
-        { "Enemy Dialogue White", StringEditor.EnemyDialogueWhiteStart },
+        { "Intro Dialogue", StringEditor.LancasterIntroStart },
+        { "Enemy Dialogue Red", StringEditor.YorkistsDuelistsDialogueStart },
+        { "Intro Dialogue White", StringEditor.YorkistSideIntroStart },
+        { "Enemy Dialogue White", StringEditor.LancasterDuelistDialogueStart },
         { "Memory Card Stuff", StringEditor.MemoryCardStuffStart },
         { "Tutorial", StringEditor.TutorialStart },
 
     };
 
+    record Section(string Label, int[] Indices);
+
+    static List<Section> SectionsLabels;
+
+    static Dictionary<int, string> SectionLabelLookup;
+
     public StringEditorWindow()
     {
         font = Fonts.MonoSpace;
-        japFont = Fonts.JapaneseFont;
+        jpFont = Fonts.JapaneseFont;
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         ArenaNames = new ModdedStringName[defaultArenaNames.Length];
         for (int i = 0; i < defaultArenaNames.Length; i++)
@@ -88,6 +94,8 @@ public class StringEditorWindow : IImGuiWindow
     void OnIsoLoaded()
     {
         ReloadStrings();
+
+
     }
 
     public static void ReloadStrings()
@@ -96,11 +104,30 @@ public class StringEditorWindow : IImGuiWindow
         {
             ArenaNames[i - StringEditor.DuelArenaNamesStart].Edited = StringEditor.StringTable[i];
         }
+
+    
+        SectionsLabels = new() {
+            new(Enemies.EnemyNameList[2].Current, new[] { 2183, 2184, 2185 }), // weevil
+            new(Enemies.EnemyNameList[3].Current, new[] { 2186, 2187, 2188, 2189 }), // rex
+            new(Enemies.EnemyNameList[8].Current, new[] { 2190, 2191, 2192, 2193 }), //lab ruler
+            new(Enemies.EnemyNameList[6].Current, new[] { 2194, 2195, 2196 }), //necromancer
+            new(Enemies.EnemyNameList[4].Current, new[] { 2197, 2198, 2199 }), //keith
+            new(Enemies.EnemyNameList[7].Current, new[] { 2200, 2201, 2202 }), //Dark ruler
+            new(Enemies.EnemyNameList[10].Current, new[] { 2203, 2204, 2205, 2206 }), //Richard
+            new(Enemies.EnemyNameList[9].Current, new[] { 2208, 2209, 2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217, 2218 }), // Pegasus
+            //new(Enemies.EnemyNameList[10].Current, new[] { 2203, 2204, 2205, 2206 }), //Richard
+        };
+        SectionLabelLookup = SectionsLabels
+            .SelectMany(s => s.Indices.Select(i => (i, s.Label)))
+            .ToDictionary(x => x.i, x => x.Label);
+
+
+
     }
 
     public void Render()
     {
-        ImGui.PushFont(japFont);
+        ImGui.PushFont(jpFont);
         if (!DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.Text($"Please load ISO file");
@@ -108,7 +135,7 @@ public class StringEditorWindow : IImGuiWindow
             return;
         }
 
-     
+
         string[] sectionArray = Sections.Keys.ToArray();
 
         Vector2 windowSize = ImGui.GetWindowSize();
@@ -122,7 +149,7 @@ public class StringEditorWindow : IImGuiWindow
         if (ImGui.Button("Remove tutorial strings"))
         {
             for (int i = StringEditor.TutorialStart; i < StringEditor.StringTable.Count; i++)
-                StringEditor.StringTable[i] = ".";
+                StringEditor.StringTable[i] = "~";
         }
         if (ImGui.IsItemHovered())
         {
@@ -162,7 +189,7 @@ public class StringEditorWindow : IImGuiWindow
             ImGui.InputText("##SearchCardName", ref cardSearchString, 20);
 
             string[] filteredStrings = CardNames.Where(s => string.IsNullOrEmpty(cardSearchString) || s.Contains(cardSearchString, StringComparison.OrdinalIgnoreCase)).ToArray();
-            
+
             for (int i = 0; i < filteredStrings.Length; i++)
             {
                 string name = filteredStrings[i];
@@ -174,9 +201,9 @@ public class StringEditorWindow : IImGuiWindow
                     currentStringIndex = StringEditor.CardNamesOffsetStart + currentCardNameIndex;
                     cardSearchString = "";
                 }
-                
+
             }
- 
+
             ImGui.EndCombo();
         }
 
@@ -190,7 +217,7 @@ public class StringEditorWindow : IImGuiWindow
             string[] filteredStrings =
                 CardNames.Where(s => string.IsNullOrEmpty(cardSearchString) || s.Contains(cardSearchString, StringComparison.OrdinalIgnoreCase)).ToArray();
 
-            
+
             for (int i = 0; i < filteredStrings.Length; i++)
             {
                 string name = filteredStrings[i];
@@ -202,7 +229,7 @@ public class StringEditorWindow : IImGuiWindow
                     currentStringIndex = StringEditor.CardEffectTextOffsetStart + currentMonsterEffectIndex;
                     cardSearchString = "";
                 }
-                
+
             }
             ImGui.EndCombo();
         }
@@ -341,7 +368,13 @@ public class StringEditorWindow : IImGuiWindow
         {
             nameText = StringEditor.StringTable[StringEditor.CardNamesOffsetStart + index - StringEditor.CardEffectTextOffsetStart];
         }
-        ImGui.Text($"String ID {index}{(uneditable ? " (uneditable)" : "")} \n{nameText}");
+        if (SectionLabelLookup.TryGetValue(index, out var sectionLabel))
+        {
+            nameText = sectionLabel;
+        }
+
+
+        ImGui.Text($"Index: {index}{(uneditable ? " (uneditable)" : "")} \n{nameText}");
         if (ImGui.InputTextMultiline(label, ref text, 4000, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 8)))
         {
             if (uneditable)

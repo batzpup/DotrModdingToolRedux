@@ -19,7 +19,8 @@ public class EditorWindow
     ImGuiIOPtr io = ImGui.GetIO();
     ImFontPtr menuBarFont = Fonts.LoadCustomFont("SpaceMonoRegular-JRrmm.ttf", 24);
     public static bool Disabled = false;
-
+    float disabledTimer = 0;
+    float maxDisabledTime = 30;
     public static Vector2 AspectRatio
     {
         get { return ImGui.GetWindowSize() / new Vector2(2560, 1351f); }
@@ -86,13 +87,13 @@ public class EditorWindow
         {
             await Updater.CheckForUpdates(true);
             Disabled = false;
-            _modalPopup.Hide();
+           
         });
 
 
     }
 
-    void HandleNeedsUpdate(bool needsUpdate, string changes)
+    void HandleNeedsUpdate(bool needsUpdate, string changes,bool isStartup)
     {
         if (needsUpdate)
         {
@@ -103,7 +104,15 @@ public class EditorWindow
         }
         else
         {
-            _modalPopup.Show($"You are up to date, you are on version {Updater.latestVersion}", "Update");
+            if (!isStartup)
+            {
+                _modalPopup.Show($"You are up to date, you are on version {Updater.latestVersion}", "Update");
+            }
+            else
+            {
+                _modalPopup.Hide();
+            }
+            
         }
 
     }
@@ -153,9 +162,16 @@ public class EditorWindow
         buttonWidthScaled = Math.Max(200f * AspectRatio.X, 100);
         buttonHeightRatio = Math.Max(100f * AspectRatio.Y, 50);
         buttonSpacingScaled = Math.Max(10f * AspectRatio.X, 5);
-        if (EditorWindow.Disabled)
+        
+        if(disabledTimer > maxDisabledTime)
+        {
+            Disabled = false;
+            disabledTimer = 0;
+        }
+        if (Disabled)
         {
             ImGui.BeginDisabled();
+            disabledTimer += ImGui.GetIO().DeltaTime;
         }
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate.ToString()}");
 
@@ -455,7 +471,6 @@ public class EditorWindow
                     Disabled = true;
                     await Updater.CheckForUpdates(false);
                     Disabled = false;
-
                 });
             }
             ImGui.Spacing();
@@ -486,6 +501,10 @@ public class EditorWindow
         if (Disabled)
         {
             ImGui.EndDisabled();
+        }
+        else
+        {
+            disabledTimer = 0;
         }
         _modalPopup.Draw(Fonts.MonoSpace);
 

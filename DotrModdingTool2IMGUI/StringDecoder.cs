@@ -13,7 +13,7 @@ public class StringDecoder
     public StringDecoder()
     {
         knownChars = new Dictionary<int, char> {
-            { 0x00, '\n' }, { 0x01, '\uFFF2' }, //PNAME_CHAR
+            { 0x00, '\n' }, { 0x01, StringEditor.PNamePlaceholder }, //PNAME_CHAR
             { 0x02, ',' }, { 0x03, '\u25CF' },
             { 0x1E, '~' }, { 0x1F, '\uFF3B' }, { 0x20, '\uFF3D' }, { 0x3B, '\uFF08' },
             { 0x3C, '\uFF09' }, { 0x46, '\uFF11' }, { 0x47, '\uFF01' }, { 0x48, '\uFF02' },
@@ -116,6 +116,7 @@ public class StringDecoder
     {
         int blobIndex = offsets[index];
         List<List<int>> lines = new List<List<int>> { new List<int>() };
+
         while (true)
         {
             if ((blob[blobIndex] & 0x4000) != 0)
@@ -125,6 +126,7 @@ public class StringDecoder
                 int pointerStart = offsets[pointerindex];
                 int pointeroffset = (blob[blobIndex] >> 6) & 0x7F;
                 pointerStart += pointeroffset;
+
                 var subStr = RecursiveRead(offsets, blob, pointerStart, subLength);
                 if (subStr.Count > 0)
                 {
@@ -133,21 +135,24 @@ public class StringDecoder
                 }
                 blobIndex += 2;
             }
+            
             else if ((blob[blobIndex] & 0x1FFF) != 0)
             {
                 lines[lines.Count - 1].Add(blob[blobIndex] & 0x1FFF);
                 blobIndex++;
             }
+            
             else
             {
                 lines.Add(new List<int>());
                 blobIndex++;
             }
-
+            
             if ((blob[blobIndex - 1] & 0x8000) != 0)
                 return lines;
         }
     }
+
 
     public void Run()
     {
@@ -202,17 +207,21 @@ public class StringDecoder
                         }
 
                         else
+                        {
+                            Console.WriteLine($"Unknown char 0x{charValue:X4} at string {i}");
                             realChars.Add('\uFFFD');
+                        }
+
                     }
                     //Non character used for 
                     realChars.Add('\n');
                 }
                 //transforms the custom codes to their string representations
                 string tempStr = string.Join("", realChars);
-                tempStr = tempStr.Remove(tempStr.Length-1)
-                    .Replace("\uFFF2", "PNAME_CHAR")
+                tempStr = tempStr.Remove(tempStr.Length - 1)
+                    .Replace(StringEditor.PNamePlaceholder.ToString(), "PNAME_CHAR")
                     .Replace("\uFFF3", "III");
-                StringEditor.StringTable.Add(i,tempStr);
+                StringEditor.StringTable.Add(i, tempStr);
             }
             if (StringEditor.ShouldDumpText)
             {
@@ -222,6 +231,4 @@ public class StringDecoder
 
         }
     }
-
-   
 }

@@ -2179,7 +2179,7 @@ SD:   5000");
     {
         if (randomiseMagicEffects || randomiseMonsterEffects)
         {
-            for (int i = StringEditor.CardEffectTextOffsetStart; i < StringEditor.CardEffectTextOffsetEnd; i++)
+            for (int i = StringEditor.CardEffectTextOffsetStart; i <= StringEditor.CardEffectTextOffsetEnd; i++)
             {
                 originalEffectTexts[i] = StringEditor.StringTable[i];
             }

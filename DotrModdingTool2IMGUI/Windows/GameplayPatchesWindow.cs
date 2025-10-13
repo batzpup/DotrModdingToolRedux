@@ -151,6 +151,7 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #endregion
 
+
     public static GameplayPatchesWindow Instance { get; private set; }
 
     public GameplayPatchesWindow()
