@@ -17,7 +17,7 @@ class MiscEditorWindow : IImGuiWindow
 
     public void Render()
     {
-        ImGui.PushFont(Fonts.MonoSpace);
+        ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.SpaceMono,32));
         ImGui.SetCursorPos(ImGui.GetContentRegionAvail() / 2f);
         ImGui.ListBox("PreloadedImages", ref currentPreloadedImageIndex, preloadedImagesArray, 223);
         ImGui.SetCursorPos(ImGui.GetContentRegionAvail() / 2f);

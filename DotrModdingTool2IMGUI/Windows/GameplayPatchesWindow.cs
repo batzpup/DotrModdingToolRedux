@@ -157,7 +157,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     public GameplayPatchesWindow()
     {
         Instance = this;
-        font = Fonts.MonoSpace;
+        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         MusicEditorWindow.OnSaveCustomMusic += onSaveMusicChanged;
     }

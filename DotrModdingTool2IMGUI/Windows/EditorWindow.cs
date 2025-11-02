@@ -17,7 +17,9 @@ public class EditorWindow
     EditorContentMode currentMode = EditorContentMode.EnemyEditor;
 
     ImGuiIOPtr io = ImGui.GetIO();
-    ImFontPtr menuBarFont = Fonts.LoadCustomFont("SpaceMonoRegular-JRrmm.ttf", 24);
+    ImFontPtr menuBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,24);
+    ImFontPtr sideBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,20);
+    ImFontPtr mainFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,28);
     public static bool Disabled = false;
     float disabledTimer = 0;
     float maxDisabledTime = 30;
@@ -66,10 +68,9 @@ public class EditorWindow
     {
         //PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
-
-        ImGui.GetIO().Fonts.Build();
-        rlImGui.ReloadFonts();
-        _enemyEditorWindow = new EnemyEditorWindow(Fonts.LoadCustomFont(pixelSize: 26), Fonts.LoadCustomFont(pixelSize: 22));
+        
+      
+        _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP,26));
         _cardEditorWindow = new CardEditorWindow();
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
@@ -140,7 +141,7 @@ public class EditorWindow
         { EditorContentMode.EnemyEditor, "Enemy Editor" },
         { EditorContentMode.CardEditor, "Card Editor" },
         { EditorContentMode.FusionEditor, "Fusion Editor" },
-        { EditorContentMode.MechanicsEditor, "Mechanics Editor" },
+        { EditorContentMode.Patches, "Patches" },
         { EditorContentMode.StringEditor, "String Editor" },
         { EditorContentMode.MusicEditor, "Music Editor" },
         { EditorContentMode.Randomiser, "Randomiser" },
@@ -407,7 +408,7 @@ public class EditorWindow
             }
             if (ImGui.BeginPopupModal("Credits", ref isCreditsOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
-                ImGui.PushFont(Fonts.MonoSpace);
+                ImGui.PushFont(mainFont);
                 CustomImguiTypes.RenderRainbowTextPerChar_Sine("Credits:");
 
                 if (CustomImguiTypes.RenderGradientSelectable
@@ -493,6 +494,7 @@ public class EditorWindow
             reloadStrings = false;
         }
 
+        
         RenderMainContent();
 
 
@@ -506,7 +508,7 @@ public class EditorWindow
         {
             disabledTimer = 0;
         }
-        _modalPopup.Draw(Fonts.MonoSpace);
+        _modalPopup.Draw(mainFont);
 
 
         ImGui.End();
@@ -581,7 +583,7 @@ public class EditorWindow
 
         ImGui.BeginChild("LeftSidePanel", new Vector2(buttonWidthScaled + (buttonSpacingScaled * 2), 0),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysUseWindowPadding);
-        ImGui.PushFont(menuBarFont);
+        ImGui.PushFont(FontManager.GetBestFitFont("fusion editor",false,FontManager.FontFamily.NotoSansJP));
         foreach (var modeButtonPair in ButtonModeTable)
         {
             if (currentMode == modeButtonPair.Key)
@@ -609,6 +611,7 @@ public class EditorWindow
 
     void RenderMainContent()
     {
+        ImageHelper.DefaultImageSize = new Vector2( ImGui.GetWindowSize().X / 18f, ImGui.GetWindowSize().X / 18f);
         switch (currentMode)
         {
             case EditorContentMode.EnemyEditor:
@@ -620,7 +623,7 @@ public class EditorWindow
             case EditorContentMode.FusionEditor:
                 _fusionEditorWindow.Render();
                 break;
-            case EditorContentMode.MechanicsEditor:
+            case EditorContentMode.Patches:
                 _gameplayPatchesWindow.Render();
                 break;
             case EditorContentMode.MusicEditor:

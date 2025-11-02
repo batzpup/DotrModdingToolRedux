@@ -24,7 +24,7 @@ public class MusicEditorWindow : IImGuiWindow
     int currentTrackIndex;
     int currentSlotMusicIndex;
     public bool bSaveMusicChanges;
-    ImFontPtr monoSpaceFont;
+    ImFontPtr font;
     public static Action<bool> OnSaveCustomMusic;
 
 
@@ -116,7 +116,7 @@ public class MusicEditorWindow : IImGuiWindow
         LoadDefaultMusic();
         waveOut = new WaveOutEvent();
         waveOut.Volume = 0.1f;
-        monoSpaceFont = Fonts.MonoSpace;
+        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
         
     }
 
@@ -167,7 +167,7 @@ public class MusicEditorWindow : IImGuiWindow
 
     public void Render()
     {
-        ImGui.PushFont(monoSpaceFont);
+        ImGui.PushFont(font);
         if (!dataAccess.IsIsoLoaded)
         {
             ImGui.Text("Please load ISO file");
@@ -178,7 +178,7 @@ public class MusicEditorWindow : IImGuiWindow
         Vector2 windowSize = ImGui.GetWindowSize();
         ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
         ImGui.TextWrapped(
-            "Note:\n Duelist music changes require fast intro to be enabled as it uses the spare bytes available from skipping the tutorial, if you enable custom music it will enable fast intro (see Mechanics Editor)");
+            "Note:\n Duelist music changes require fast intro to be enabled as it uses the spare bytes available from skipping the tutorial, if you enable custom music it will enable fast intro (see patches)");
         ImGui.PopStyleColor();
         if (ImGui.Checkbox("Save music changes", ref bSaveMusicChanges))
         {
@@ -189,7 +189,7 @@ public class MusicEditorWindow : IImGuiWindow
         ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, remainingHeight),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
 
-        ImGui.PushFont(monoSpaceFont);
+        ImGui.PushFont(font);
         ImGui.Text("Duelist Music");
         ImGui.PushItemWidth(windowSize.X / 3f);
         if (ImGui.BeginListBox("##DuelistMusic", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * MusicTargets.Length)))

@@ -97,7 +97,8 @@ public class ImGuiModalPopup
 
     public void Draw()
     {
-        ImGui.PushFont(Fonts.MonoSpace);
+        Vector2 size = ImGui.GetWindowSize();
+        ImGui.PushFont(FontManager.GetBestFitFont(errorMessage,size.X,size.Y));
         if (showErrorPopup)
         {
             ImGui.OpenPopup(messageTitle);

@@ -64,10 +64,10 @@ public class StringEditorWindow : IImGuiWindow
         { "Debug Menu", StringEditor.DebugMenu },
         { "Card Names", StringEditor.CardNamesOffsetStart },
         { "Card Effect Text", StringEditor.CardEffectTextOffsetStart },
-        { "Intro Dialogue", StringEditor.LancasterIntroStart },
-        { "Enemy Dialogue Red", StringEditor.YorkistsDuelistsDialogueStart },
-        { "Intro Dialogue White", StringEditor.YorkistSideIntroStart },
-        { "Enemy Dialogue White", StringEditor.LancasterDuelistDialogueStart },
+        { "Intro Dialogue (Playing as Red)", StringEditor.LancasterIntroStart },
+        { "Enemy Dialogue (Playing as Red)", StringEditor.YorkistsDuelistsDialogueStart },
+        { "Intro Dialogue (Playing as White)", StringEditor.YorkistSideIntroStart },
+        { "Enemy Dialogue (Playing as White)", StringEditor.LancasterDuelistDialogueStart },
         { "Memory Card Stuff", StringEditor.MemoryCardStuffStart },
         { "Tutorial", StringEditor.TutorialStart },
 
@@ -81,8 +81,8 @@ public class StringEditorWindow : IImGuiWindow
 
     public StringEditorWindow()
     {
-        font = Fonts.MonoSpace;
-        jpFont = Fonts.JapaneseFont;
+        font = FontManager.GetFont(FontManager.FontFamily.SpaceMono,32);
+        jpFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         ArenaNames = new ModdedStringName[defaultArenaNames.Length];
         for (int i = 0; i < defaultArenaNames.Length; i++)
@@ -105,18 +105,35 @@ public class StringEditorWindow : IImGuiWindow
             ArenaNames[i - StringEditor.DuelArenaNamesStart].Edited = StringEditor.StringTable[i];
         }
 
-    
+
         SectionsLabels = new() {
-            new(Enemies.EnemyNameList[2].Current, new[] { 2183, 2184, 2185 }), // weevil
-            new(Enemies.EnemyNameList[3].Current, new[] { 2186, 2187, 2188, 2189 }), // rex
-            new(Enemies.EnemyNameList[8].Current, new[] { 2190, 2191, 2192, 2193 }), //lab ruler
-            new(Enemies.EnemyNameList[6].Current, new[] { 2194, 2195, 2196 }), //necromancer
-            new(Enemies.EnemyNameList[4].Current, new[] { 2197, 2198, 2199 }), //keith
-            new(Enemies.EnemyNameList[7].Current, new[] { 2200, 2201, 2202 }), //Dark ruler
-            new(Enemies.EnemyNameList[10].Current, new[] { 2203, 2204, 2205, 2206 }), //Richard
-            new(Enemies.EnemyNameList[9].Current, new[] { 2208, 2209, 2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217, 2218 }), // Pegasus
-            //new(Enemies.EnemyNameList[10].Current, new[] { 2203, 2204, 2205, 2206 }), //Richard
+            new(Enemy.GetEnemyNameByIndex(2).Current, new[] { 2183, 2184, 2185 }), // Weevil
+            new(Enemy.GetEnemyNameByIndex(3).Current, new[] { 2186, 2187, 2188, 2189 }), // Rex
+            new(Enemy.GetEnemyNameByIndex(8).Current, new[] { 2190, 2191, 2192, 2193 }), // Labyrinth Ruler
+            new(Enemy.GetEnemyNameByIndex(6).Current, new[] { 2194, 2195, 2196 }), // Necromancer
+            new(Enemy.GetEnemyNameByIndex(4).Current, new[] { 2197, 2198, 2199 }), // Keith
+            new(Enemy.GetEnemyNameByIndex(7).Current, new[] { 2200, 2201, 2202 }), // Dark Ruler
+            new(Enemy.GetEnemyNameByIndex(5).Current, new[] { 2203, 2204, 2205, 2206 }), // Ishtar
+            new(Enemy.GetEnemyNameByIndex(9).Current, new[] { 2207, 2208, 2209, 2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217, 2218 }), // Pegasus
+            
+            new(Enemy.GetEnemyNameByIndex(10).Current, new[] { 2222, 2223, 2224, 2225, 2226, 2227, 2228, 2229, 2230 }), // Richard
+            new(Enemy.GetEnemyNameByIndex(1).Current, new[] { 2272, 2273, 2274, 2275, 2276, 2277, 2278, 2279, 2280, 2281, 2282 }), // Seto
+            
+            new($"{Enemy.GetEnemyNameByIndex(20).Current} ({Deck.DeckList[20 + 26].DeckLeader.Name.Current})", 
+                new[] { 2306, 2307, 2308, 2309 }), // MFL White
+
+            new(Enemy.GetEnemyNameByIndex(11).Current, new[] { 2358, 2359, 2360, 2361 }), // Tea
+            new(Enemy.GetEnemyNameByIndex(12).Current, new[] { 2362, 2363, 2364, 2365 }), // Tristan
+            new(Enemy.GetEnemyNameByIndex(13).Current, new[] { 2366, 2367, 2368, 2369, 2370 }), // Mai
+            new(Enemy.GetEnemyNameByIndex(14).Current, new[] { 2371, 2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381 }), // Mako
+            new(Enemy.GetEnemyNameByIndex(15).Current, new[] { 2383, 2384, 2385, 2386, 2387 }), // Joey
+            new(Enemy.GetEnemyNameByIndex(16).Current, new[] { 2388, 2389, 2390, 2391, 2392, 2393, 2394, 2395 }), // Shadi
+            new(Enemy.GetEnemyNameByIndex(17).Current, new[] { 2396, 2397, 2398 }), // Grandpa
+            new(Enemy.GetEnemyNameByIndex(18).Current, new[] { 2399, 2400, 2401, 2402, 2403, 2404, 2405, 2406, 2407, 2408 }), // Bakura
+            new(Enemy.GetEnemyNameByIndex(19).Current, new[] { 2409, 2410, 2411, 2412, 2413, 2414, 2415 }), // Yugi
+            new($"{Enemy.GetEnemyNameByIndex(21).Current} ({Deck.DeckList[21 + 26].DeckLeader.Name.Current})", new[] { 2435, 2436, 2437, 2438, 2439, 2440 }) // MFL Red
         };
+
         SectionLabelLookup = SectionsLabels
             .SelectMany(s => s.Indices.Select(i => (i, s.Label)))
             .ToDictionary(x => x.i, x => x.Label);

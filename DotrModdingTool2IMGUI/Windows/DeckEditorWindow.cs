@@ -22,7 +22,7 @@ public class DeckEditorWindow : IImGuiWindow
 
     bool openDeckErrors;
     StringBuilder deckErrorText = new StringBuilder();
-    ImFontPtr fontToUse;
+    ImFontPtr currentFont;
     Deck currentDeck;
     int currentDeckListIndex = 0;
     int lastDeckListIndex = 0;
@@ -32,17 +32,20 @@ public class DeckEditorWindow : IImGuiWindow
     string trunkSearchFilter = "";
 
     Vector4 highlightColour = new GuiColour(8, 153, 154, 155).value;
-
+    int currentFontIndex = 0;
+    string[] fontSizes = new string[] { "10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30", "32" };
     public Action<ModdedStringName> ViewCardInEditor;
 
-    public DeckEditorWindow(ImFontPtr fontPtr)
+    public DeckEditorWindow()
     {
-        fontToUse = fontPtr;
+        currentFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, UserSettings.LastDeckEditorFontSize);
+        currentFontIndex = Array.IndexOf(fontSizes, UserSettings.LastDeckEditorFontSize.ToString());
 
     }
 
     public void Render()
     {
+        ImGui.PushFont(currentFont);
         float availableHeight = ImGui.GetContentRegionAvail().Y;
         ImGui.BeginChild("Trunk", new Vector2(ImGui.GetContentRegionAvail().X / 2f, availableHeight),
             ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
@@ -53,8 +56,9 @@ public class DeckEditorWindow : IImGuiWindow
             ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
         DrawDeckListTable();
         ImGui.EndChild();
-        ImGui.PushFont(Fonts.MonoSpace);
+        ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28));
         modalPopup.Draw();
+        ImGui.PopFont();
         ImGui.PopFont();
 
 
@@ -86,8 +90,10 @@ public class DeckEditorWindow : IImGuiWindow
             lastDeckListIndex = currentDeckListIndex;
         }
 
-        ImGui.PushFont(fontToUse);
-        if (ImGui.BeginCombo("Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name.Current}", ImGuiComboFlags.HeightLarge))
+        ImGui.PushFont(currentFont);
+        ImGui.Text("Decks");
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2);
+        if (ImGui.BeginCombo("##Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name.Current}", ImGuiComboFlags.HeightLarge))
         {
             for (var index = 0; index < Deck.DeckList.Count; index++)
             {
@@ -340,26 +346,69 @@ public class DeckEditorWindow : IImGuiWindow
     void DrawTrunkTable()
     {
 
-        ImGui.PushFont(fontToUse);
+        ImGui.PushFont(currentFont);
         if (sortedTrunkList.Count == 0 || sortedTrunkList.Count != CardConstant.List.Count)
         {
             sortedTrunkList = new List<CardConstant>(CardConstant.List);
         }
         ImGui.TextColored(new GuiColour(System.Drawing.Color.SkyBlue).value,
             "Instructions: Left click = select card, \nCtrl + Left Click = add to selection or remove a card already selected\nShift + left click to add everything between your last clicked card and the this card, Ctrl + Right click to clear all\nShift + Right click = view hovered card in editor");
+
+        ImGui.Text("Font Size");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize("12").X + ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetFrameHeight());
+        if (ImGui.Combo("##Font size", ref currentFontIndex, fontSizes, fontSizes.Length))
+        {
+            UserSettings.LastDeckEditorFontSize = int.Parse(fontSizes[currentFontIndex]);
+            currentFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, UserSettings.LastDeckEditorFontSize);
+
+        }
+
+        float maxWidth = ImGui.GetContentRegionAvail().X;
+        float lineWidth = 0;
+        float searchLabelWidth = ImGui.CalcTextSize("Search Bar").X + ImGui.GetStyle().ItemSpacing.X;
+        float searchInputWidth = ImGui.CalcTextSize("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW").X + ImGui.GetStyle().FramePadding.X * 2; // Approximate width for 32 chars
+        float searchTotalWidth = searchLabelWidth + searchInputWidth + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + searchTotalWidth > maxWidth && lineWidth > 0)
+        {
+            lineWidth = 0;
+        }
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
+
         ImGui.Text("Search Bar");
         ImGui.SameLine();
         ImGui.InputText("##SearchBar", ref trunkSearchFilter, 32);
-        ImGui.SameLine();
+        lineWidth += searchTotalWidth;
+
+        float radioWidth = ImGui.CalcTextSize("Use colour").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + radioWidth > maxWidth && lineWidth > 0)
+        {
+            lineWidth = 0;
+        }
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
+
         if (ImGui.RadioButton("Use colour", UserSettings.deckEditorUseColours))
         {
             UserSettings.deckEditorUseColours = !UserSettings.deckEditorUseColours;
         }
-        ImGui.SameLine();
+        lineWidth += radioWidth;
+
+        float colorEditWidth = ImGui.CalcTextSize("Highlight colour").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth > 0 && lineWidth + colorEditWidth <= maxWidth)
+        {
+            ImGui.SameLine();
+        }
         if (ImGui.ColorEdit4("Highlight colour", ref highlightColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {
             UserSettings.DeckEditorHighlightcolour = highlightColour;
         }
+
         if (ImGui.BeginTable("Trunk", 9, tableFlags))
         {
             float idWidth = ImGui.CalcTextSize("999").X;

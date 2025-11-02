@@ -3,8 +3,9 @@
 public static class Effects
 {
     public static List<MonsterEffects> MonsterEffectsList = new List<MonsterEffects>();
-    public static List<Effect> MagicEffectsList = new List<Effect>();
-
+    public static List<Effect> NonMonsterEffectsList = new List<Effect>();
+        
+    
 
     public static Dictionary<int, ModdedStringName> MonsterEffectOwners = new Dictionary<int, ModdedStringName> {
         { 1, new ModdedStringName("Seiyaryu", "Seiyaryu") },
@@ -265,7 +266,7 @@ public static class Effects
         { 682, new ModdedStringName("Moisture Creature", "Moisture Creature") },
     };
 
-    public static Dictionary<int, ModdedStringName> MagicEffectOwnerNames = new Dictionary<int, ModdedStringName> {
+    public static Dictionary<int, ModdedStringName> NonMonsterOwners = new Dictionary<int, ModdedStringName> {
         { 683, new ModdedStringName("Dragon Capture Jar", "Dragon Capture Jar") },
         { 684, new ModdedStringName("Time Seal", "Time Seal") },
         { 685, new ModdedStringName("Monster Reborn", "Monster Reborn") },
@@ -447,7 +448,7 @@ public static class Effects
 
     public static byte[] MagicEffectBytes
     {
-        get { return MagicEffectsList.SelectMany(a => a.Bytes).ToArray(); }
+        get { return NonMonsterEffectsList.SelectMany(a => a.Bytes).ToArray(); }
     }
 
     public static void ReloadStrings()
@@ -456,7 +457,7 @@ public static class Effects
         {
             mEffect.Value.Edited = StringEditor.StringTable[StringEditor.CardNamesOffsetStart + mEffect.Key];
         }
-        foreach (var mEffect in MagicEffectOwnerNames)
+        foreach (var mEffect in NonMonsterOwners)
         {
             mEffect.Value.Edited = StringEditor.StringTable[StringEditor.CardNamesOffsetStart + mEffect.Key];
         }

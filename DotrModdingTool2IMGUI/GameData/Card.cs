@@ -78,7 +78,7 @@ public class Card
     {
         if (index >= cardNameList.Length)
         {
-            return new ModdedStringName("???", "???");
+            return new ModdedStringName("???????", "???????");
         }
         return cardNameList[index];
     }

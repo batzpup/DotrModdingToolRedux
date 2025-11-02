@@ -1867,4 +1867,9 @@
     <ItemGroup>
       <ProjectReference Include="..\Updater\Updater.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Images\extractedImages\picpack\" />
+      <Folder Include="Images\extractedImages\picture\" />
+    </ItemGroup>
 </Project>

@@ -441,7 +441,7 @@ public partial class DataAccess
         byte[] monsterEffectsBytes = new byte[EffectByteCount * MonsterEffectsCount * MonsterEffectsTypeCount];
         byte[] magicEffectsBytes = new byte[EffectByteCount * MagicEffectsCount];
         Effects.MonsterEffectsList.Clear();
-        Effects.MagicEffectsList.Clear();
+        Effects.NonMonsterEffectsList.Clear();
         lock (FileStreamLock)
         {
             fileStream.Seek(MonsterEffectsOffset, SeekOrigin.Begin);
@@ -466,7 +466,7 @@ public partial class DataAccess
         {
             Span<byte> effectByteSpan = new Span<byte>(magicEffectsBytes, i * 8, 8);
 
-            Effects.MagicEffectsList.Add(new Effect(effectByteSpan.ToArray()));
+            Effects.NonMonsterEffectsList.Add(new Effect(effectByteSpan.ToArray()));
         }
 
         Effects.ReloadStrings();
@@ -676,65 +676,75 @@ public partial class DataAccess
 
     public static void LoadImageData()
     {
-        CDReader isoFile = new CDReader(fileStream, true);
-        // Get the file from inside the ISO
-        PreLoadImageEditor.fileEntries = isoFile.GetFiles($"Data");
-        if (PreLoadImageEditor.fileEntries == null)
+        lock (FileStreamLock)
         {
-            return;
-        }
-        foreach (var file in PreLoadImageEditor.fileEntries)
-        {
-
-            if (file == "Data\\PICTURE.MRG;1")
+            CDReader isoFile = new CDReader(fileStream, true);
+            // Get the file from inside the ISO
+            PreLoadImageEditor.fileEntries = isoFile.GetFiles($"Data");
+            if (PreLoadImageEditor.fileEntries == null)
+            {
+                return;
+            }
+            foreach (var file in PreLoadImageEditor.fileEntries)
             {
 
-                var data = isoFile.OpenFile(file, FileMode.Open);
-                for (int i = 0; i < 871; i++)
+                if (file == "Data\\PICTURE.MRG;1")
                 {
-                    byte[] picture = new byte[PictureSize];
-                    data.Read(picture, 0, PictureSize);
-                    PreLoadImageEditor.CardArtBytes[i] = picture;
+
+                    var data = isoFile.OpenFile(file, FileMode.Open);
+                    for (int i = 0; i < 871; i++)
+                    {
+                        byte[] picture = new byte[PictureSize];
+                        data.ReadExactly(picture, 0, PictureSize);
+                        PreLoadImageEditor.CardArtBytes[i] = picture;
+                        CreateImageFromBytes(picture);
+                    }
                 }
-
-            }
-            else if (file == "Data\\PICPACK.MRG;1")
-            {
-
-                var data = isoFile.OpenFile(file, FileMode.Open);
-                for (int i = 0; i < 223; i++)
+                else if (file == "Data\\PICPACK.MRG;1")
                 {
-                    byte[] picture = new byte[PicPackSize];
 
-                    data.Read(picture, 0, PicPackSize);
-                    PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
+                    var data = isoFile.OpenFile(file, FileMode.Open);
+                    for (int i = 0; i < 223; i++)
+                    {
+                        byte[] picture = new byte[PicPackSize];
 
+                        data.ReadExactly(picture, 0, PicPackSize);
+                        PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
+
+                    }
                 }
             }
         }
+    }
+
+    static void CreateImageFromBytes(byte[] picture)
+    {
+        
     }
 
     public void SavePreloadImages(Dictionary<int, int> images)
     {
         if (fileStream != null)
         {
-            for (int i = 0; i < images.Count; i++)
+            lock (FileStreamLock)
             {
-                if (images[i] == -1)
+                for (int i = 0; i < images.Count; i++)
                 {
-                    continue;
-                }
-                WritePicPackImage(images[i], i);
-                byte[] bytes = BitConverter.GetBytes((ushort)images[i]);
-                lock (FileStreamLock)
-                {
-                    fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
-                    fileStream.Write(bytes, 0, 2);
-                    fileStream.Flush();
+                    if (images[i] == -1)
+                    {
+                        continue;
+                    }
+                    WritePicPackImage(images[i], i);
+                    byte[] bytes = BitConverter.GetBytes((ushort)images[i]);
+                    lock (FileStreamLock)
+                    {
+                        fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
+                        fileStream.Write(bytes, 0, 2);
+                        fileStream.Flush();
+                    }
                 }
             }
         }
-
     }
 
     public void ApplyPatches()

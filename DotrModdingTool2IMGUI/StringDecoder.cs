@@ -40,6 +40,7 @@ public class StringDecoder
         {
             knownChars[0x8F + i] = (i + 1).ToString()[0];
             knownChars[0x3D + i] = ((char)(0xFF11 + i));
+
         }
 
         for (int i = 0; i < 194; i++)
@@ -135,19 +136,19 @@ public class StringDecoder
                 }
                 blobIndex += 2;
             }
-            
+
             else if ((blob[blobIndex] & 0x1FFF) != 0)
             {
                 lines[lines.Count - 1].Add(blob[blobIndex] & 0x1FFF);
                 blobIndex++;
             }
-            
+
             else
             {
                 lines.Add(new List<int>());
                 blobIndex++;
             }
-            
+
             if ((blob[blobIndex - 1] & 0x8000) != 0)
                 return lines;
         }
@@ -213,7 +214,6 @@ public class StringDecoder
                         }
 
                     }
-                    //Non character used for 
                     realChars.Add('\n');
                 }
                 //transforms the custom codes to their string representations

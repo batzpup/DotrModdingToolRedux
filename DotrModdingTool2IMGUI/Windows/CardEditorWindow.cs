@@ -74,8 +74,8 @@ class CardEditorWindow : IImGuiWindow
     public CardEditorWindow()
     {
         starImagePtr = ImageHelper.LoadImageImgui($"Images.cardExtras.star.png");
-        font = Fonts.MonoSpace;
-        smallerFont = Fonts.LoadCustomFont(pixelSize: 26);
+        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
+        smallerFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26);
         cardImageSize = new Vector2(192 * imageScale, 192 * imageScale);
         frameImageSize = new Vector2(256 * imageScale, 368 * imageScale);
         textBoxTopLeftInnerOffsetInPixelsScaled = new Vector2(19, 22) * imageScale;
@@ -140,13 +140,14 @@ class CardEditorWindow : IImGuiWindow
         _modalPopup.Draw();
         ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, windowSize.Y),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Text("Cards:");
         ImGui.SameLine();
+        ImGui.PushFont(FontManager.GetBestFitFont("Difference highlight colour", false));
         ImGui.Checkbox("Show help", ref showHelpText);
         ImGui.SameLine();
 
         ImGui.ColorEdit4("Difference highlight colour", ref UserSettings.CardEditorDifferenceHighlightColour,
             ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs);
+        ImGui.PopFont();
         if (showHelpText)
         {
             ImGui.PushFont(smallerFont);
@@ -165,135 +166,56 @@ class CardEditorWindow : IImGuiWindow
         }
 
 
+        ImGui.PushFont(FontManager.GetBestFitFont("Attribute", true));
         ImGui.Separator();
         ImGui.Text("Sort by");
-        if (ImGui.Button("ID"))
+        ImGui.BeginGroup();
+
+        string[] sortButtons = { "ID", "Name", "ATK", "DEF", "Level", "Attribute", "Kind", "DC" };
+        float lineWidth = 0;
+        float maxWidth = ImGui.GetContentRegionAvail().X;
+
+        for (int i = 0; i < sortButtons.Length; i++)
         {
-            if (cardEditorSearchSortField == "ID")
+            string field = sortButtons[i];
+            Vector2 buttonSize = ImGui.CalcTextSize(field);
+            buttonSize.X += ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().ItemSpacing.X;
+
+            // If adding this button would exceed width, start new line
+            if (lineWidth + buttonSize.X > maxWidth && lineWidth > 0)
             {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
+                lineWidth = 0;
             }
-            else
+            else if (i > 0 && lineWidth > 0)
             {
-                cardEditorSearchSortField = "ID";
-                cardEditorSearchAscending = true;
-            }
-            FilterAndSort();
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("Name"))
-        {
-            if (cardEditorSearchSortField == "Name")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "Name";
-                cardEditorSearchAscending = true;
-            }
-            FilterAndSort();
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("ATK"))
-        {
-            if (cardEditorSearchSortField == "ATK")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "ATK";
-                cardEditorSearchAscending = true;
-            }
-            FilterAndSort();
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("DEF"))
-        {
-            if (cardEditorSearchSortField == "DEF")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "DEF";
-                cardEditorSearchAscending = true;
+                ImGui.SameLine();
             }
 
-            FilterAndSort();
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("Level"))
-        {
-            if (cardEditorSearchSortField == "Level")
+            if (ImGui.Button(field))
             {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "Level";
-                cardEditorSearchAscending = true;
-            }
-
-            FilterAndSort();
-        }
-        ImGui.SameLine();
-
-        ImGui.SameLine();
-
-        if (ImGui.Button("Attribute"))
-        {
-            if (cardEditorSearchSortField == "Attribute")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "Attribute";
-                cardEditorSearchAscending = true;
+                if (cardEditorSearchSortField == field)
+                {
+                    cardEditorSearchAscending = !cardEditorSearchAscending;
+                }
+                else
+                {
+                    cardEditorSearchSortField = field;
+                    cardEditorSearchAscending = true;
+                }
+                FilterAndSort();
             }
 
-            FilterAndSort();
+            lineWidth += buttonSize.X;
         }
 
-        ImGui.SameLine();
-        if (ImGui.Button("Kind"))
-        {
-            if (cardEditorSearchSortField == "Kind")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "Kind";
-                cardEditorSearchAscending = true;
-            }
-            FilterAndSort();
-        }
+        ImGui.EndGroup();
 
-        ImGui.SameLine();
-        if (ImGui.Button("DC"))
-        {
-            if (cardEditorSearchSortField == "DC")
-            {
-                cardEditorSearchAscending = !cardEditorSearchAscending;
-            }
-            else
-            {
-                cardEditorSearchSortField = "DC";
-                cardEditorSearchAscending = true;
-            }
-
-            FilterAndSort();
-        }
-        ImGui.SameLine();
         if (ImGui.Checkbox("Ascending", ref cardEditorSearchAscending))
         {
             FilterAndSort();
         }
 
-
+        ImGui.PopFont();
 
         float availableHeight = windowBottom - ImGui.GetCursorPosY();
         ImGui.PushItemWidth(windowSize.X / 3f);
@@ -301,10 +223,12 @@ class CardEditorWindow : IImGuiWindow
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
         ;
 
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         if (ImGui.BeginListBox("##Cards", new Vector2(0, availableHeight)))
         {
             ImGui.Text("Card Search");
-            ImGui.SetNextItemWidth(windowSize.X / 3f);
+            Vector2 availArea = ImGui.GetContentRegionAvail();
+            ImGui.SetNextItemWidth(availArea.X);
             if (ImGui.InputText("##CardSearch", ref cardSearch, 32))
             {
                 FilterAndSort();
@@ -314,6 +238,7 @@ class CardEditorWindow : IImGuiWindow
             {
                 bool isSelected = selectedCards.Contains(filteredName);
 
+                ImGui.PushFont(FontManager.GetBestFitFont(filteredName.Current, availArea.X, availArea.Y, FontManager.FontFamily.NotoSansJP));
                 if (ImGui.Selectable($"{filteredName}", isSelected, ImGuiSelectableFlags.AllowDoubleClick))
                 {
 
@@ -333,14 +258,7 @@ class CardEditorWindow : IImGuiWindow
                             }
                             if (CanSelectCard(CardConstant.CardLookup[filteredName]))
                             {
-                                if (UserSettings.UseDefaultNames)
-                                {
-                                    currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
-                                }
-                                else
-                                {
-                                    currentCardIndex = Array.IndexOf(StringEditor.StringTable.Values.ToArray(), filteredName) - StringEditor.CardNamesOffsetStart;
-                                }
+                                currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
 
                             }
                         }
@@ -368,6 +286,7 @@ class CardEditorWindow : IImGuiWindow
                     }
 
                 }
+                ImGui.PopFont();
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(filteredName.Default);
@@ -376,7 +295,7 @@ class CardEditorWindow : IImGuiWindow
             ImGui.EndListBox();
         }
         ImGui.PopStyleVar(1);
-        
+
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
@@ -467,7 +386,7 @@ class CardEditorWindow : IImGuiWindow
         ImGui.EndChild();
         ImGui.SameLine();
         font.Scale = 1f;
-        ImGui.PushFont(font);
+        ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 30));
         ImGui.BeginChild("RightSidePanel", Vector2.Zero, ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
 
         if (ImGui.BeginTabBar("CardEditorMode"))
@@ -529,7 +448,7 @@ class CardEditorWindow : IImGuiWindow
         else
         {
             //TODO FIX
-            filteredList = Card.cardNameList 
+            filteredList = Card.cardNameList
                 .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
@@ -687,7 +606,7 @@ class CardEditorWindow : IImGuiWindow
             Card.cardNameList[currentCardIndex].Edited = name;
         }
         ImGui.Spacing();
-        
+
         ImGui.Text("Card Text: ");
         string text = StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + currentCardIndex];
         ImGui.InputTextMultiline("##EffectText", ref text, 200, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 15));
@@ -717,7 +636,7 @@ class CardEditorWindow : IImGuiWindow
             {
                 if (currentCardIndex >= 683)
                 {
-                    ImGui.Text($"Original effect ({Effects.MagicEffectOwnerNames.ElementAt(magicEffectTableEditorIndex)})");
+                    ImGui.Text($"Original effect ({Effects.NonMonsterOwners.ElementAt(magicEffectTableEditorIndex)})");
                     ImGui.Text($"Magic Effect Id: {currentCardConst.EffectId}");
                     for (int j = 0; j < effectsTableHorizontalHeaders.Length; j++)
                     {
@@ -735,20 +654,20 @@ class CardEditorWindow : IImGuiWindow
                                 {
                                     case 0:
                                         ImGui.Text(
-                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].effectName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].EffectId}");
+                                            $"{Effects.NonMonsterEffectsList[currentCardConst.EffectId].effectName} : {(int)Effects.NonMonsterEffectsList[currentCardConst.EffectId].EffectId}");
                                         break;
                                     case 1:
                                         ImGui.Text(
-                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].SearchMode}");
+                                            $"{Effects.NonMonsterEffectsList[currentCardConst.EffectId].SearchModeName} : {(int)Effects.NonMonsterEffectsList[currentCardConst.EffectId].SearchMode}");
                                         break;
                                     case 2:
                                         ImGui.Text(
-                                            $"{Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeTargetingName} : {(int)Effects.MagicEffectsList[currentCardConst.EffectId].SearchModeTargeting}");
+                                            $"{Effects.NonMonsterEffectsList[currentCardConst.EffectId].SearchModeTargetingName} : {(int)Effects.NonMonsterEffectsList[currentCardConst.EffectId].SearchModeTargeting}");
                                         break;
                                     case 3:
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataUpper.ToString());
+                                        ImGui.Text(Effects.NonMonsterEffectsList[currentCardConst.EffectId].EffectDataUpper.ToString());
                                         ImGui.Separator();
-                                        ImGui.Text(Effects.MagicEffectsList[currentCardConst.EffectId].EffectDataLower.ToString());
+                                        ImGui.Text(Effects.NonMonsterEffectsList[currentCardConst.EffectId].EffectDataLower.ToString());
                                         break;
                                 }
                             }
@@ -770,9 +689,10 @@ class CardEditorWindow : IImGuiWindow
                     ImGui.Text($"Monster Effect Id:");
                     ImGui.SameLine();
                     int effectId = currentCardConst.EffectId;
-                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 3);
+
                     ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.EffectId), () =>
                     {
+                        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                         if (ImGui.InputInt("##EffectId", ref effectId))
                         {
                             foreach (var selectedCard in selectedCards)
@@ -996,28 +916,28 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.PopStyleColor();
                 ImGui.Separator();
 
-                ImGui.Text($"Original: ({Effects.MagicEffectOwnerNames.ElementAt(magicEffectTableEditorIndex)})");
+                ImGui.Text($"Original: ({Effects.NonMonsterOwners.ElementAt(magicEffectTableEditorIndex)})");
                 ImGui.SetNextItemWidth(200);
                 if (ImGui.InputInt("Current Magic effect index", ref magicEffectTableEditorIndex))
                 {
                     if (magicEffectTableEditorIndex < 0)
                     {
-                        magicEffectTableEditorIndex = Effects.MagicEffectsList.Count - 1;
+                        magicEffectTableEditorIndex = Effects.NonMonsterEffectsList.Count - 1;
                     }
-                    else if (magicEffectTableEditorIndex >= Effects.MagicEffectsList.Count)
+                    else if (magicEffectTableEditorIndex >= Effects.NonMonsterEffectsList.Count)
                     {
                         magicEffectTableEditorIndex = 0;
                     }
                 }
-                currentMagicEffectId = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId;
-                currentMagicEffectSearchMode = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode;
-                currentMagicEffectSearchModeTargeting = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargeting;
-                currentMagicEffectDataUpper = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataUpper;
-                currentMagicEffectDataLower = (int)Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower;
+                currentMagicEffectId = (int)Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].EffectId;
+                currentMagicEffectSearchMode = (int)Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchMode;
+                currentMagicEffectSearchModeTargeting = (int)Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchModeTargeting;
+                currentMagicEffectDataUpper = (int)Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].EffectDataUpper;
+                currentMagicEffectDataLower = (int)Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].EffectDataLower;
 
                 if (ImGui.Button($"Disable##Magic"))
                 {
-                    Effects.MagicEffectsList[magicEffectTableEditorIndex].DisableEffect();
+                    Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].DisableEffect();
                 }
                 for (int i = 0; i < effectsTableHorizontalHeaders.Length; i++)
                 {
@@ -1031,30 +951,30 @@ class CardEditorWindow : IImGuiWindow
                         switch (i)
                         {
                             case 0:
-                                ImGui.Text($"{Effects.MagicEffectsList[magicEffectTableEditorIndex].effectName}");
+                                ImGui.Text($"{Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].effectName}");
                                 if (ImGui.InputInt($"##EffectId{i}", ref currentMagicEffectId))
                                 {
                                     int value = currentMagicEffectId;
                                     int wrappedValue = ((value - 1) % 88 + 88) % 88 + 1;
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectId =
+                                    Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].EffectId =
                                         (EffectId)wrappedValue;
                                 }
                                 break;
                             case 1:
                                 ImGui.Text(
-                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeName}");
+                                    $"{Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchModeName}");
                                 if (ImGui.InputInt($"##EffectTarget{i}", ref currentMagicEffectSearchMode))
                                 {
                                     int value = currentMagicEffectSearchMode;
                                     int wrappedValue = (value % 62 + 62) % 62;
 
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchMode =
+                                    Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchMode =
                                         (SearchMode)wrappedValue;
                                 }
                                 break;
                             case 2:
                                 ImGui.Text(
-                                    $"{Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargetingName}");
+                                    $"{Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchModeTargetingName}");
                                 if (ImGui.InputInt($"##EffectTarget{i}",
                                         ref currentMagicEffectSearchModeTargeting, 0x40))
                                 {
@@ -1073,7 +993,7 @@ class CardEditorWindow : IImGuiWindow
                                     {
                                         wrappedValue = (value % 0x100 + 0x100) % 0x100;
                                     }
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].SearchModeTargeting =
+                                    Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].SearchModeTargeting =
                                         (SearchModeTargeting)wrappedValue;
                                 }
                                 break;
@@ -1094,7 +1014,7 @@ class CardEditorWindow : IImGuiWindow
                                 {
                                     currentMagicEffectDataLower =
                                         Math.Clamp(currentMagicEffectDataLower, 0, 65535);
-                                    Effects.MagicEffectsList[magicEffectTableEditorIndex].EffectDataLower =
+                                    Effects.NonMonsterEffectsList[magicEffectTableEditorIndex].EffectDataLower =
                                         (ushort)currentMagicEffectDataLower;
                                 }
                                 break;
@@ -1122,149 +1042,183 @@ class CardEditorWindow : IImGuiWindow
 
     void RenderProperties()
     {
-        Vector2 topRow = ImGui.GetCursorPos();
-        ImGui.Text("Attribute");
-        ImGui.SetNextItemWidth(125);
-        if (currentCardIndex < 683)
-        {
+        Dictionary<string, string> SectionTextMaxWidth = new Dictionary<string, string>() {
+            { "Attribute", "Attribute" },
+            { "Kind", "Winged-beast   " },
+            { "Level", "12" },
+            { "DC", "99 " },
+        };
 
-            int count = selectedCards.Count;
-            ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Attribute), () =>
+        float lineWidth = 0;
+        float maxWidth = ImGui.GetContentRegionAvail().X;
+
+        foreach (var kvp in SectionTextMaxWidth)
+        {
+            Vector2 textSize = ImGui.CalcTextSize(kvp.Value);
+            Vector2 labelSize = ImGui.CalcTextSize(kvp.Key);
+            float groupWidth = Math.Max(textSize.X, labelSize.X) + ImGui.GetStyle().FramePadding.X * 2;
+            float totalWidth = groupWidth;
+
+            if (lineWidth + groupWidth > maxWidth && lineWidth > 0)
             {
-                GlobalImgui.CardEditorCombo("##Attribute", ref currentCardAttribute, CardAttribute.AttributeNames, (newValue) =>
-                {
-                    foreach (var selectedCardName in selectedCards)
+                lineWidth = 0;
+            }
+            else if (kvp.Key != "Attribute" && lineWidth > 0)
+            {
+                ImGui.SameLine();
+            }
+
+            ImGui.BeginGroup();
+            switch (kvp.Key)
+            {
+                case "Attribute":
+                    ImGui.Text("Attribute");
+                    ImGui.SetNextItemWidth(groupWidth);
+                    if (currentCardIndex < 683)
                     {
-                        if (Array.IndexOf(Card.cardNameList, selectedCardName) < 683 &&
-                            CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                        int count = selectedCards.Count;
+                        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Attribute), () =>
                         {
-                            card.Attribute = (byte)newValue;
+                            GlobalImgui.CardEditorCombo("##Attribute", ref currentCardAttribute, CardAttribute.AttributeNames, (newValue) =>
+                            {
+                                foreach (var selectedCardName in selectedCards)
+                                {
+                                    if (Array.IndexOf(Card.cardNameList, selectedCardName) < 683 &&
+                                        CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                                    {
+                                        card.Attribute = (byte)newValue;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                    break;
+
+                case "Kind":
+                    ImGui.Text("Kind");
+                    ImGui.SetNextItemWidth(groupWidth);
+
+                    String[] kindsToShow;
+                    if (currentCardConst.Index < 683)
+                    {
+                        kindsToShow = CardKind.Kinds.Where(k => k.Key <= 20).Select(k => k.Value).ToArray();
+                    }
+                    else if (currentCardConst.Index >= 752 && currentCardConst.Index <= 800)
+                    {
+                        kindsToShow = new[] { "Power Up", "Magic" };
+                    }
+                    else
+                    {
+                        kindsToShow = CardKind.Kinds.Where(k => k.Key > 20 && k.Key != 64).Select(k => k.Value).ToArray();
+                    }
+
+                    byte selectedKey = CardKind.Kinds.ElementAt(currentCardKind).Key;
+                    CardKind.Kinds.TryGetValue(selectedKey, out string selectedValue);
+                    currentCardKind = Array.IndexOf(kindsToShow, selectedValue);
+
+                    if (currentCardKind < 0 || currentCardKind >= kindsToShow.Length)
+                    {
+                        currentCardKind = 0;
+                    }
+
+                    bool allKindSame = AllSelectedCardConstHaveSame(c => c.Kind);
+                    if (!allKindSame)
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.FrameBg, new GuiColour(Color.Orange).value);
+                    }
+
+                    ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Kind), () =>
+                    {
+                        GlobalImgui.CardEditorCombo("##Kind", ref currentCardKind, kindsToShow, (newValue) =>
+                        {
+                            foreach (var selectedCardName in selectedCards)
+                            {
+                                if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                                {
+                                    card.Kind = CardKind.Kinds
+                                        .FirstOrDefault(k => k.Value == kindsToShow[currentCardKind])
+                                        .Key;
+                                    currentCardConst.setCardColor();
+                                }
+                            }
+                        });
+                    });
+
+                    if (!allKindSame)
+                    {
+                        ImGui.PopStyleColor();
+                    }
+
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        if (currentCardConst.CardKind.isMonster())
+                        {
+                            ImGui.TextColored(new GuiColour(Color.Green).value, "Free to change for monsters");
                         }
+                        else
+                        {
+                            ImGui.TextColored(new GuiColour(Color.Red).value, "Do not change for non monsters unless you know what you are doing");
+                        }
+                        ImGui.EndTooltip();
                     }
-                });
-            });
+                    break;
 
-        }
-        var kindPos = new Vector2(ImGui.CalcTextSize("Attribute").X + 30, topRow.Y);
-        ImGui.SetCursorPos(kindPos);
-        ImGui.Text("Kind");
-
-        float textWidth = ImGui.CalcTextSize("Trap (Limited Range)").X;
-        ImGui.SetNextItemWidth(textWidth);
-        ImGui.SetCursorPosX(kindPos.X);
-
-        String[] kindsToShow;
-
-
-
-        if (currentCardConst.Index < 683)
-        {
-            kindsToShow = CardKind.Kinds.Where(k => k.Key <= 20).Select(k => k.Value).ToArray();
-
-        }
-        else if (currentCardConst.Index >= 752 && currentCardConst.Index <= 800)
-        {
-            kindsToShow = new[] { "Power Up", "Magic" };
-            //kindsToShow = CardKind.Kinds.Where(k => k.Key == 64).Select(k => k.Value).ToArray();
-        }
-        else
-        {
-            kindsToShow = CardKind.Kinds.Where(k => k.Key > 20 && k.Key != 64).Select(k => k.Value).ToArray();
-        }
-
-        byte selectedKey = CardKind.Kinds.ElementAt(currentCardKind).Key;
-        CardKind.Kinds.TryGetValue(selectedKey, out string selectedValue);
-        currentCardKind = Array.IndexOf(kindsToShow, selectedValue);
-
-        if (currentCardKind < 0 || currentCardKind >= kindsToShow.Length)
-        {
-            currentCardKind = 0;
-        }
-        bool allKindSame = AllSelectedCardConstHaveSame(c => c.Kind);
-        if (!allKindSame)
-        {
-            ImGui.PushStyleColor(ImGuiCol.FrameBg, new GuiColour(Color.Orange).value);
-        }
-        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Kind), () =>
-        {
-            GlobalImgui.CardEditorCombo("##Kind", ref currentCardKind, kindsToShow, (newValue) =>
-            {
-                foreach (var selectedCardName in selectedCards)
-                {
-                    if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                case "Level":
+                    ImGui.Text("Level");
+                    ImGui.SetNextItemWidth(groupWidth);
+                    ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Level), () =>
                     {
-                        card.Kind = CardKind.Kinds
-                            .FirstOrDefault(k => k.Value == kindsToShow[currentCardKind])
-                            .Key;
-                        currentCardConst.setCardColor();
-                    }
-                }
-            });
-        });
-        if (!allKindSame)
-        {
-            ImGui.PopStyleColor();
-        }
-        if (ImGui.IsItemHovered())
-        {
+                        if (ImGui.SliderInt("##Select Value", ref currentCardSummonLevel, 0, 12))
+                        {
+                            foreach (var selectedCardName in selectedCards)
+                            {
+                                if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                                {
+                                    card.Level = (byte)currentCardSummonLevel;
+                                }
+                            }
+                        }
+                    });
+                    break;
 
-            ImGui.BeginTooltip();
-            if (currentCardConst.CardKind.isMonster())
-            {
-                ImGui.TextColored(new GuiColour(Color.Green).value, "Free to change for monsters");
-            }
-            else
-            {
-                ImGui.TextColored(new GuiColour(Color.Red).value, "Do not change for non monsters unless you know what you are doing");
-            }
-            ImGui.EndTooltip();
-
-        }
-        ImGui.SetCursorPos(kindPos + new Vector2(textWidth + ImGui.GetStyle().ItemSpacing.X, 0));
-
-        ImGui.Text("Level");
-
-        ImGui.SetCursorPos(kindPos + new Vector2(textWidth + 100 + ImGui.GetStyle().ItemSpacing.X * 2, 0));
-        ImGui.Text("DC");
-
-        ImGui.SetCursorPosX(kindPos.X + textWidth + ImGui.GetStyle().ItemSpacing.X);
-
-        ImGui.SetNextItemWidth(100);
-
-        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.Level), () =>
-        {
-            if (ImGui.SliderInt("##Select Value", ref currentCardSummonLevel, 0, 12))
-            {
-                foreach (var selectedCardName in selectedCards)
-                {
-                    if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                case "DC":
+                    ImGui.Text("DC");
+                    ImGui.SetNextItemWidth(groupWidth);
+                    ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.DeckCost), () =>
                     {
-                        card.Level = (byte)currentCardSummonLevel;
-                    }
-                }
+                        if (ImGui.InputInt("##DC", ref currentCardDeckCost, 0))
+                        {
+                            foreach (var selectedCardName in selectedCards)
+                            {
+                                if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
+                                {
+                                    currentCardDeckCost = Math.Clamp(currentCardDeckCost, 0, 99);
+                                    card.DeckCost = (byte)currentCardDeckCost;
+                                }
+                            }
+                        }
+                    });
+                    break;
             }
-        });
 
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(80);
-        ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.DeckCost), () =>
+            ImGui.EndGroup();
+            lineWidth += totalWidth;
+        }
+
+
+        ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28));
+        lineWidth = 0;
+        float radioButtonSize = ImGui.GetFrameHeight();
+        Vector2 reincarnationSize = ImGui.CalcTextSize("Reincarnation");
+        float reincarnationTotalWidth = reincarnationSize.X + radioButtonSize + ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + reincarnationTotalWidth > maxWidth && lineWidth > 0)
         {
-            if (ImGui.InputInt("##DC", ref currentCardDeckCost, 0))
-            {
-                foreach (var selectedCardName in selectedCards)
-                {
-                    if (CardConstant.CardLookup.TryGetValue(selectedCardName, out var card))
-                    {
-                        currentCardDeckCost = Math.Clamp(currentCardDeckCost, 0, 99);
-                        card.DeckCost = (byte)currentCardDeckCost;
-                    }
-                }
-
-            }
-        });
+            lineWidth = 0;
+        }
         ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.AppearsInReincarnation), () =>
         {
-            if (ImGui.RadioButton("Appears in reincarnation", currentCardConst.AppearsInReincarnation))
+            if (ImGui.RadioButton("Reincarnation", currentCardConst.AppearsInReincarnation))
             {
                 currentCardConst.AppearsInReincarnation = !currentCardConst.AppearsInReincarnation;
                 foreach (var selectedCardName in selectedCards)
@@ -1275,8 +1229,24 @@ class CardEditorWindow : IImGuiWindow
                     }
                 }
             }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Card can be acquired from reincarnation");
+            }
         });
-        ImGui.SameLine();
+        lineWidth += reincarnationTotalWidth;
+
+
+        Vector2 enablePasswordSize = ImGui.CalcTextSize("Enable Password");
+        float enablePasswordTotalWidth = enablePasswordSize.X + radioButtonSize + ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + enablePasswordTotalWidth > maxWidth && lineWidth > 0)
+        {
+            lineWidth = 0;
+        }
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
         ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.PasswordWorks), () =>
         {
             if (ImGui.RadioButton("Enable Password", currentCardConst.PasswordWorks))
@@ -1291,34 +1261,22 @@ class CardEditorWindow : IImGuiWindow
                 }
             }
         });
-        if (currentCardConst.PasswordWorks)
+        lineWidth += enablePasswordTotalWidth;
+
+
+        Vector2 slotRareSize = ImGui.CalcTextSize("Slot Rare");
+        float slotRareTotalWidth = slotRareSize.X + radioButtonSize + ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + slotRareTotalWidth > maxWidth && lineWidth > 0)
         {
-            unsafe
-            {
-                ImGui.Text("Password:");
-                ImGui.SameLine();
-
-                if (ImGui.InputText($"##password{currentCardConst.Index}", ref currentCardPassword, 8, ImGuiInputTextFlags.CallbackCharFilter,
-                        FilterPasswordInput))
-                {
-                    if (currentCardPassword.Length != 8)
-                    {
-                        StringBuilder stringBuilder = new StringBuilder(currentCardPassword);
-                        for (int i = currentCardPassword.Length; i < 8; i++)
-                        {
-                            stringBuilder.Append('0');
-                        }
-                        currentCardPassword = stringBuilder.ToString();
-                    }
-                    currentCardConst.Password = currentCardPassword;
-                }
-            }
+            lineWidth = 0;
         }
-
-
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
         ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.IsRareDrop), () =>
         {
-            if (ImGui.RadioButton("Is Slot Rare", currentCardConst.IsRareDrop))
+            if (ImGui.RadioButton("Slot Rare", currentCardConst.IsRareDrop))
             {
                 CardConstant.List[currentCardIndex].IsRareDrop = !CardConstant.List[currentCardIndex].IsRareDrop;
                 foreach (var selectedCardName in selectedCards)
@@ -1332,11 +1290,26 @@ class CardEditorWindow : IImGuiWindow
                     }
                 }
             }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("When enabled card can be found from the 3 in a row rares");
+            }
         });
-        ImGui.SameLine();
+        lineWidth += slotRareTotalWidth;
+
+        Vector2 graveyardSize = ImGui.CalcTextSize("Graveyard");
+        float graveyardTotalWidth = graveyardSize.X + radioButtonSize + ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetStyle().ItemSpacing.X;
+        if (lineWidth + graveyardTotalWidth > maxWidth && lineWidth > 0)
+        {
+            lineWidth = 0;
+        }
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
         ColourMatchFrame(() => !AllSelectedCardConstHaveSame(c => c.AppearsInSlotReels), () =>
         {
-            if (ImGui.RadioButton("In slots", currentCardConst.AppearsInSlotReels))
+            if (ImGui.RadioButton("Graveyard", currentCardConst.AppearsInSlotReels))
             {
                 CardConstant.List[currentCardIndex].AppearsInSlotReels = !CardConstant.List[currentCardIndex].AppearsInSlotReels;
                 foreach (var selectedCardName in selectedCards)
@@ -1350,14 +1323,25 @@ class CardEditorWindow : IImGuiWindow
                     }
                 }
             }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Can be found from the graveyard slots");
+            }
         });
+        lineWidth += graveyardTotalWidth;
+
+
         if (currentCardConst.CardKind.isMonster())
         {
-            ImGui.SameLine();
-
+            float strongOnToonSize = ImGui.CalcTextSize("Strong on toon").X + ImGui.GetFrameHeight()  + ImGui.GetStyle().ItemSpacing.X;
+            
+            if (lineWidth > 0 && lineWidth + strongOnToonSize <= maxWidth)
+            {
+                ImGui.SameLine();
+            }
             ColourMatchFrame(() => !AllSelectedMonsterEnchantFlagsHaveSame(49), () =>
             {
-                if (ImGui.RadioButton($"Strong on toon terrain", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49]))
+                if (ImGui.RadioButton($"Strong on toon", MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49]))
                 {
                     MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49] =
                         !MonsterEnchantData.MonsterEnchantDataList[currentCardIndex].Flags[49];
@@ -1376,10 +1360,35 @@ class CardEditorWindow : IImGuiWindow
             });
         }
 
-        ImGui.Separator();
+        if (currentCardConst.PasswordWorks)
+        {
+            unsafe
+            {
+                ImGui.Text("Password:");
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                if (ImGui.InputText($"##password{currentCardConst.Index}", ref currentCardPassword, 8, ImGuiInputTextFlags.CallbackCharFilter,
+                        FilterPasswordInput))
+                {
+                    if (currentCardPassword.Length != 8)
+                    {
+                        StringBuilder stringBuilder = new StringBuilder(currentCardPassword);
+                        for (int i = currentCardPassword.Length; i < 8; i++)
+                        {
+                            stringBuilder.Append('0');
+                        }
+                        currentCardPassword = stringBuilder.ToString();
+                    }
+                    currentCardConst.Password = currentCardPassword;
+                }
+            }
+        }
 
+        ImGui.PopFont();
+
+        ImGui.PushFont(FontManager.GetBestFitFont("Leader Abilities", false, FontManager.FontFamily.NotoSansJP));
         ImGui.Text("Leader Abilities");
-        ImGui.Dummy(new Vector2(0, 20));
+        ImGui.Dummy(new Vector2(0, 20) * EditorWindow.AspectRatio);
 
         if (currentCardIndex < 683)
         {
@@ -1393,7 +1402,11 @@ class CardEditorWindow : IImGuiWindow
                     continue;
                 }
                 currentAbilityRankIndex[i] = abilityInstance.Abilities[i].RankRequired;
-                ImGui.Text(abilityInstance.Abilities[i].Name);
+
+                ImGui.PushFont(FontManager.GetBestFitFont(abilityInstance.Abilities[i].Name + "EEEEEEE", true));
+                ImGui.TextWrapped(abilityInstance.Abilities[i].Name);
+                ImGui.PopFont();
+
                 ImGui.SameLine();
                 ColourMatchFrame(() => !AllSelectedMonsterLeaderAbilityHaveSame(i, c => c.IsEnabled), () =>
                 {
@@ -1423,6 +1436,7 @@ class CardEditorWindow : IImGuiWindow
 
                     ColourMatchFrame(() => !AllSelectedMonsterLeaderAbilityHaveSame(i, c => c.RankRequired), () =>
                     {
+                        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                         GlobalImgui.CardEditorCombo($"##RR{i}", ref currentAbilityRankIndex[i], unlockRanksNames, (newValue) =>
                         {
                             foreach (var selectedCardName in selectedCards)
@@ -1438,6 +1452,7 @@ class CardEditorWindow : IImGuiWindow
                 }
             }
         }
+        ImGui.PopFont();
     }
 
     Vector2 AutoSizeTextToRect(string @string, Vector2 size)
@@ -1609,8 +1624,8 @@ class CardEditorWindow : IImGuiWindow
                 throw new Exception($"Malformed CSV line {i}: {line}");
                 continue;
             }
-            CardConstant card = CardConstant.List[i-1];
-            card.Name = new ModdedStringName(Card.cardNameList[i-1].Default, csvLine[0]);
+            CardConstant card = CardConstant.List[i - 1];
+            card.Name = new ModdedStringName(Card.cardNameList[i - 1].Default, csvLine[0]);
             card.CardKind = new CardKind(CardKind.Kinds.FirstOrDefault(x => x.Value == csvLine[1]).Key);
             card.Level = byte.Parse(csvLine[2]);
             card.DeckCost = byte.Parse(csvLine[3]);
@@ -1619,10 +1634,10 @@ class CardEditorWindow : IImGuiWindow
             card.AppearsInReincarnation = bool.Parse(csvLine[6]);
             card.AppearsInSlotReels = bool.Parse(csvLine[7]);
             card.EffectId = ushort.Parse(csvLine[8]);
-            
+
             string effectText = csvLine[9].Replace("\\n", "\n");
             StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + card.Index] = effectText;
-            CardConstant.List[i-1] = card;
+            CardConstant.List[i - 1] = card;
 
         }
         StringEditor.ReloadStrings();

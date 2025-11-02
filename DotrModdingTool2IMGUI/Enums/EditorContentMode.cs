@@ -5,7 +5,7 @@ public enum EditorContentMode
     EnemyEditor,
     CardEditor,
     FusionEditor,
-    MechanicsEditor,
+    Patches,
     MusicEditor,
     Misc,
     Randomiser,

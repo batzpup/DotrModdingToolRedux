@@ -1,11 +1,13 @@
 ﻿using System.Numerics;
 using System.Reflection;
+using ImGuiNET;
 using Raylib_cs;
 
 namespace DotrModdingTool2IMGUI;
 
 public static class ImageHelper
 {
+    public static Vector2 DefaultImageSize;
     public static Vector4 ColorToVec4(Color color)
     {
         return new Vector4(color.R, color.G, color.B, color.A);

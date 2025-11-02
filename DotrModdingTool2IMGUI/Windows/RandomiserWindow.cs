@@ -9,7 +9,7 @@ namespace DotrModdingTool2IMGUI;
 
 public class RandomiserWindow : IImGuiWindow
 {
-    ImFontPtr monoSpaceFont = Fonts.MonoSpace;
+    ImFontPtr monoSpaceFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
 
     bool randomiseStartingDecks;
     bool randomiseOpponentDecks;
@@ -218,7 +218,7 @@ public class RandomiserWindow : IImGuiWindow
         }
 
         ImGui.TextColored(new GuiColour(Color.Firebrick).value,
-            @"Using the randomiser makes all AI's DMK if not you choose not randomise the AI, as this is the most versatile and least likely to brick
+            @"Using the randomiser makes all the AI's DMK if you do not randomise the AI, as this is the most versatile and least likely to brick
 Secondly Deck Cost will be meaningless when randomiser, this will make all battle available regardless of DC");
         ImGui.Separator();
         ImGui.Text("Press this button after selecting your settings");
@@ -322,7 +322,7 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             {
                 if (!balancedDeckCorrectAmount)
                 {
-                    ImGui.TextColored(new GuiColour(Color.Red).value, "Error not 40 cards in deck");
+                    ImGui.TextColored(new GuiColour(Color.Firebrick).value, "Error not 40 cards in deck");
                 }
                 ImGui.Indent();
                 if (ImGui.SliderInt("Monsters", ref monsterCount, 0, 40))
@@ -732,9 +732,9 @@ SD:   5000");
 
 
         ImGui.Separator();
-        ImGui.TextColored(new GuiColour(Color.Red).value, "Use a fresh ISO everytime when using these\notherwise strings become incorrect");
+        ImGui.TextColored(new GuiColour(Color.Firebrick).value, "Use a fresh ISO everytime when using these\notherwise strings become incorrect");
         ImGui.Separator();
-        
+
         ImGui.Checkbox("Randomise monster effects", ref randomiseMonsterEffects);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(@"Will give monsters a X/100 chance top be assigned a random monster effect. ");
@@ -2353,13 +2353,15 @@ SD:   5000");
 
             else if (cardConstant.CardKind.isMagic() && randomiseMagicEffects)
             {
-                cardConstant.EffectId = (ushort)GetRandomValue(0, Effects.MagicEffectsList.Count);
-                cardChanges.Properties.Effect = Effects.MagicEffectOwnerNames.ElementAt(cardConstant.EffectId).Value.Current;
+                //TODO add monster flip effects (manually copy out the flip data and save into the magic effect data, you cant do effect id ==)
+                cardConstant.EffectId = (ushort)GetRandomValue(0, 69);
+                cardChanges.Properties.Effect = Effects.NonMonsterOwners.ElementAt(cardConstant.EffectId).Value.Current;
 
                 int index = cardConstant.Index + StringEditor.CardEffectTextOffsetStart;
-                StringEditor.StringTable[index] = originalEffectTexts[Effects.MagicEffectOwnerNames.ElementAt(cardConstant.EffectId).Key + StringEditor.CardEffectTextOffsetStart];
+                StringEditor.StringTable[index] = originalEffectTexts[Effects.NonMonsterOwners.ElementAt(cardConstant.EffectId).Key + StringEditor.CardEffectTextOffsetStart];
                 cardConstant.setCardColor();
             }
+            
         }
 
         if (randomisePowerUpValues)

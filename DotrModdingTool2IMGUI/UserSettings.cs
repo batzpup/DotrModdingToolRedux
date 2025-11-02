@@ -17,19 +17,22 @@ public static class UserSettings
     public static Vector4 CustomSlotDropdownColour = new GuiColour(Color.DimGray).value;
     public static Vector4 CardEditorDifferenceHighlightColour = new GuiColour(Color.Orange).value;
     public static Vector4 StringDropDownColour { get; set; }
+    public static int LastDeckEditorFontSize { get; set; } = 24;
     public static string? LastIsoPath { get; set; }
-    
+
 
     public static void SaveSettings()
     {
         StringBuilder sb = new StringBuilder();
 
         sb.AppendLine("[Settings]");
+        sb.AppendLine($"LastDeckEditorFontSize={LastDeckEditorFontSize}");
         sb.AppendLine($"deckEditorUseColours={deckEditorUseColours}");
         sb.AppendLine($"performanceMode={performanceMode}");
         sb.AppendLine($"ToggleImageTooltips={ToggleImageTooltips}");
         sb.AppendLine($"UseDefaultNames={UseDefaultNames}");
         sb.AppendLine($"LastIsoPath={LastIsoPath}");
+
 
         sb.AppendLine("[Colors]");
         sb.AppendLine(
@@ -64,9 +67,12 @@ public static class UserSettings
         }
 
 
+        if (config.TryGetValue("LastDeckEditorFontSize", out var fontSize))
+            LastDeckEditorFontSize = int.Parse(fontSize);
+
         if (config.TryGetValue("LastIsoPath", out var isoPath))
             LastIsoPath = isoPath;
-        
+
         if (config.TryGetValue("deckEditorUseColours", out var useColors))
             deckEditorUseColours = bool.Parse(useColors);
 

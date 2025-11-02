@@ -6,7 +6,7 @@ namespace DotrModdingTool2IMGUI;
 
 class FusionEditorWindow : IImGuiWindow
 {
-    ImFontPtr font = Fonts.MonoSpace;
+    ImFontPtr font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,28);
     public List<KeyValuePair<int, FusionData>> sortedData;
     string filter1Text = "";
     string filter2Text = "";
@@ -53,7 +53,6 @@ class FusionEditorWindow : IImGuiWindow
 
 
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
-        float columnWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X + 100;
         if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {
             UserSettings.FusionTableBgColour = tableBgColour;
@@ -100,14 +99,20 @@ class FusionEditorWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
 
         if (ImGui.BeginTable("##FusionTable", 4,
-                ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.RowBg |
-                ImGuiTableFlags.Sortable))
+                 ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
+                                                            ImGuiTableFlags.Sortable |
+                                                            ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
+                                                            ImGuiTableFlags.Borders |
+                                                            ImGuiTableFlags.ScrollX |
+                                                            ImGuiTableFlags.ScrollY |
+                                                            ImGuiTableFlags.BordersInnerH))
         {
-            ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags.None;
-            ImGui.TableSetupColumn("Fusion Id", columnFlags);
-            ImGui.TableSetupColumn("Card 1", columnFlags, columnWidth);
-            ImGui.TableSetupColumn("Card 2", columnFlags, columnWidth);
-            ImGui.TableSetupColumn("Fusion Result", columnFlags, columnWidth);
+            
+            
+            ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("12456").X);
+            ImGui.TableSetupColumn("Card 1",  ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Card 2",  ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Fusion Result",  ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableHeadersRow();
 
             ImGuiTableSortSpecsPtr sortSpecifications = ImGui.TableGetSortSpecs();
@@ -166,12 +171,13 @@ class FusionEditorWindow : IImGuiWindow
 
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
+                    
                     ImGui.Text(id.ToString());
 
 
 
                     ImGui.TableSetColumnIndex(1);
-                    ImGui.SetNextItemWidth(columnWidth);
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selected1 = fusion.lowerCardId;
                     if (ImGui.BeginCombo($"##lower_{id}", Card.cardNameList[selected1].Current))
                     {
@@ -230,7 +236,7 @@ class FusionEditorWindow : IImGuiWindow
 
 
                     ImGui.TableSetColumnIndex(2);
-                    ImGui.SetNextItemWidth(columnWidth);
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selected2 = fusion.higherCardId;
                     if (ImGui.BeginCombo($"##higher{id}", Card.cardNameList[selected2].Current))
                     {
@@ -277,7 +283,7 @@ class FusionEditorWindow : IImGuiWindow
                     }
 
                     ImGui.TableSetColumnIndex(3);
-                    ImGui.SetNextItemWidth(columnWidth);
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selectedResult = fusion.resultId;
                     if (ImGui.BeginCombo($"##result{id}", Card.cardNameList[selectedResult].Current))
                     {

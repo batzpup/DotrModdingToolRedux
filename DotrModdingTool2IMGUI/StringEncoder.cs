@@ -21,8 +21,8 @@ public class StringEncoder
         for (int i = 0; i < modStrings.Count; i++)
         {
             modStrings[i] = modStrings[i]
-                .Replace("PNAME_CHAR", "\uFFF2")
-                .Replace("III", "\uFFF3");
+                .Replace("PNAME_CHAR", StringEditor.PNamePlaceholder.ToString());
+            //.Replace("III", "\uFFF3")
         }
         for (int i = 0; i < modStrings.Count; i++)
         {
@@ -281,6 +281,8 @@ public class StringEncoder
 
 
     //Still causes (pointer corruption) issues for some text in the tutorial, maybe some pointer issues but no longer crashes and fixes player name usage
+    // also corrupts string 2226 to  is ior two... instead of  duel or two...
+    
     public void ExportToBytes()
     {
         Offsets = new List<int>();

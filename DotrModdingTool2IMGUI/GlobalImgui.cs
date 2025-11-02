@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Raylib_cs;
 namespace DotrModdingTool2IMGUI;
 
 public class GlobalImgui
@@ -11,14 +12,15 @@ public class GlobalImgui
         if (!UserSettings.ToggleImageTooltips)
             return;
         if (!GlobalImages.Instance.Cards.TryGetValue(cardName, out var texture))
-            return; 
+            return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
+
         ImGui.BeginTooltip();
         ImGui.Text("Card Preview");
         float tooltipWidth = ImGui.GetWindowSize().X;
 
-        ImGui.SetCursorPosX((tooltipWidth - 128) * 0.5f);
-        ImGui.Image(texture, new Vector2(128, 128));
+        ImGui.SetCursorPosX((tooltipWidth - ImageHelper.DefaultImageSize.X) * 0.5f);
+        ImGui.Image(texture, ImageHelper.DefaultImageSize);
         ImGui.EndTooltip();
         ImGui.PopStyleColor();
 
@@ -75,5 +77,39 @@ public class GlobalImgui
             }
             ImGui.EndCombo();
         }
+    }
+
+    public static void AutoWrappingButton(string label, Action onClick, ref float lineWidth, float availableSpace, bool disabled = false)
+    {
+        ImGui.PushFont(FontManager.GetBestFitFont("Make Current Map Default", false, FontManager.FontFamily.NotoSansJP));
+        float padding = ImGui.GetStyle().FramePadding.X * 2;
+        float spaceToUse = ImGui.CalcTextSize(label).X + padding + ImGui.GetStyle().ItemSpacing.X;
+
+        if (lineWidth + spaceToUse > availableSpace && lineWidth > 0)
+        {
+            lineWidth = 0;
+        }
+        else if (lineWidth > 0)
+        {
+            ImGui.SameLine();
+        }
+
+        if (disabled)
+        {
+            ImGui.BeginDisabled();
+        }
+
+        if (ImGui.Button(label))
+        {
+            onClick?.Invoke();
+        }
+
+        if (disabled)
+        {
+            ImGui.EndDisabled();
+        }
+
+        lineWidth += spaceToUse;
+        ImGui.PopFont();
     }
 }
