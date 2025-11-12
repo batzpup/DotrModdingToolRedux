@@ -3,9 +3,9 @@ namespace GameplayPatches
 {
     public class DcRuleChanges : Patch
     {
-        static int postGamePatchLocation = 0x209f40;
-        static int TaTutoDbgInit34 = 0x145f60;
-        static int allGamePatchLocation = 0x209f44;
+        static int postGamePatchLocation = 0x239E40 - DataAccess.IsoSlusRamOffset;
+        static int TaTutoDbgInit34 =       0x175E60 - DataAccess.IsoSlusRamOffset;
+        static int allGamePatchLocation =  0x239E44 - DataAccess.IsoSlusRamOffset;
 
         public DcRules GetRule()
         {
@@ -17,7 +17,7 @@ namespace GameplayPatches
             {
                 return DcRules.NoCheckPostGame;
             }
-            if (dataAccess.CheckIfPatchApplied(postGamePatchLocation, new byte[] { 0x99, 0xe7, 0x08, 0x08 }))
+            if (dataAccess.CheckIfPatchApplied(allGamePatchLocation, new byte[] { 0x99, 0xe7, 0x08, 0x08 }))
             {
                 return DcRules.NoCheckAll;
             }

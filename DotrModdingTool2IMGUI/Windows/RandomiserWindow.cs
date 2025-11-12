@@ -845,7 +845,7 @@ SD:   5000");
 
                 }
                 changeLog.MusicChanges.Add(new MusicChange(MusicEditorWindow.MusicTargets[key].Current,
-                    _musicEditorWindow.musicTracks[_musicEditorWindow.DuelistMusic[key] - 1]));
+                    MusicEditorWindow.musicTracks[_musicEditorWindow.DuelistMusic[key] - 1]));
             }
             _musicEditorWindow.bSaveMusicChanges = true;
             GameplayPatchesWindow.Instance.bSaveMusic = true;
@@ -2043,7 +2043,7 @@ SD:   5000");
                 DotrMap temp = newMapOrder[i];
                 newMapOrder[i] = newMapOrder[j];
                 newMapOrder[j] = temp;
-                changeLog.MapChanges.MapSwaps.Add(new MapSwap(Map.DuelistMaps[i].Current,
+                changeLog.RandomiserMapChanges.MapSwaps.Add(new MapSwap(Map.DuelistMaps[i].Current,
                     Map.DuelistMaps[j].Current));
             }
             Array.Copy(newMapOrder, DataAccess.Instance.maps, newMapOrder.Length);
@@ -2072,7 +2072,7 @@ SD:   5000");
                         Terrain originalTerrain = (Terrain)i;
                         Terrain newTerrain = GetRandomTerrain();
                         terrainSwapMap[originalTerrain] = newTerrain;
-                        changeLog.MapChanges.TerrainChanges.Add(new TerrainChange(Map.DuelistMaps[mapId].Current,
+                        changeLog.RandomiserMapChanges.TerrainChanges.Add(new TerrainChange(Map.DuelistMaps[mapId].Current,
                             originalTerrain.ToString(), newTerrain.ToString()));
                     }
 
@@ -2143,14 +2143,14 @@ SD:   5000");
             foreach (var treasureCard in TreasureCards.Instance.Treasures)
             {
                 HiddenCardChange currentCardChange;
-                if (changeLog.MapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Current, new HiddenCardChange()))
+                if (changeLog.RandomiserMapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Current, new HiddenCardChange()))
                 {
-                    currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName.Current];
+                    currentCardChange = changeLog.RandomiserMapChanges.HiddenCardChanges[treasureCard.EnemyName.Current];
                 }
                 else
                 {
-                    changeLog.MapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Default, new HiddenCardChange());
-                    currentCardChange = changeLog.MapChanges.HiddenCardChanges[treasureCard.EnemyName.Default];
+                    changeLog.RandomiserMapChanges.HiddenCardChanges.TryAdd(treasureCard.EnemyName.Default, new HiddenCardChange());
+                    currentCardChange = changeLog.RandomiserMapChanges.HiddenCardChanges[treasureCard.EnemyName.Default];
                 }
 
                 if (randomiseHiddenCardValue)

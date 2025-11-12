@@ -4,6 +4,7 @@ namespace DotrModdingTool2IMGUI;
 public class DotrMap
 {
     public Terrain[,] tiles;
+
     public DotrMap()
     {
         tiles = new Terrain[7, 7];
@@ -29,12 +30,36 @@ public class DotrMap
             y = i / 7;
             try
             {
-                tiles[x,y] = (Terrain)arr[i];
+                tiles[x, y] = (Terrain)arr[i];
             }
             catch
             {
-              
+
             }
+        }
+    }
+
+    public byte[] Bytes
+    {
+        get
+        {
+            byte[] bytes = new Byte[49];
+            int x;
+            int y;
+            for (var i = 0; i < 49; i++)
+            {
+                x = i % 7;
+                y = i / 7;
+                try
+                {
+                    bytes[i] = (byte)tiles[x, y];
+                }
+                catch
+                {
+
+                }
+            }
+            return bytes;
         }
     }
 }

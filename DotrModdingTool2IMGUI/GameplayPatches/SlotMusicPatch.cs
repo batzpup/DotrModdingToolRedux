@@ -1,8 +1,9 @@
-﻿namespace GameplayPatches;
+﻿using DotrModdingTool2IMGUI;
+namespace GameplayPatches;
 
 public class SlotMusicPatch : Patch
 {
-    public static int SlotTrackPtr = 0x17ae34;
+    public static int SlotTrackPtr = 0x1AAD34 - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied()
     {

@@ -1,16 +1,11 @@
-﻿using GameplayPatches;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class ToonLeadersMovePatch : Patch
     {
-        static int patchLocation = 0x21f99c;
-        static int TaTutoSetDeck35Part2 = 0x1484c0;
+        static int patchLocation =        0x24F89C - DataAccess.IsoSlusRamOffset;
+        static int TaTutoSetDeck35Part2 = 0x1783C0 - DataAccess.IsoSlusRamOffset;
 
         public override bool IsApplied()
         {

@@ -19,6 +19,7 @@ public static class UserSettings
     public static Vector4 StringDropDownColour { get; set; }
     public static int LastDeckEditorFontSize { get; set; } = 24;
     public static string? LastIsoPath { get; set; }
+    public static bool AutoChangelog = false;
 
 
     public static void SaveSettings()
@@ -32,6 +33,7 @@ public static class UserSettings
         sb.AppendLine($"ToggleImageTooltips={ToggleImageTooltips}");
         sb.AppendLine($"UseDefaultNames={UseDefaultNames}");
         sb.AppendLine($"LastIsoPath={LastIsoPath}");
+        sb.AppendLine($"AutoChangelog={AutoChangelog}");
 
 
         sb.AppendLine("[Colors]");
@@ -73,6 +75,9 @@ public static class UserSettings
         if (config.TryGetValue("LastIsoPath", out var isoPath))
             LastIsoPath = isoPath;
 
+        if (config.TryGetValue("AutoChangelog", out var autoChangelog))
+            AutoChangelog = bool.Parse(autoChangelog);
+        
         if (config.TryGetValue("deckEditorUseColours", out var useColors))
             deckEditorUseColours = bool.Parse(useColors);
 
@@ -101,6 +106,7 @@ public static class UserSettings
             CustomSlotDropdownColour = ParseColor(customeSlotDropdown);
         if (config.TryGetValue("CardEditorDifferenceHighlightColour", out var cardEditorDifColour))
             CardEditorDifferenceHighlightColour = ParseColor(cardEditorDifColour);
+   
 
     }
 

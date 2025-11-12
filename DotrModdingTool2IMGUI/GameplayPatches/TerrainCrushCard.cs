@@ -1,12 +1,12 @@
 ﻿
-
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
-    internal class TerrainCrushCard : Patch
+    class TerrainCrushCard : Patch
     {
-        static int cardEffectPatch = 0x29ca68;
-        static int cardParamPatch = 0x29ca6c;
-        static int cardTypePatch = 0x292f88;
+        static int cardEffectPatch = 0x2CC968 - DataAccess.IsoSlusRamOffset;
+        static int cardParamPatch =  0x2CC96C - DataAccess.IsoSlusRamOffset;
+        static int cardTypePatch =   0x2C2E88 - DataAccess.IsoSlusRamOffset;
         public override bool IsApplied()
         {
             return dataAccess.CheckIfPatchApplied(cardEffectPatch, new byte[4] { 0xfd, 0x02, 0x00, 0x00 });

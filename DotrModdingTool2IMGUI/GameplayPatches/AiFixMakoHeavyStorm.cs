@@ -1,15 +1,11 @@
-﻿using GameplayPatches;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class AiFixMakoHeavyStorm : Patch
     {
-        static int patchLocation = 0x11F7DC;
+        static int patchLocation = 0x14F6DC - DataAccess.IsoSlusRamOffset;
         
 
         public override bool IsApplied()

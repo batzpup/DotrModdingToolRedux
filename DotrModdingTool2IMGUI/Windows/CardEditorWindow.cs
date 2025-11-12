@@ -305,7 +305,7 @@ class CardEditorWindow : IImGuiWindow
 
 
         ImGui.BeginChild("MiddlePanel", new Vector2(windowSize.X / 3, windowSize.Y), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
-
+        
         //Draw card frame
         Vector2 middleWindowSize = ImGui.GetContentRegionAvail();
         Vector2 pos = new Vector2((middleWindowSize.X / 2f) - frameImageSize.X / 2f, (middleWindowSize.Y / 2f) - frameImageSize.Y / 2f);

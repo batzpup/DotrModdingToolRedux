@@ -1,7 +1,8 @@
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches {
 public class AIFasterTurnPassing : Patch {
-    static int patchLocation = 0x246400;
-    static int TaTutoSetDeck35 = 0x148420;
+    static int patchLocation =   0x276300 - DataAccess.IsoSlusRamOffset;
+    static int TaTutoSetDeck35 = 0x178320 - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied() {
         return dataAccess.CheckIfPatchApplied(patchLocation, new byte[8] { 0xc8, 0xe0, 0x05, 0x08, 0x00, 0x00, 0x00, 0x00 });

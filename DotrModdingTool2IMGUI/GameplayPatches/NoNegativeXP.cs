@@ -2,15 +2,15 @@
 using DotrModdingTool2IMGUI;
 namespace GameplayPatches {
     public class NoNegativeXP : Patch {
-        static int DelUnit = 0x21f48c;
-        static int DelUnit2 = 0x21f504;
-        static int DelUnit2_1 = 0x21f560;
-        static int DelUnit2_2 = 0x21f5e4;
-        static int AtkLeader = 0x244658;
-        static int DuelEnd1 = 0x243468;
-        static int DuelEnd2 = 0x2432c8;
-        static int DuelEnd3 = 0x243128;
-        static int DuelEnd4 = 0x242f88;
+        static int DelUnit =    0x24F38C - DataAccess.IsoSlusRamOffset;
+        static int DelUnit2 =   0x24F404 - DataAccess.IsoSlusRamOffset;
+        static int DelUnit2_1 = 0x24F460 - DataAccess.IsoSlusRamOffset;
+        static int DelUnit2_2 = 0x24F4E4 - DataAccess.IsoSlusRamOffset;
+        static int AtkLeader =  0x274558 - DataAccess.IsoSlusRamOffset;
+        static int DuelEnd1 =   0x273368 - DataAccess.IsoSlusRamOffset;
+        static int DuelEnd2 =   0x2731C8 - DataAccess.IsoSlusRamOffset;
+        static int DuelEnd3 =   0x273028 - DataAccess.IsoSlusRamOffset;
+        static int DuelEnd4 =   0x272E88 - DataAccess.IsoSlusRamOffset;
 
         public override bool IsApplied() {
             return DataAccess.Instance.CheckIfPatchApplied(DelUnit2_1, new byte[4] { 0x00, 0x00, 0x07, 0x24 });

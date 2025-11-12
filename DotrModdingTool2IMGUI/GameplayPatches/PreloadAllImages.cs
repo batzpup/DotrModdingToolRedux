@@ -1,11 +1,10 @@
-﻿using System;
-
+﻿
 namespace GameplayPatches
 {
     //DO NOT USE DOESNT WORK SHITS BROKEN, also not how the game loads cards images sad
     public class PreloadAllImages : Patch
     {
-        static int AI_Tut_05 = 0x14AB70;
+        static int AI_Tut_05 = 0x14AB70 ;
         static int relocatePicPack = 0x1d26cc;
 
         public override bool IsApplied()

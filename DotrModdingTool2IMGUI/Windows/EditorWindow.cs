@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
+using DotrModdingTool2IMGUI.ChangelogDiffCheckers;
 using ImGuiNET;
 using NativeFileDialogSharp;
 using Raylib_cs;
@@ -17,12 +19,14 @@ public class EditorWindow
     EditorContentMode currentMode = EditorContentMode.EnemyEditor;
 
     ImGuiIOPtr io = ImGui.GetIO();
-    ImFontPtr menuBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,24);
-    ImFontPtr sideBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,20);
-    ImFontPtr mainFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,28);
+    ImFontPtr menuBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 24);
+    ImFontPtr sideBarFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 20);
+    ImFontPtr mainFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28);
+
     public static bool Disabled = false;
     float disabledTimer = 0;
     float maxDisabledTime = 30;
+
     public static Vector2 AspectRatio
     {
         get { return ImGui.GetWindowSize() / new Vector2(2560, 1351f); }
@@ -31,6 +35,7 @@ public class EditorWindow
     float buttonWidthScaled = 200f;
     float buttonHeightRatio = 100f;
     float buttonSpacingScaled = 10f;
+
 
     EnemyEditorWindow _enemyEditorWindow;
     CardEditorWindow _cardEditorWindow;
@@ -49,6 +54,8 @@ public class EditorWindow
     public static Action OnIsoLoaded;
     bool reloadStrings = false;
 
+    bool isSavingStrings = false;
+    int stringCompressionProgress;
 
     public static void PrintEmbeddedResources()
     {
@@ -68,9 +75,9 @@ public class EditorWindow
     {
         //PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
-        
-      
-        _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP,26));
+
+
+        _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
         _cardEditorWindow = new CardEditorWindow();
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         _musicEditorWindow = new MusicEditorWindow();
@@ -88,13 +95,13 @@ public class EditorWindow
         {
             await Updater.CheckForUpdates(true);
             Disabled = false;
-           
+
         });
 
 
     }
 
-    void HandleNeedsUpdate(bool needsUpdate, string changes,bool isStartup)
+    void HandleNeedsUpdate(bool needsUpdate, string changes, bool isStartup)
     {
         if (needsUpdate)
         {
@@ -113,7 +120,7 @@ public class EditorWindow
             {
                 _modalPopup.Hide();
             }
-            
+
         }
 
     }
@@ -163,8 +170,8 @@ public class EditorWindow
         buttonWidthScaled = Math.Max(200f * AspectRatio.X, 100);
         buttonHeightRatio = Math.Max(100f * AspectRatio.Y, 50);
         buttonSpacingScaled = Math.Max(10f * AspectRatio.X, 5);
-        
-        if(disabledTimer > maxDisabledTime)
+
+        if (disabledTimer > maxDisabledTime)
         {
             Disabled = false;
             disabledTimer = 0;
@@ -175,6 +182,30 @@ public class EditorWindow
             disabledTimer += ImGui.GetIO().DeltaTime;
         }
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate.ToString()}");
+        if (DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.PushFont(FontManager.GetBestFitFont("Vanilla Iso"));
+            if (DataAccess.Instance.CurrentHash != String.Empty)
+            {
+                if (DataAccess.VanillaHash != DataAccess.Instance.CurrentHash)
+                {
+                    ImGui.TextColored(new GuiColour(Color.Crimson).value, "Modded ISO");
+
+                }
+                else
+                {
+                    ImGui.TextColored(new GuiColour(Color.Green).value, "Vanilla ISO");
+                }
+            }
+            else
+            {
+                ImGui.Text("Calculating Hash");
+            }
+
+            ImGui.PopFont();
+
+        }
+
 
         ImGui.PushFont(menuBarFont);
         if (ImGui.BeginMenuBar())
@@ -218,6 +249,67 @@ public class EditorWindow
                     ImGui.Text("Ctrl + S");
                     ImGui.EndTooltip();
                 }
+                if (dataAccess.IsIsoLoaded)
+                {
+                    if (ImGui.BeginMenu("Changelog"))
+                    {
+                        if (ImGui.MenuItem("Auto Changelog", null, ref UserSettings.AutoChangelog))
+                        {
+                        }
+                        if (ImGui.MenuItem("Take old snapshot"))
+                        {
+                            ChangelogManager.OldSnapshot = new ModSnapshot();
+                        }
+                        if (ImGui.MenuItem("Take new snapshot"))
+                        {
+
+                            ChangelogManager.NewSnapshot = new ModSnapshot();
+                        }
+                        if (ImGui.MenuItem("Generate Changelog"))
+                        {
+                            if (ChangelogManager.OldSnapshot is null)
+                            {
+                                _modalPopup.Show("No old snapshot");
+
+                            }
+                            else
+                            {
+                                if (ChangelogManager.NewSnapshot is null)
+                                {
+                                    ChangelogManager.NewSnapshot = new ModSnapshot();
+                                }
+                                DataAccess.Instance.GetMd5Hash();
+                                string changelogText = ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
+                                Console.WriteLine("Passed Comparison");
+                                File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt", changelogText);
+                                _ = Task.Run(async () =>
+                                {
+                                    try
+                                    {
+                                        Disabled = true;
+                                        _modalPopup.Show("Generating MD5 hash and logs", "Saving");
+
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"MD5 hash failed (also written to log): {ex}");
+                                    }
+                                    finally
+                                    {
+                                        Disabled = false;
+                                    }
+                                });
+
+                            }
+
+
+                        }
+                        ImGui.EndMenu();
+                    }
+                    ImGui.Spacing();
+                }
+
                 if (ImGui.MenuItem("Save Strings"))
                 {
                     if (dataAccess.IsIsoLoaded)
@@ -309,7 +401,7 @@ public class EditorWindow
                         }
                         else
                         {
-                             _modalPopup.Show("Failed to export strings");
+                            _modalPopup.Show("Failed to export strings");
                         }
                     }
                     if (ImGui.MenuItem("Export Card Data"))
@@ -322,7 +414,7 @@ public class EditorWindow
                         }
                         else
                         {
-                             _modalPopup.Show("Failed to export card data ");
+                            _modalPopup.Show("Failed to export card data ");
                         }
                     }
                     if (ImGui.MenuItem("Export Fusion Data"))
@@ -335,7 +427,7 @@ public class EditorWindow
                         }
                         else
                         {
-                             _modalPopup.Show("Failed to export fusion csv");
+                            _modalPopup.Show("Failed to export fusion csv");
                         }
                     }
                     if (ImGui.MenuItem("Export Maps"))
@@ -347,7 +439,7 @@ public class EditorWindow
                         }
                         else
                         {
-                             _modalPopup.Show("Failed to export map text file");
+                            _modalPopup.Show("Failed to export map text file");
                         }
                     }
                     ImGui.EndMenu();
@@ -494,7 +586,7 @@ public class EditorWindow
             reloadStrings = false;
         }
 
-        
+
         RenderMainContent();
 
 
@@ -514,8 +606,6 @@ public class EditorWindow
         ImGui.End();
         rlImGui.End();
     }
-
-    
 
 
     void SaveStringAsync(Action onComplete = null, bool showMessage = true)
@@ -583,7 +673,7 @@ public class EditorWindow
 
         ImGui.BeginChild("LeftSidePanel", new Vector2(buttonWidthScaled + (buttonSpacingScaled * 2), 0),
             ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysUseWindowPadding);
-        ImGui.PushFont(FontManager.GetBestFitFont("fusion editor",false,FontManager.FontFamily.NotoSansJP));
+        ImGui.PushFont(FontManager.GetBestFitFont("fusion editor", false, FontManager.FontFamily.NotoSansJP));
         foreach (var modeButtonPair in ButtonModeTable)
         {
             if (currentMode == modeButtonPair.Key)
@@ -611,7 +701,7 @@ public class EditorWindow
 
     void RenderMainContent()
     {
-        ImageHelper.DefaultImageSize = new Vector2( ImGui.GetWindowSize().X / 18f, ImGui.GetWindowSize().X / 18f);
+        ImageHelper.DefaultImageSize = new Vector2(ImGui.GetWindowSize().X / 18f, ImGui.GetWindowSize().X / 18f);
         switch (currentMode)
         {
             case EditorContentMode.EnemyEditor:
@@ -663,6 +753,23 @@ public class EditorWindow
                 DataAccess.Instance.OpenIso(isoPath);
                 LoadDataFromIso();
                 UserSettings.LastIsoPath = Path.GetDirectoryName(isoPath);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await DataAccess.Instance.GetMd5HashAsync();
+                        Console.WriteLine("MD5 hash completed successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"MD5 hash failed: {ex}");
+                    }
+                });
+                if (UserSettings.AutoChangelog)
+                {
+                    ChangelogManager.OldSnapshot = new ModSnapshot();
+                }
+
             }
             else
             {
@@ -672,8 +779,6 @@ public class EditorWindow
         }
     }
 
-    bool isSavingStrings = false;
-    int stringCompressionProgress;
 
     public void SaveChanges()
     {
@@ -682,6 +787,7 @@ public class EditorWindow
             _modalPopup.Show("No ISO loaded to save");
             return;
         }
+
         _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
@@ -695,8 +801,17 @@ public class EditorWindow
         _fusionEditorWindow.SaveFusionChanges();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
         UserSettings.SaveSettings();
+
+        if (UserSettings.AutoChangelog)
+        {
+            DataAccess.Instance.GetMd5Hash();
+            ChangelogManager.NewSnapshot = new ModSnapshot();
+            string changelogText = ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
+            File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt", changelogText);
+        }
+
+
         SaveStringAsync(printComplete, false);
-        //StringEditor.ReloadFromISO();
 
 
     }

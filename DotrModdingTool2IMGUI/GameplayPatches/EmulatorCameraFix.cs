@@ -1,10 +1,11 @@
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches {
 public class EmulatorCameraFix : Patch {
-    static int EmulatorCameraFix1 = 0x1a9428;
-    static int EmulatorCameraFix2 = 0x1a2c78;
-    static int EmulatorCameraFix3 = 0x1a2c80;
-    static int EmulatorCameraSpyFix1 = 0x225edc;
-    static int EmulatorCameraSpyFix2 = 0x225efc;
+    static int EmulatorCameraFix1 =    0x1D9328 - DataAccess.IsoSlusRamOffset;
+    static int EmulatorCameraFix2 =    0x1D2B78 - DataAccess.IsoSlusRamOffset;
+    static int EmulatorCameraFix3 =    0x1D2B80 - DataAccess.IsoSlusRamOffset;
+    static int EmulatorCameraSpyFix1 = 0x255DDC - DataAccess.IsoSlusRamOffset;
+    static int EmulatorCameraSpyFix2 = 0x255DFC - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied() {
         return dataAccess.CheckIfPatchApplied(EmulatorCameraFix1, new byte[4] { 0x00, 0x38, 0x02, 0x24 });

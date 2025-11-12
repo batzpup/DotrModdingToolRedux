@@ -1,14 +1,14 @@
 namespace DotrModdingTool2IMGUI;
 
-public static class EnchantData
+public class EnchantData
 {
     public static List<byte> EnchantIds = new List<byte>();
     public static List<ushort> EnchantScores = new List<ushort>();
     public static byte[] EquipScoreBytes => EnchantScores.SelectMany(BitConverter.GetBytes).ToArray();
 
-     public static ModdedStringName GetEquipName(int flagIndex)
+     public static ModdedStringName GetEquipName(int index)
     {
-       return Card.GetNameByIndex(Card.EquipCardStartIndex + flagIndex);
+       return Card.GetNameByIndex(Card.EquipCardStartIndex + index);
     }
 
     public static string GetEnchantIdName(int id)
@@ -36,11 +36,11 @@ public enum EnchantScore : ushort
     Multiply,
     Sword_Of_Dragon_Soul,
     Enchanted_Javelin,
-    AntiMagic_Fragrance,
+    Anti_Magic_Fragrance,
     Crush_Card,
     Elegant_Egotist,
     Cocoon_Of_Evolution,
     Metalmorph,
     Insect_Imitation,
-    Breaker_OR_Paralyzing = 666
+    CBreaker_Or_ParalyzingPot = 666
 }

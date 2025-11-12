@@ -1,16 +1,12 @@
-﻿using GameplayPatches;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class AiFixGetMaxApAndCtlList : Patch
     {
-        static int TaLogic_GetUnitCtlLst_fix = 0x24C200;
-        static int TaLogic_GetMaxApUnit = 0x24B750;
+        static int TaLogic_GetUnitCtlLst_fix = 0x27C100 - DataAccess.IsoSlusRamOffset;
+        static int TaLogic_GetMaxApUnit =      0x27B650 - DataAccess.IsoSlusRamOffset;
 
 
 

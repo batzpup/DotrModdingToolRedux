@@ -9,6 +9,8 @@ namespace DotrModdingTool2IMGUI;
 
 public class MusicEditorWindow : IImGuiWindow
 {
+    public static MusicEditorWindow Instance;
+    
     //Music
     static int AddCustomMusicPtr = 0x17ac58;
     static int TaTuto_DrawTrapArea = 0x24f800;
@@ -32,7 +34,7 @@ public class MusicEditorWindow : IImGuiWindow
 
     public static ModdedStringName[] MusicTargets;
 
-    static string[] defaultMusicTargets = new[] {
+    public static string[] defaultMusicTargets = new[] {
         "Tutorial",
         "Seto",
         "Weevil Underwood",
@@ -57,7 +59,7 @@ public class MusicEditorWindow : IImGuiWindow
         "MFL Chakra"
     };
 
-    public string[] musicTracks = new[] {
+    public static string[] musicTracks = new[] {
         "01OpeningCutscene",
         "02MainMenu",
         "03CustomDuel",
@@ -117,7 +119,7 @@ public class MusicEditorWindow : IImGuiWindow
         waveOut = new WaveOutEvent();
         waveOut.Volume = 0.1f;
         font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
-        
+        Instance = this;
     }
 
     static MusicEditorWindow()

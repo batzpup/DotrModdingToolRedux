@@ -1,16 +1,12 @@
-﻿using GameplayPatches;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class AiDMKFixRevive : Patch
     {
-        static int patchLocation = 0x13CA9C;
-        
+        static int patchLocation = 0x16C99C - DataAccess.IsoSlusRamOffset;
+
 
         public override bool IsApplied()
         {

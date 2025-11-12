@@ -6,9 +6,14 @@ public class FusionData
 {
     public static Dictionary<int, FusionData> FusionTableData = new();
 
-    public static byte[] Bytes
+    public static byte[] TableBytes
     {
         get { return FusionTableData.SelectMany(a => BitConverter.GetBytes(a.Value.fusionData)).ToArray(); }
+    }
+
+    public byte[] Bytes
+    {
+        get { return BitConverter.GetBytes(fusionData); }
     }
 
 
@@ -74,10 +79,10 @@ public class FusionData
             row.Add(fusionData.lowerCardId.ToString());
             row.Add(fusionData.higherCardId.ToString());
             row.Add(fusionData.resultId.ToString());
-            
-            row.Add(fusionData.lowerCardName.Current.Replace(',',' '));
-            row.Add(fusionData.higherCardName.Current.Replace(',',' '));
-            row.Add(fusionData.cardResultName.Current.Replace(',',' '));
+
+            row.Add(fusionData.lowerCardName.Current.Replace(',', ' '));
+            row.Add(fusionData.higherCardName.Current.Replace(',', ' '));
+            row.Add(fusionData.cardResultName.Current.Replace(',', ' '));
             sb.AppendLine(string.Join(",", row));
         }
         File.WriteAllText(filePath, sb.ToString());
@@ -94,20 +99,20 @@ public class FusionData
             string line = lines[i];
             string[] values = line.Split(',');
 
-            if (values.Length == 6) 
+            if (values.Length == 6)
             {
                 ushort lowerId = ushort.Parse(values[0]);
                 ushort higherId = ushort.Parse(values[1]);
                 ushort resultId = ushort.Parse(values[2]);
-                
+
                 FusionData data = new FusionData {
                     lowerCardId = lowerId,
                     higherCardId = higherId,
                     resultId = resultId,
                     fusionData = 0, //updated in updateFusion
-                    lowerCardName = Card.cardNameList.Length > lowerId ? Card.cardNameList[lowerId] :new ModdedStringName($"Card_{lowerId}",$"Card_{lowerId}") ,
-                    higherCardName = Card.cardNameList.Length > higherId ? Card.cardNameList[higherId] : new ModdedStringName($"Card_{higherId}",$"Card_{higherId}"),
-                    cardResultName = Card.cardNameList.Length > resultId ? Card.cardNameList[resultId] : new ModdedStringName($"Card_{resultId}",$"Card_{resultId}")
+                    lowerCardName = Card.cardNameList.Length > lowerId ? Card.cardNameList[lowerId] : new ModdedStringName($"Card_{lowerId}", $"Card_{lowerId}"),
+                    higherCardName = Card.cardNameList.Length > higherId ? Card.cardNameList[higherId] : new ModdedStringName($"Card_{higherId}", $"Card_{higherId}"),
+                    cardResultName = Card.cardNameList.Length > resultId ? Card.cardNameList[resultId] : new ModdedStringName($"Card_{resultId}", $"Card_{resultId}")
                 };
                 data.UpdateFusion();
                 FusionTableData[index] = data;

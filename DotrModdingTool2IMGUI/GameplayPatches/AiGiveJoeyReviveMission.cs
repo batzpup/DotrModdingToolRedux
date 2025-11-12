@@ -1,16 +1,10 @@
-﻿using GameplayPatches;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
     public class AiGiveJoeyReviveMission : Patch
     {
-        static int patchLocation = 0x11ff38;
-        static int TaTuto_Init036 = 0x24F6B0;
+        static int patchLocation =  0x14FE38 - DataAccess.IsoSlusRamOffset;
+        static int TaTuto_Init036 = 0x27F5B0 - DataAccess.IsoSlusRamOffset;
         
 
         public override bool IsApplied()

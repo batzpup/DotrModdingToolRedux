@@ -509,7 +509,7 @@ public class DeckEditorWindow : IImGuiWindow
                 ImGui.TableSetColumnIndex(8);
                 if (ImGui.Button("Add", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
                 {
-                    if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < 3)
+                    if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < 3 || (GameplayPatchesWindow.Instance.bNineCardLimit &&  sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) <9))
                     {
                         currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
                         sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
@@ -526,7 +526,7 @@ public class DeckEditorWindow : IImGuiWindow
                         if (i != cardConstant.Index)
                         {
                             CardConstant newCardConst = CardConstant.List[i];
-                            if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3)
+                            if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3 || (GameplayPatchesWindow.Instance.bNineCardLimit && sortedDeckList.Count(card => card.CardConstant.Index == i) < 9))
                             {
                                 sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
                                 currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));

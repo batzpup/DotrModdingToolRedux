@@ -1,80 +1,94 @@
 ﻿using System.Collections;
+using System.Diagnostics;
+using System.Security.Cryptography;
 using DiscUtils.Iso9660;
 namespace DotrModdingTool2IMGUI;
 
-public partial class DataAccess
+public class DataAccess
 {
-    public const int DeckLeaderRankThresholdsByteOffset = 0x2A0952;
+    public const int IsoSlusRamOffset = 0x2ff00;
+
+    //Ram addresses plus offset
+    public const int DeckLeaderRankThresholdsByteOffset = 0x2D0852 - IsoSlusRamOffset;
     public const int DeckLeaderRankThresholdByteLength = 24;
 
-    public const int FusionListByteOffset = 0x26E930;
+    public const int FusionListByteOffset = 0x29E830 - IsoSlusRamOffset;
     public const int FusionListByteLength = 26540 * 4;
 
-    public const int CardConstantsByteOffset = 0x28F180;
+    public const int CardConstantsByteOffset = 0x2BF080 - IsoSlusRamOffset;
     public const int CardConstantByteLength = 20;
     public const int CardConstantCount = Card.TotalCardCount;
 
-    public const int EnemyAiByteOffset = 0x28AFB0;
+    public const int EnemyAiByteOffset = 0x2BAEB0 - IsoSlusRamOffset;
     public const int EnemyAiByteLength = 4;
     public const int EnemyAiCount = 32;
 
-    public const int TreasureCardByteOffset = 0x2A09D0;
+    public const int TreasureCardByteOffset = 0x2D08D0 - IsoSlusRamOffset;
     public const int TreasureCardByteSize = 4;
     public const int TreasureCardCount = 22;
 
-    public const int CardLeaderAbilitiesOffset = 0x293438;
+    public const int CardLeaderAbilitiesOffset = 0x2C3338 - IsoSlusRamOffset;
     public const int CardLeaderAbilityCount = 683;
     public const int CardLeaderAbilityTypeCount = 20;
     public const int CardLeaderAbilityByteSize = 2;
 
-    public const int MonsterEquipCardCompatabilityOffset = 0x26D680;
+    public const int MonsterEquipCardCompatabilityOffset = 0x29D580 - IsoSlusRamOffset;
     public const int MonsterEquipCardCompabilityCardCount = 683;
     public const int MonsterEquipCardCompabilityByteSize = 7;
 
-    public const int DeckByteOffset = 0x2A0A70;
+    public const int DeckByteOffset = 0x2D0970 - IsoSlusRamOffset;
     public const int DeckCount = 51;
     public const int DeckCardCount = 41;
     public const int DeckCardByteCount = 2;
 
     public const int EffectByteCount = 8;
-    public const int MonsterEffectsOffset = 0x299EF0;
+    public const int MonsterEffectsOffset = 0x2C9DF0 - IsoSlusRamOffset;
     public const int MonsterEffectsCount = 256;
     public const int MonsterEffectsTypeCount = 5;
 
-    public const int MagicEffectsOffset = 0x29C6F0;
+    public const int MagicEffectsOffset = 0x2CC5F0 - IsoSlusRamOffset;
     public const int MagicEffectsCount = 171;
 
-    public const int EnchantIdsOffset = 0x26D5E0;
+    public const int EnchantIdsOffset = 0x29D4E0 - IsoSlusRamOffset;
     public const int EnchantIdSize = 2;
     public const int EnchantDataCount = 50;
-    public const int EnchantScoresOffset = 0x26D612;
+    public const int EnchantScoresOffset = 0x29D512 - IsoSlusRamOffset;
     public const int EnchantScoresSize = 2;
 
     public const int PicPackSize = 0x4410;
+
     public const int PictureSize = 0x4800;
+
+    //These is not on the slus
     public const int PickPackOffset = 0xe9b800;
-    public const IntPtr picPackArtsSLUSArray = 0x29eafc;
+    public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
 
-    public static int OffsetTable = 0x2A1AD0;
-    public static int TextDataTable = 0x2A4AD4;
+    public static int OffsetTable = 0x2D19D0 - IsoSlusRamOffset;
+    public static int TextDataTable = 0x2D49D4 - IsoSlusRamOffset;
 
-    public static int EnglishOffsetStart = 0x2A1B48;
-    public static int EnglishTextStart = 0x2A4F0C;
+    public static int EnglishOffsetStart = 0x2D1A48 - IsoSlusRamOffset;
+    public static int EnglishTextStart = 0x2D4E0C - IsoSlusRamOffset;
 
     public static int TotalStringCount = 3073;
     public static int TotalTextLength = 74252 * 2;
 
 
     public DotrMap[] maps = new DotrMap[46];
-    private static readonly object FileStreamLock = new object();
+    public static int MapOffset = 0x2CEE5C - IsoSlusRamOffset;
+
+    static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
-    public string filePath = null;
     public bool IsIsoLoaded = false;
 
     static DataAccess instance;
 
-    public static int AdjustOffset(int offset) => offset - 0x2FF00;
+    public string currentIsoPath;
+    public string CurrentHash = String.Empty;
+    public const string VanillaHash = "ca838dae26ff750936c0814d1c2d33f1";
+
+    public static int ToRamOffset(int offset) => offset + 0x2FF00;
+    public static int ToIsoOffset(int ramAddress) => ramAddress - 0x2FF00;
 
     public static DataAccess Instance
     {
@@ -105,22 +119,53 @@ public partial class DataAccess
 
             for (int i = 0; i < maps.Length; i++)
             {
-                int mapOffset = 0x29EF5C;
-                mapOffset += i * 49;
                 DotrMap map = maps[i];
-
                 int x;
                 int y;
                 for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
                 {
                     x = tileIndex % 7;
                     y = tileIndex / 7;
-                    fileStream.Seek(mapOffset + tileIndex, SeekOrigin.Begin);
+                    fileStream.Seek(MapOffset + (i * 49) + tileIndex, SeekOrigin.Begin);
                     fileStream.Write(new byte[] { (byte)map.tiles[x, y] }, 0, 1);
                 }
             }
             fileStream.Flush();
         }
+    }
+
+    public async Task GetMd5HashAsync()
+    {
+        CurrentHash = string.Empty;
+
+        lock (fileStream)
+        {
+            fileStream.Seek(0, SeekOrigin.Begin);
+        }
+        using var md5 = MD5.Create();
+        var sw = Stopwatch.StartNew();
+        byte[] hash = md5.ComputeHash(fileStream);
+        sw.Stop();
+        Console.WriteLine($"Elapsed: {sw.Elapsed.TotalSeconds:F2}s");
+        CurrentHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+    }
+
+    public void GetMd5Hash()
+    {
+        CurrentHash = string.Empty;
+
+        lock (fileStream)
+        {
+            fileStream.Seek(0, SeekOrigin.Begin);
+            var sw = Stopwatch.StartNew();
+            using var md5 = MD5.Create();
+
+            byte[] hash = md5.ComputeHash(fileStream);
+            sw.Stop();
+            Console.WriteLine($"Elapsed: {sw.Elapsed.TotalSeconds:F2}s");
+            CurrentHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
+
     }
 
     public void SaveMap(int mapIndex)
@@ -132,17 +177,14 @@ public partial class DataAccess
         lock (FileStreamLock)
         {
 
-            int mapOffset = 0x29EF5C;
-            mapOffset += mapIndex * 49;
             DotrMap map = maps[mapIndex];
-
             int x;
             int y;
             for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
             {
                 x = tileIndex % 7;
                 y = tileIndex / 7;
-                fileStream.Seek(mapOffset + tileIndex, SeekOrigin.Begin);
+                fileStream.Seek(MapOffset + (mapIndex * 49) + tileIndex, SeekOrigin.Begin);
                 fileStream.Write(new byte[] { (byte)map.tiles[x, y] }, 0, 1);
             }
             fileStream.Flush();
@@ -157,11 +199,8 @@ public partial class DataAccess
 
             for (int i = 0; i < maps.Length; i++)
             {
-                int mapOffset = 0x29EF5C;
-                mapOffset += i * 0x31;
-
                 byte[] slusMap = new byte[49];
-                fileStream.Seek(mapOffset, SeekOrigin.Begin);
+                fileStream.Seek(MapOffset + (i * 49), SeekOrigin.Begin);
 
                 for (int j = 0; j < slusMap.Length; j++)
                 {
@@ -183,7 +222,7 @@ public partial class DataAccess
             fileStream.Seek(deckBytesLocation, SeekOrigin.Begin);
             fileStream.Write(bytes, 0, bytes.Length);
             fileStream.Flush();
-            fileStream.Flush();
+
         }
     }
 
@@ -286,14 +325,18 @@ public partial class DataAccess
 
     public void OpenIso(string filePath)
     {
-        fileStream?.Dispose();
 
-        this.filePath = filePath;
-        fileStream = new FileStream(
-            filePath,
-            FileMode.Open,
-            FileAccess.ReadWrite,
-            FileShare.ReadWrite);
+        currentIsoPath = filePath;
+
+        lock (FileStreamLock)
+        {
+            fileStream?.Dispose();
+            fileStream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite);
+        }
 
         IsIsoLoaded = true;
     }
@@ -476,17 +519,10 @@ public partial class DataAccess
     {
         lock (FileStreamLock)
         {
-            // fileStream.Position = EnglishOffsetStart;
-            //foreach (byte b in StringEditor.OffsetBytes)
-            //    fileStream.WriteByte(b);
             fileStream.Seek(EnglishOffsetStart, SeekOrigin.Begin);
             fileStream.Write(StringEditor.OffsetBytes.ToArray(), 0, StringEditor.OffsetBytes.Count);
             fileStream.Flush();
 
-
-            // fileStream.Position = EnglishTextStart;
-            //foreach (byte b in StringEditor.StringBytes)
-            //    fileStream.WriteByte(b);
             fileStream.Seek(EnglishTextStart, SeekOrigin.Begin);
             fileStream.Write(StringEditor.StringBytes.ToArray(), 0, StringEditor.StringBytes.Count);
             fileStream.Flush();
@@ -719,7 +755,7 @@ public partial class DataAccess
 
     static void CreateImageFromBytes(byte[] picture)
     {
-        
+
     }
 
     public void SavePreloadImages(Dictionary<int, int> images)

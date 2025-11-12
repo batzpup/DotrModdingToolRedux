@@ -1,8 +1,9 @@
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches;
 
 class ChangeSpRecoveryRed : Patch
 {
-    public static int patchLocationRed = 0x17E1E4;
+    public static int patchLocationRed = 0x1AE0E4 - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied()
     {
@@ -35,8 +36,7 @@ class ChangeSpRecoveryRed : Patch
 
 class ChangeSpRecoveryWhite : Patch
 {
-    public static int patchLocationRed = 0x17E1E4;
-    public static int patchLocationWhite = 0x17E288;
+    public static int patchLocationWhite = 0x1AE188 - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied()
     {

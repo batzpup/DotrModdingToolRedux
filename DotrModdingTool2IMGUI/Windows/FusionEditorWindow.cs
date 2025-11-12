@@ -38,7 +38,7 @@ class FusionEditorWindow : IImGuiWindow
     public void SaveFusionChanges()
     {
         FusionData.FusionTableData = sortedData.ToDictionary();
-        DataAccess.Instance.SaveFusionData(FusionData.Bytes);
+        DataAccess.Instance.SaveFusionData(FusionData.TableBytes);
     }
 
     unsafe void DrawFusionTable()

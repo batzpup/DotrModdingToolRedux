@@ -1,5 +1,6 @@
 ﻿
 
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
     /// <summary>
@@ -7,8 +8,8 @@ namespace GameplayPatches
     /// </summary>
     public class AiFixAttackLeaderOnCrush : Patch
     {
-        static int patchLocation = 0x21FF88;
-        static int TaTuto_Init036Location = 0x24F6B0;
+        static int patchLocation =           0x24FE88 - DataAccess.IsoSlusRamOffset;
+        static int TaTuto_Init036Location =  0x27F5B0 - DataAccess.IsoSlusRamOffset;
 
         public override bool IsApplied()
         {

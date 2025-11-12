@@ -326,12 +326,12 @@ public class MapEditorWindow : IImGuiWindow
         Vector2 availableSpace = ImGui.GetContentRegionAvail();
         Vector2 spacing = ImGui.GetStyle().ItemSpacing;
 
-        
+
         float leftIndent = availableSpace.X / 8f;
 
-        
+
         float totalHorizontalSpacing = (spacing.X * 6) + (ImGui.GetStyle().FramePadding.X * 2 * 7) + leftIndent;
-        
+
         float maxCellWidth = (availableSpace.X - totalHorizontalSpacing) / 7;
 
         float totalVerticalSpacing = (spacing.Y * 8) + (ImGui.GetStyle().FramePadding.Y * 2 * 9);
@@ -343,9 +343,11 @@ public class MapEditorWindow : IImGuiWindow
 
         ImGui.Dummy(new Vector2(0, availableSpace.Y / 32));
         ImGui.Indent(leftIndent);
-        ImGui.Indent((tileSize.X + spacing.X) * 3);
+
+        Vector2 currentPos = ImGui.GetCursorScreenPos();
+        ImGui.SetCursorScreenPos(currentPos + spacing * 5 + new Vector2((tileSize.X + spacing.X / 2f) * 3, -tileSize.Y / 2f));
         ImGui.Image(GlobalImages.Instance.Terrain[ETerrainImages.WhiteRose], tileSize);
-        ImGui.Unindent((tileSize.X + spacing.X) * 3);
+
         bool isMouseDragging = ImGui.IsMouseDown(0);
 
         int x;
@@ -362,11 +364,32 @@ public class MapEditorWindow : IImGuiWindow
             }
             if (DataAccess.Instance.IsIsoLoaded && currentMapIndex < 22)
             {
+                var drawList = ImGui.GetForegroundDrawList();
                 if (currentTreasureCard.Column == x && currentTreasureCard.Row == y)
                 {
-                    var temp = ImGui.GetForegroundDrawList();
-                    temp.AddRectFilled(tilePos + spacing / 2f,
-                        new Vector2(tilePos.X + tileSize.X + spacing.X / 2f, tilePos.Y + tileSize.Y + spacing.Y / 2f + 1), treasureHighlightColour);
+
+                    drawList.AddRectFilled(tilePos + spacing / 2f, new Vector2(tilePos.X + tileSize.X + spacing.X / 2f, tilePos.Y + tileSize.Y + spacing.Y / 2f + 1), treasureHighlightColour);
+                }
+                if (x == 0)
+                {
+                    
+                    Vector2 textPos = new Vector2(
+                        tilePos.X - ImGui.CalcTextSize($"{y}").X - spacing.X * 0.5f,
+                        tilePos.Y + tileSize.Y / 2f - ImGui.GetFontSize() / 2f
+                    );
+                    drawList.AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text), $"{y}");
+                }
+                if (y == 0)
+                {
+                    if (x != 3)
+                    {
+                        Vector2 textPosTop = new Vector2(
+                            tilePos.X + tileSize.X / 2f - ImGui.CalcTextSize($"{x}").X / 2f,
+                            tilePos.Y - ImGui.GetFontSize() - spacing.Y * 0.5f
+                        );
+                        drawList.AddText(textPosTop, ImGui.GetColorU32(ImGuiCol.Text), $"{x}");
+                    }
+
                 }
             }
             bool isInSquare = mousePos.X >= tilePos.X && mousePos.X < tilePos.X + tileSize.X &&
@@ -389,9 +412,10 @@ public class MapEditorWindow : IImGuiWindow
             if (x < 6) ImGui.SameLine();
 
         }
-        ImGui.Indent((tileSize.X + spacing.X) * 3);
+        Vector2 currentPos2 = ImGui.GetCursorScreenPos();
+        ImGui.SetCursorScreenPos(currentPos2 + spacing * 5 + new Vector2((tileSize.X + spacing.X / 2f) * 3, -spacing.Y * 5f));
         ImGui.Image(GlobalImages.Instance.Terrain[ETerrainImages.RedRose], tileSize);
-        ImGui.Unindent((tileSize.X + spacing.X) * 3);
+
         ImGui.EndChild();
     }
 

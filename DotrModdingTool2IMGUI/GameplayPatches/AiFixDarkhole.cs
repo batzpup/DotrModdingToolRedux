@@ -1,5 +1,6 @@
 ﻿
 
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
     /// <summary>
@@ -7,12 +8,13 @@ namespace GameplayPatches
     /// </summary>
     public class AiFixDarkhole : Patch
     {
-        static int patchLocation = 0x13B1F0;
-        static int bonesPatchLocation = 0xFB100;
+        
+        static int patchLocation =      0X16B0F0 - DataAccess.IsoSlusRamOffset;
+        static int bonesPatchLocation = 0x12B000 - DataAccess.IsoSlusRamOffset;
 
         public override bool IsApplied()
         {
-            return dataAccess.CheckIfPatchApplied(patchLocation, new byte[8] { 0xc8, 0xe0, 0x05, 0x08, 0x00, 0x00, 0x00, 0x00 });
+            return dataAccess.CheckIfPatchApplied(bonesPatchLocation, new byte[8] { 0x3C, 0xAC, 0x05, 0x08,0x00, 0x00, 0x00, 0x00 });
         }
 
         protected override void Apply()

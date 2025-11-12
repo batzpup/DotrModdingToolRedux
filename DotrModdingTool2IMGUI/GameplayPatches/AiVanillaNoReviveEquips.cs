@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class AiVanillaNoReviveEquips : Patch
     {
-        static int MFL_SK_Part1 = 0x13705C;
-        static int MFL_SK_Part2 = 0x1370F4;
-        static int TaTuto_ControlFade = 0x24F990;
-        static int DMK_Part1 = 0x13CB54;
-        static int DMK_Part2 = 0x13CBF8;
+        static int MFL_SK_Part1 =       0x166F5C - DataAccess.IsoSlusRamOffset;
+        static int MFL_SK_Part2 =       0x166FF4 - DataAccess.IsoSlusRamOffset;
+        static int TaTuto_ControlFade = 0x27F890 - DataAccess.IsoSlusRamOffset;
+        static int DMK_Part1 =          0x16CA54 - DataAccess.IsoSlusRamOffset;
+        static int DMK_Part2 =          0x16CAF8 - DataAccess.IsoSlusRamOffset;
 
 
         public override bool IsApplied()

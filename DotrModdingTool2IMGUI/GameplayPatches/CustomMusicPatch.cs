@@ -1,14 +1,19 @@
-﻿namespace GameplayPatches;
+﻿using DotrModdingTool2IMGUI;
+namespace GameplayPatches;
 
 class CustomMusicPatch : Patch
 {
     
-    static int AddCustomMusicPtr = 0x17ac58;
-    static int TaTuto_DrawTrapArea = 0x24f800;
+    static int AddCustomMusicPtr1 =   0x1AAB58 - DataAccess.IsoSlusRamOffset;
+    static int AddCustomMusicPtr2 =   0x1D0108 - DataAccess.IsoSlusRamOffset;
+    static int AddCustomMusicPtr3 =   0x1D0C04 - DataAccess.IsoSlusRamOffset;
+    static int AddCustomMusicPtr4 =   0x1D0DE0 - DataAccess.IsoSlusRamOffset;
+    static int AddCustomMusicPtr5 =   0x1D0E80 - DataAccess.IsoSlusRamOffset;
+    static int TaTuto_DrawTrapArea =  0x27F700 - DataAccess.IsoSlusRamOffset;
     
     public override bool IsApplied()
     {
-        return dataAccess.CheckIfPatchApplied(AddCustomMusicPtr, new byte[8] { 0xc0, 0xfd, 0x09, 0x08, 0x15, 0x00, 0x03, 0x24  });
+        return dataAccess.CheckIfPatchApplied(AddCustomMusicPtr1, new byte[8] { 0xc0, 0xfd, 0x09, 0x08, 0x15, 0x00, 0x03, 0x24  });
     }
 
     protected void Apply(Dictionary<int, int> duelistMusic)
@@ -43,26 +48,24 @@ class CustomMusicPatch : Patch
                 bytes[i] = newBytes[0];
             }
             //patch jump
-            dataAccess.ApplyPatch(AddCustomMusicPtr, new byte[8] { 0xc0, 0xfd, 0x09, 0x08, 0x15, 0x00, 0x03, 0x24 });
+            dataAccess.ApplyPatch(AddCustomMusicPtr1, new byte[8] { 0xc0, 0xfd, 0x09, 0x08, 0x15, 0x00, 0x03, 0x24 });
             dataAccess.ApplyPatch(TaTuto_DrawTrapArea, bytes);
-
             //Add music restart fix for combat
-
-            dataAccess.ApplyPatch(0x1a0208, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
-            dataAccess.ApplyPatch(0x1a0d04, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
-            dataAccess.ApplyPatch(0x1a0ee0, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
-            dataAccess.ApplyPatch(0x1a0f80, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
+            dataAccess.ApplyPatch(AddCustomMusicPtr2, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
+            dataAccess.ApplyPatch(AddCustomMusicPtr3, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
+            dataAccess.ApplyPatch(AddCustomMusicPtr4, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
+            dataAccess.ApplyPatch(AddCustomMusicPtr5, new byte[4] { 0x01, 0x00, 0x04, 0x24 });
             
     }
 
 
     protected override void Remove()
     {
-        dataAccess.ApplyPatch(AddCustomMusicPtr, new byte[8] { 0x3c, 0x01, 0xe6, 0x8c, 0x15, 0x00, 0x03, 0x24 });
-        dataAccess.ApplyPatch(0x1a0208, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
-        dataAccess.ApplyPatch(0x1a0d04, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
-        dataAccess.ApplyPatch(0x1a0ee0, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
-        dataAccess.ApplyPatch(0x1a0f80, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
+        dataAccess.ApplyPatch(AddCustomMusicPtr1, new byte[8] { 0x3c, 0x01, 0xe6, 0x8c, 0x15, 0x00, 0x03, 0x24 });
+        dataAccess.ApplyPatch(AddCustomMusicPtr2, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
+        dataAccess.ApplyPatch(AddCustomMusicPtr3, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
+        dataAccess.ApplyPatch(AddCustomMusicPtr4, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
+        dataAccess.ApplyPatch(AddCustomMusicPtr5, new byte[4] { 0x84, 0x0c, 0x24, 0x96 });
     }
 
     public void ApplyOrRemove(bool apply, Dictionary<int, int> DuelistMusic)

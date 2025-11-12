@@ -7,39 +7,59 @@ namespace DotrModdingTool2IMGUI;
 public class GameplayPatchesWindow : IImGuiWindow
 {
     ImFontPtr font;
+
     DataAccess dataAccess = DataAccess.Instance;
-    static int LockTeamSelection = 0x1ec7f0; // lock the selection options
-    static int LockTeamSelection2 = 0x1ec7d8;
-    static int SelectWhiteDefault = 0x1ef260;
-    static int MakeWhiteStart = 0x179074; //Makes white always start
-    static int changeTeamStart = 0x179074;
-    static int ChangeTerrainValues = 0x236590;
-    static int MoreDigitsOnScreen = 0x181cd0;
+
+    //Ram addresses plus offset
+    static int LockTeamSelection = 0x21C6F0 - DataAccess.IsoSlusRamOffset; // lock the selection options
+    static int LockTeamSelection2 = 0x21C6D8 - DataAccess.IsoSlusRamOffset;
+    const int LockTeamSelection3 = 0x21EF58 - DataAccess.IsoSlusRamOffset;
+
+    static int SelectWhiteDefault = 0x21F160 - DataAccess.IsoSlusRamOffset;
+    static int MakeWhiteStart = 0x1A8F74 - DataAccess.IsoSlusRamOffset; //Makes white always start
+    static int changeTeamStart = 0x1A8F74 - DataAccess.IsoSlusRamOffset;
+    static int ComparePlayerSidePatch = 0x1D7A08 - DataAccess.IsoSlusRamOffset;
+    static int ChangeTerrainValues = 0x266490 - DataAccess.IsoSlusRamOffset;
+    static int MoreDigitsOnScreen = 0x1A1BD0 - DataAccess.IsoSlusRamOffset;
+
+    //LP cap
+    const int ChangeLPCapOffset1 = 0x2508D4 - DataAccess.IsoSlusRamOffset;
+    const int ChangeLPCapOffset2 = 0x2508E0 - DataAccess.IsoSlusRamOffset;
+    const int ChangeLPCapOffset3 = 0x2508EC - DataAccess.IsoSlusRamOffset;
+    const int LpCalc1 = 0x1DF51C - DataAccess.IsoSlusRamOffset;
+    const int LpCalc2 = 0x1DF524 - DataAccess.IsoSlusRamOffset;
+    const int DuelDrawMoveLpBoxY = 0x1B13B4 - DataAccess.IsoSlusRamOffset;
+    const int DuelDrawMovePlayerTag = 0x1B1BE4 - DataAccess.IsoSlusRamOffset;
+    const int DuelDrawWhiteRoseOffsetX = 0x1B13F8 - DataAccess.IsoSlusRamOffset;
+    const int DuelDrawMovePlayerPic = 0x1B1B2C - DataAccess.IsoSlusRamOffset;
+    const int DuelDrawLpBgWiden = 0x1B1B9C - DataAccess.IsoSlusRamOffset;
+
+    const int DuelDrawWidenUiBox = 0x1B1AFC - DataAccess.IsoSlusRamOffset;
 
     //BELOW HERE REQUIRE FAST INTRO TO BE ENABLED:
     //Remove Dc Requirements
-    static int TaTutoDbgInit34 = 0x145f60;
-    static int TaTutoFocusUnit33 = 0x1446f0;
-    static int TaTutoFocusInit34 = 0x145ca0;
+    static int TaTutoDbgInit34 = 0x175E60 - DataAccess.IsoSlusRamOffset;
+    static int TaTutoFocusUnit33 = 0x1745F0 - DataAccess.IsoSlusRamOffset;
+    static int TaTutoFocusInit34 = 0x175BA0 - DataAccess.IsoSlusRamOffset;
 
     //For AI changes
     //Joey Fix
-    static int TaTuto_Init036 = 0x24F6B0;
+    static int TaTuto_Init036 = 0x27F5B0 - DataAccess.IsoSlusRamOffset;
 
     //Ai not reviving equips
-    static int TaTuto_ControlFade = 0x24F990;
+    static int TaTuto_ControlFade = 0x27F890 - DataAccess.IsoSlusRamOffset;
 
     //TutorialStuff
-    static int TaTutoSetDeck35 = 0x148420;
+    static int TaTutoSetDeck35 = 0x178320 - DataAccess.IsoSlusRamOffset;
 
     //Slots
-    static int AddSlotRewardsPtr = 0x221610;
-    static int TaTutoFocusUnit032 = 0x142610;
+    static int AddSlotRewardsPtr = 0x251510 - DataAccess.IsoSlusRamOffset;
+    static int TaTutoFocusUnit032 = 0x172510 - DataAccess.IsoSlusRamOffset;
 
     //Music
-    static int AddCustomMusicPtr = 0x17ac58;
-    static int TaTuto_DrawTrapArea = 0x24f800;
-    static int AI_Tut_05 = 0x14AB70;
+    static int AddCustomMusicPtr = 0x1AAB58 - DataAccess.IsoSlusRamOffset;
+    static int TaTuto_DrawTrapArea = 0x27F700 - DataAccess.IsoSlusRamOffset;
+    static int AI_Tut_05 = 0x17AA70 - DataAccess.IsoSlusRamOffset;
 
     #region Toggle only
 
@@ -60,14 +80,16 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bSaveMusic;
 
     public int CurrentRule;
-    string[] ruleList = new[] { "Normal", "No requirements post game", "No requirements" };
+    public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
 
     #endregion
 
     #region Toggle and value
 
+    public static string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
+    
     public int currentSideToGoFirst;
-    string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
+    
     public bool bSideToGoFirst;
     public bool bForceNewStartSide;
     public bool bLpCap;
@@ -108,16 +130,16 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #region AIPatches
 
-    bool bFixDarkHole;
-    bool bMaiFeatherDuster;
-    bool bFixGetMaxApList;
-    bool bMakoHeavyStorm;
-    bool bStopPegasusFusion;
-    bool bDmkFixRevive;
-    bool bDontReviveEquips;
-    bool bGiveJoeyReviveMission;
-    bool bYugiRaigeki;
-    bool bTeaInsectImitation;
+    public bool bFixDarkHole;
+    public bool bMaiFeatherDuster;
+    public bool bFixGetMaxApList;
+    public bool bMakoHeavyStorm;
+    public bool bStopPegasusFusion;
+    public bool bDmkFixRevive;
+    public bool bDontReviveEquips;
+    public bool bGiveJoeyReviveMission;
+    public bool bYugiRaigeki;
+    public bool bTeaInsectImitation;
 
     #endregion
 
@@ -157,7 +179,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     public GameplayPatchesWindow()
     {
         Instance = this;
-        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
+        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         MusicEditorWindow.OnSaveCustomMusic += onSaveMusicChanged;
     }
@@ -368,18 +390,18 @@ public class GameplayPatchesWindow : IImGuiWindow
                         }
                         if (ImGui.IsItemHovered())
                         {
-                           
+
                             GlobalImgui.RenderTooltipCardImage(cardName.Default);
-                        
+
                         }
                     }
                     ImGui.EndCombo();
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    
+
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialSlotRewards[i]].Default);
-                   
+
                 }
             }
             ImGui.EndTable();
@@ -418,8 +440,9 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Exceed the 9999 LP Cap");
         if (bLpCap)
         {
-            lpCap = Math.Clamp(lpCap, 9999, 32000);
+
             ImGui.InputInt("##lpCap", ref lpCap, 100, 1000);
+            lpCap = Math.Clamp(lpCap, 1000, 32000);
         }
 
         ImGui.Checkbox("Change reincarnation count", ref bReincarnationCount);
@@ -552,7 +575,7 @@ public class GameplayPatchesWindow : IImGuiWindow
             ImGui.SetTooltip(
                 "If a deck leader that has the Terrain Change leader ability is strong on toon\nit will create toon for its ability instead");
 
-        if (ImGui.Combo("DC rule changes", ref CurrentRule, ruleList, ruleList.Length))
+        if (ImGui.Combo("DC rule changes", ref CurrentRule, RuleList, RuleList.Length))
         {
         }
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change DC requirements");
@@ -641,12 +664,15 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     void ReadValuesFromIso()
     {
-        bDeckLeaderRecovery = !dataAccess.CheckIfPatchApplied(0x24268C, new byte[4] { 0x32, 0x00, 0x04, 0x24 });
+
+        bDeckLeaderRecovery = new ChangeLpRecovery().IsApplied();
         if (bDeckLeaderRecovery)
         {
-            leaderRecovery = BitConverter.ToInt16(dataAccess.ReadBytes(0x24268C, 2), 0);
+            leaderRecovery = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeLpRecovery.patchLocation, 2), 0);
         }
-        bSideToGoFirst = dataAccess.CheckIfPatchApplied(0x1a7b08, new byte[4] { 0x00, 0xff, 0x23, 0x92 });
+        //TODO
+
+        bSideToGoFirst = dataAccess.CheckIfPatchApplied(ComparePlayerSidePatch, new byte[4] { 0x00, 0xff, 0x23, 0x92 });
         if (bSideToGoFirst)
         {
             byte[] value = dataAccess.ReadBytes(changeTeamStart + 28, 1);
@@ -683,7 +709,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 forceSideIndex = 1;
             }
         }
-        int CapValue = BitConverter.ToUInt16(dataAccess.ReadBytes(0x2209d4, 2), 0);
+        int CapValue = BitConverter.ToUInt16(dataAccess.ReadBytes(0x2508D4 - DataAccess.IsoSlusRamOffset, 2), 0);
         if (CapValue != 10000)
         {
             bLpCap = true;
@@ -855,7 +881,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 0x92, 0x0f, 0x16, 0xa2
             });
             //Patching duel act to compare what side the player is and not who went first
-            dataAccess.ApplyPatch(0x1a7b08, new byte[4] { 0x00, 0xff, 0x23, 0x92 });
+            dataAccess.ApplyPatch(ComparePlayerSidePatch, new byte[4] { 0x00, 0xff, 0x23, 0x92 });
         }
         else
         {
@@ -864,8 +890,9 @@ public class GameplayPatchesWindow : IImGuiWindow
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x28, 0x00, 0x00, 0x40, 0x79, 0x07, 0x0c, 0x01, 0x00, 0x04, 0x24, 0x3c, 0x01,
                     0x04, 0x8e, 0x40, 0x01, 0x05, 0x8e, 0x40, 0xb7, 0x06, 0x0c, 0x28, 0x36, 0x40, 0x72
                 });
-            dataAccess.ApplyPatch(0x1a7b08, new byte[4] { 0x52, 0x0d, 0x23, 0x92 });
+            dataAccess.ApplyPatch(ComparePlayerSidePatch, new byte[4] { 0x52, 0x0d, 0x23, 0x92 });
         }
+
         if (bForceNewStartSide)
         {
             //loads 1 into a1
@@ -875,7 +902,7 @@ public class GameplayPatchesWindow : IImGuiWindow
             {
                 //Loads a1 into has beaten White side
                 dataAccess.ApplyPatch(LockTeamSelection, new byte[4] { 0x02, 0x00, 0x25, 0xa2 });
-                dataAccess.ApplyPatch(0x1ef058, new byte[4] { 0x00, 0x00, 0x18, 0x24 });
+                dataAccess.ApplyPatch(LockTeamSelection3, new byte[4] { 0x00, 0x00, 0x18, 0x24 });
 
                 //Unpatch if they previous version had Red forced first
                 dataAccess.ApplyPatch(LockTeamSelection - 4, new byte[4] { 0x01, 0x00, 0x20, 0xa2 });
@@ -884,7 +911,7 @@ public class GameplayPatchesWindow : IImGuiWindow
             {
                 //Loads a1 into has beaten red side
                 dataAccess.ApplyPatch(LockTeamSelection - 4, new byte[4] { 0x01, 0x00, 0x25, 0xa2 });
-                dataAccess.ApplyPatch(0x1ef058, new byte[4] { 0x01, 0x00, 0x18, 0x24 });
+                dataAccess.ApplyPatch(LockTeamSelection3, new byte[4] { 0x01, 0x00, 0x18, 0x24 });
                 //Unpatch if they previous version had white forced first
                 dataAccess.ApplyPatch(LockTeamSelection, new byte[4] { 0x02, 0x00, 0x20, 0xa2 });
             }
@@ -900,12 +927,13 @@ public class GameplayPatchesWindow : IImGuiWindow
             //If Fast is enabled patch default selection
             if (bFastIntro)
             {
-                dataAccess.ApplyPatch(0x1ef058, new byte[4] { 0x01, 0x00, 0x18, 0x24 });
+                dataAccess.ApplyPatch(LockTeamSelection3, new byte[4] { 0x01, 0x00, 0x18, 0x24 });
             }
             //Otherwise if its disabled DO NOTHING as fast intro will clean this area up. As this space is in fast intro's
 
 
         }
+
 
         if (bLpCap)
         {
@@ -915,26 +943,26 @@ public class GameplayPatchesWindow : IImGuiWindow
                 dataAccess.ApplyPatch(MoreDigitsOnScreen, new byte[4] { 0x05, 0x00, 0x07, 0x24 });
 
                 //Move player details box y pos
-                dataAccess.ApplyPatch(0x1814b4, new byte[4] { 0x14, 0x00, 0x04, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawMoveLpBoxY, new byte[4] { 0x14, 0x00, 0x04, 0x24 });
 
                 //Move Player name tag
-                dataAccess.ApplyPatch(0x181ce4, new byte[4] { 0x94, 0x00, 0x03, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawMovePlayerTag, new byte[4] { 0x94, 0x00, 0x03, 0x24 });
 
                 //Move allignment (not needed anymore but could be useful in future)
                 //Mem.PatchEx(0x201b1c64, "\x1c\x00\xf0\x26", 4);
 
                 //offset white rose x pos left
-                dataAccess.ApplyPatch(0x1814f8, new byte[4] { 0x90, 0x01, 0x06, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawWhiteRoseOffsetX, new byte[4] { 0x90, 0x01, 0x06, 0x24 });
 
                 //Move Player Picture Right
                 //Mem.PatchEx(0x201b1b34, "\x18\x00\xa3\x26", 4);
-                dataAccess.ApplyPatch(0x181c2c, new byte[4] { 0x94, 0x00, 0x02, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawMovePlayerPic, new byte[4] { 0x94, 0x00, 0x02, 0x24 });
 
                 // make LP background box wider
-                dataAccess.ApplyPatch(0x181c9c, new byte[4] { 0x0e, 0x00, 0x08, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawLpBgWiden, new byte[4] { 0x0e, 0x00, 0x08, 0x24 });
 
                 //Make UI Wider
-                dataAccess.ApplyPatch(0x181bfc, new byte[4] { 0x2a, 0x00, 0x0a, 0x24 });
+                dataAccess.ApplyPatch(DuelDrawWidenUiBox, new byte[4] { 0x2a, 0x00, 0x0a, 0x24 });
                 //Make UI Taller
                 //Mem.PatchEx(0x201b1b00, "\x10\x00\x0b\x24", 4);
             }
@@ -942,36 +970,37 @@ public class GameplayPatchesWindow : IImGuiWindow
             byte[] CapBytes = BitConverter.GetBytes((int)lpCap + 1);
             byte[] SetBytes = BitConverter.GetBytes((int)lpCap);
             //Changes the if check from 9999 to value
-            dataAccess.ApplyPatch(0x2209d4, new byte[4] { CapBytes[0], CapBytes[1], 0x81, 0x28 });
-            dataAccess.ApplyPatch(0x2209e0, new byte[4] { CapBytes[0], CapBytes[1], 0x81, 0x28 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset1, new byte[4] { CapBytes[0], CapBytes[1], 0x81, 0x28 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset2, new byte[4] { CapBytes[0], CapBytes[1], 0x81, 0x28 });
             //changes the assignment to value -1
-            dataAccess.ApplyPatch(0x2209ec, new byte[4] { SetBytes[0], SetBytes[1], 0x04, 0x24 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset3, new byte[4] { SetBytes[0], SetBytes[1], 0x04, 0x24 });
             //Changes SzDuel_CalcLP function
             //Changes the if check from 9999 to value
-            dataAccess.ApplyPatch(0x1af61c, new byte[4] { CapBytes[0], CapBytes[1], 0x41, 0x28 });
+            dataAccess.ApplyPatch(LpCalc1, new byte[4] { CapBytes[0], CapBytes[1], 0x41, 0x28 });
             //changes the assignment to to value -1
-            dataAccess.ApplyPatch(0x1af624, new byte[4] { SetBytes[0], SetBytes[1], 0x06, 0x24 });
+            dataAccess.ApplyPatch(LpCalc2, new byte[4] { SetBytes[0], SetBytes[1], 0x06, 0x24 });
         }
         else
         {
             //Force 4 digits ui
             dataAccess.ApplyPatch(MoreDigitsOnScreen, new byte[4] { 0x04, 0x00, 0x07, 0x24 });
-            dataAccess.ApplyPatch(0x1814b4, new byte[4] { 0x14, 0x00, 0x04, 0x24 });
-            dataAccess.ApplyPatch(0x181ce4, new byte[4] { 0x7f, 0x00, 0x03, 0x24 });
-            dataAccess.ApplyPatch(0x1814f8, new byte[4] { 0xb8, 0x01, 0x06, 0x24 });
-            dataAccess.ApplyPatch(0x181c2c, new byte[4] { 0x7f, 0x00, 0x02, 0x24 });
-            dataAccess.ApplyPatch(0x181c9c, new byte[4] { 0x0c, 0x00, 0x08, 0x24 });
-            dataAccess.ApplyPatch(0x181bfc, new byte[4] { 0x25, 0x00, 0x0a, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawMoveLpBoxY, new byte[4] { 0x14, 0x00, 0x04, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawMovePlayerTag, new byte[4] { 0x7f, 0x00, 0x03, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawWhiteRoseOffsetX, new byte[4] { 0xb8, 0x01, 0x06, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawMovePlayerPic, new byte[4] { 0x7f, 0x00, 0x02, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawLpBgWiden, new byte[4] { 0x0c, 0x00, 0x08, 0x24 });
+            dataAccess.ApplyPatch(DuelDrawWidenUiBox, new byte[4] { 0x25, 0x00, 0x0a, 0x24 });
             //Set Lp cap to 9999 (makes the value 10k)
-            dataAccess.ApplyPatch(0x2209d4, new byte[4] { 0x10, 0x27, 0x81, 0x28 });
-            dataAccess.ApplyPatch(0x2209e0, new byte[4] { 0x10, 0x27, 0x81, 0x28 });
-            dataAccess.ApplyPatch(0x2209ec, new byte[4] { 0x0f, 0x27, 0x04, 0x24 });
-            dataAccess.ApplyPatch(0x1af61c, new byte[4] { 0x0f, 0x27, 0x41, 0x28 });
-            dataAccess.ApplyPatch(0x1af624, new byte[4] { 0x0f, 0x27, 0x06, 0x24 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset1, new byte[4] { 0x10, 0x27, 0x81, 0x28 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset2, new byte[4] { 0x10, 0x27, 0x81, 0x28 });
+            dataAccess.ApplyPatch(ChangeLPCapOffset3, new byte[4] { 0x0f, 0x27, 0x04, 0x24 });
+            dataAccess.ApplyPatch(LpCalc1, new byte[4] { 0x0f, 0x27, 0x41, 0x28 });
+            dataAccess.ApplyPatch(LpCalc2, new byte[4] { 0x0f, 0x27, 0x06, 0x24 });
         }
         if (bReincarnationCount)
         {
 
+            //Could optimise by using location but is fine for now
             Byte[] bytes = Patcher.ChangeReincarnationAmount.Patch;
             bytes[0] = Convert.ToByte(reincarnationCount);
             dataAccess.ApplyPatch(Patcher.ChangeReincarnationAmount.Offset, bytes);
@@ -983,8 +1012,8 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         if (bTerrainBuff)
         {
-            byte[] posBytes = BitConverter.GetBytes((int)terrainBuffAmount);
-            byte[] negBytes = BitConverter.GetBytes(-(int)terrainBuffAmount);
+            byte[] posBytes = BitConverter.GetBytes(terrainBuffAmount);
+            byte[] negBytes = BitConverter.GetBytes(-terrainBuffAmount);
 
             // D4(0th byte),FE(1st byte) = Negetive 300 change those bytes to change value of Negetive terrain
             // x2c(13th byte),x01 (14th byte) = postive 300 change those to change value of positive terrain

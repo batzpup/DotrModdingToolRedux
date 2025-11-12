@@ -4,12 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
     public class AiPegasusNoFusions : Patch
     {
-        static int patchLocation = 0x106C80;
+        static int patchLocation = 0x136B80 - DataAccess.IsoSlusRamOffset;
         
 
         public override bool IsApplied()

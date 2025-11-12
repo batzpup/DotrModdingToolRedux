@@ -1,13 +1,15 @@
 ﻿
 
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
     /// <summary>
-    /// TOO MANY DAMN IMPLICATIONS DOING THIS, Intern who did the AI needs this for AI to not break, but breaks how things are loaded and what teams are thing in your hand
+    /// TOO MANY DAMN IMPLICATIONS DOING THIS,
+    /// Intern who did the AI needs this for AI to not break, but breaks how things are loaded and what teams are thing in your hand
     /// </summary>
     public class AiHandTeamFix : Patch
     {
-        static int patchLocation = 0x130648;
+        static int patchLocation = 0x160548 - DataAccess.IsoSlusRamOffset;
 
 
         public override bool IsApplied()

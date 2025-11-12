@@ -1,6 +1,7 @@
+using DotrModdingTool2IMGUI;
 namespace GameplayPatches {
 public class ExpandedZoom : Patch {
-    static int patchLocation = 0x1a2d00;
+    static int patchLocation = 0x1D2C00 - DataAccess.IsoSlusRamOffset;
 
     public override bool IsApplied() {
         return dataAccess.CheckIfPatchApplied(patchLocation, new byte[12] { 0x71, 0x02, 0x41, 0x28, 0x04, 0x00, 0x20, 0x50, 0x71, 0x02, 0x03, 0x24 });

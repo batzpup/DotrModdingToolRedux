@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DotrModdingTool2IMGUI;
 
 namespace GameplayPatches
 {
-    internal class AllKindsExtraCardLeaderAbility : Patch
+    class AllKindsExtraCardLeaderAbility : Patch
     {
-
-
-            static int patchLocation = 0x221334;
+            static int patchLocation = 0x251234 - DataAccess.IsoSlusRamOffset;
 
             public override bool IsApplied()
             {
