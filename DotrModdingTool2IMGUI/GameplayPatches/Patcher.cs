@@ -54,6 +54,8 @@ namespace GameplayPatches
         public static bool CheckIfPatchApplied(PatchByteSequences patch)
         {
             return dataAccess.CheckIfPatchApplied(patch.Offset, patch.Patch);
+            
         }
+        
     }
 }

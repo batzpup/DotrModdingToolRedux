@@ -74,10 +74,11 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bAllCustomDuels;
     public bool bKeepReincarnatedCard;
 
-    public bool bNineCardLimit;
+
     public bool bToonLeaderLandChange;
     public bool bAllKindsExtraSlots;
     public bool bSaveMusic;
+    public bool bSandBoxMode;
 
     public int CurrentRule;
     public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
@@ -87,9 +88,9 @@ public class GameplayPatchesWindow : IImGuiWindow
     #region Toggle and value
 
     public static string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
-    
+
     public int currentSideToGoFirst;
-    
+
     public bool bSideToGoFirst;
     public bool bForceNewStartSide;
     public bool bLpCap;
@@ -100,6 +101,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool bStartingLpRed;
     public bool bSpRecoveryRed;
     public bool bStartingSpRed;
+    public bool bMaxCardLimitInDeck;
 
     public int startingSpRed = 4;
     public int startingLpRed = 4000;
@@ -117,6 +119,8 @@ public class GameplayPatchesWindow : IImGuiWindow
     public int reincarnationCount;
     public int terrainBuffAmount;
     public int leaderRecovery;
+
+    public int maxCardLimitInDeck;
 
     #endregion
 
@@ -517,6 +521,16 @@ public class GameplayPatchesWindow : IImGuiWindow
             spRecoveryWhite = Math.Clamp(spRecoveryWhite, 0, 12);
             ImGui.SliderInt("##SpRecoveryWhite", ref spRecoveryWhite, 0, 12);
         }
+
+        ImGui.Checkbox("Remove card limit in deck ", ref bMaxCardLimitInDeck);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Changes the max limit of cards in the deck");
+
+        if (bMaxCardLimitInDeck)
+        {
+            maxCardLimitInDeck = Math.Clamp(maxCardLimitInDeck, 1, 9);
+            ImGui.SliderInt("##MaxCardLimit", ref maxCardLimitInDeck, 1, 9);
+        }
         ImGui.EndChild();
     }
 
@@ -580,13 +594,15 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change DC requirements");
 
-        ImGui.Checkbox("Remove card limit in deck ", ref bNineCardLimit);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Changes the limit from 3 to 9 (max ownable copies)");
+
 
         ImGui.Checkbox("All kinds can get extra slots ability", ref bAllKindsExtraSlots);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Fixes the hardcoded issue of only allowing specific Kinds to properly use the Extra Slots Ability ");
+
+        // ImGui.Checkbox("New game sandbox mode", ref bSandBoxMode);
+        // if (ImGui.IsItemHovered())
+        //     ImGui.SetTooltip("All duels are available at all times");
 
         ImGui.Separator();
         ImGui.Text("AI Patches");
@@ -641,8 +657,8 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         bToonLeaderLandChange = new ToonLeadersMovePatch().IsApplied();
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
-        bNineCardLimit = new ExtendedCardCopyLimitPatch().IsApplied();
 
+        bSandBoxMode = new SandboxModePatch().IsApplied();
         ReadValuesFromIso();
         ReadAiPatches();
     }
@@ -772,8 +788,11 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             startingSpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSpWhite.patchLocationWhite, 2), 0);
         }
-
-
+        bMaxCardLimitInDeck = new CardDeckLimitPatch().IsApplied();
+        if (bMaxCardLimitInDeck)
+        {
+            maxCardLimitInDeck = BitConverter.ToInt16(dataAccess.ReadBytes(CardDeckLimitPatch.patchLocation, 2), 0);
+        }
         bSaveCustomSlotRewards = dataAccess.CheckIfPatchApplied(AddSlotRewardsPtr, new byte[8] { 0x44, 0xc9, 0x05, 0x08, 0x00, 0x00, 0x00, 0x00 });
         if (bSaveCustomSlotRewards)
         {
@@ -840,7 +859,8 @@ public class GameplayPatchesWindow : IImGuiWindow
         new ToonLeadersMovePatch().ApplyOrRemove(bToonLeaderLandChange);
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
-        new ExtendedCardCopyLimitPatch().ApplyOrRemove(bNineCardLimit);
+
+
 
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
         new DcRuleChanges().Apply((DcRules)CurrentRule);
@@ -857,6 +877,8 @@ public class GameplayPatchesWindow : IImGuiWindow
         new AiFixYugiRaigeki().ApplyOrRemove(bYugiRaigeki);
         new AiFixTeaInsectImitation().ApplyOrRemove(bTeaInsectImitation);
         SaveCustomSlots();
+
+        new SandboxModePatch().ApplyOrRemove(bSandBoxMode);
     }
 
     void ApplyValuePatches()
@@ -935,6 +957,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
 
 
+        //TODO investigate Ui not being updated
         if (bLpCap)
         {
             if (lpCap > 9999)
@@ -1039,6 +1062,7 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         new ChangeStartingSpRed().ApplyOrRemove(bStartingSpRed, (uint)startingSpRed);
         new ChangeStartingSpWhite().ApplyOrRemove(bStartingSpWhite, (uint)startingSpWhite);
+        new CardDeckLimitPatch().ApplyOrRemove(bMaxCardLimitInDeck, maxCardLimitInDeck);
     }
 
     void NopTutorialsForOtherMods()

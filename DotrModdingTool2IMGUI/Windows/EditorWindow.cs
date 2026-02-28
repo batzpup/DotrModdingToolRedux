@@ -242,6 +242,18 @@ public class EditorWindow
                     }
                 }
                 ImGui.Spacing();
+                //if (ImGui.MenuItem("Print passwords"))
+                //{
+                //    if (dataAccess.IsIsoLoaded)
+                //    {
+                //        PrintPasswords();
+                //    }
+                //    else
+                //    {
+                //        _modalPopup.Show("No ISO open to save to");
+                //    }
+                //}
+                //ImGui.Spacing();
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
@@ -605,6 +617,16 @@ public class EditorWindow
 
         ImGui.End();
         rlImGui.End();
+    }
+
+    void PrintPasswords()
+    {
+        StringBuilder buffer = new StringBuilder();
+        foreach (var card in CardConstant.List)
+        {
+            buffer.AppendLine($"{card.Name.Current} : {card.Password}");
+        }
+        File.WriteAllText("passwords.txt", buffer.ToString());
     }
 
 

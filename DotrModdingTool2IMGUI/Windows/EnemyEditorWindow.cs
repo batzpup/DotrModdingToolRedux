@@ -7,9 +7,7 @@ public class EnemyEditorWindow : IImGuiWindow
     public MapEditorWindow MapEditorWindow;
     public DeckEditorWindow DeckEditorWindow;
     DataAccess _dataAccess;
- 
-
-
+    
     public EnemyEditorWindow(ImFontPtr mapEditorFont)
     {
         _dataAccess = DataAccess.Instance;

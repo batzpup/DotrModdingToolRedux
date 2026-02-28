@@ -64,7 +64,7 @@ The logic is hardcoded and can't be changed with this tool.
 Reduction depends on the leader’s kind and level as follows:
   Immortal -> always 1
   Beast-Warrior, Sea Serpent -> 2 if level is at least 6, else 1
-  Dragon, Winged Beast, Fish, Machine -> 2 if level is at least 7, else 0."
+  Dragon, Winged Beast, Fish, Machine -> 2 if level is at least 7, else 1."
         };
 
         NameAndDescriptions[(int)DeckLeaderAbilityType.ExtendedSupportRange] = new string[] {

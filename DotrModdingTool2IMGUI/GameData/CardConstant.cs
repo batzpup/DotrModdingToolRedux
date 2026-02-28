@@ -234,7 +234,6 @@ public class CardConstant
     public string? Type
     {
         get { return this._cardKind.Name; }
-     
     }
 
 

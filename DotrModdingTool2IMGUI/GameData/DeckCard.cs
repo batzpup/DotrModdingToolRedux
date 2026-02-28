@@ -10,7 +10,7 @@ public class DeckCard
     {
         Bytes = cardBytes;
         ushort value = BitConverter.ToUInt16(cardBytes, 0);
-        rank =  (DeckLeaderRank)(value >> 12);
+        rank = (DeckLeaderRank)(value >> 12);
         ushort cardNumber = (ushort)(((cardBytes[1] & 0x0F) << 8) + cardBytes[0]);
         CardConstant = CardConstant.List[cardNumber];
     }
@@ -95,4 +95,6 @@ public class DeckCard
         ushort newValue = (ushort)((cardConstant.Index & 0xFFF) | (((ushort)Rank & 0xF) << 12));
         return BitConverter.GetBytes(newValue);
     }
+
+   
 }

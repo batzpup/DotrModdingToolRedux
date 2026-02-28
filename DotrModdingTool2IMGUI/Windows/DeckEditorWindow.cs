@@ -509,7 +509,17 @@ public class DeckEditorWindow : IImGuiWindow
                 ImGui.TableSetColumnIndex(8);
                 if (ImGui.Button("Add", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
                 {
-                    if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < 3 || (GameplayPatchesWindow.Instance.bNineCardLimit &&  sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) <9))
+                    if (GameplayPatchesWindow.Instance.bMaxCardLimitInDeck)
+                    {
+                        if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < GameplayPatchesWindow.Instance.maxCardLimitInDeck)
+                        {
+                            currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
+                            sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
+                            Console.WriteLine($"Adding {filteredList[index].Name.Current} to deck");
+                        }
+
+                    }
+                    else if (sortedDeckList.Count(constant => constant.CardConstant.Index == filteredList[index].Index) < 3)
                     {
                         currentDeck.CardList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
                         sortedDeckList.Add(new DeckCard(filteredList[index], DeckLeaderRank.NCO));
@@ -518,7 +528,7 @@ public class DeckEditorWindow : IImGuiWindow
                     }
                     else
                     {
-                        Console.WriteLine($"You already have 3 copies {filteredList[index].Name.Current} in the deck (Single)");
+                        Console.WriteLine($"You already have max copies {filteredList[index].Name.Current} in the deck (Single)");
                     }
 
                     foreach (var i in trunkSelection)
@@ -526,7 +536,16 @@ public class DeckEditorWindow : IImGuiWindow
                         if (i != cardConstant.Index)
                         {
                             CardConstant newCardConst = CardConstant.List[i];
-                            if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3 || (GameplayPatchesWindow.Instance.bNineCardLimit && sortedDeckList.Count(card => card.CardConstant.Index == i) < 9))
+                            if (GameplayPatchesWindow.Instance.bMaxCardLimitInDeck)
+                            {
+                                if (sortedDeckList.Count(card => card.CardConstant.Index == i) < GameplayPatchesWindow.Instance.maxCardLimitInDeck)
+                                {
+                                    sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
+                                    currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
+                                    Console.WriteLine($"Adding {newCardConst.Name.Current} to deck");
+                                }
+                            }
+                            else if (sortedDeckList.Count(card => card.CardConstant.Index == i) < 3)
                             {
                                 sortedDeckList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
                                 currentDeck.CardList.Add(new DeckCard(newCardConst, DeckLeaderRank.NCO));
@@ -534,7 +553,7 @@ public class DeckEditorWindow : IImGuiWindow
                             }
                             else
                             {
-                                Console.WriteLine($"You already have 3 copies {newCardConst.Name.Current} in the deck (Loop)");
+                                Console.WriteLine($"You already have max copies {newCardConst.Name.Current} in the deck (Loop)");
                             }
                         }
                     }

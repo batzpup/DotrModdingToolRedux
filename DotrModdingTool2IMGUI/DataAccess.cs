@@ -90,10 +90,11 @@ public class DataAccess
     public static int ToRamOffset(int offset) => offset + 0x2FF00;
     public static int ToIsoOffset(int ramAddress) => ramAddress - 0x2FF00;
 
-    public static DataAccess Instance
+    public static DataAccess Instance 
     {
         get
         {
+            
             if (instance == null)
             {
                 instance = new DataAccess();
@@ -107,8 +108,7 @@ public class DataAccess
     {
     }
 
-    public void SaveMaps()
-    {
+    public void SaveMaps() {
 
         if (maps[0] == null)
         {
@@ -116,7 +116,6 @@ public class DataAccess
         }
         lock (FileStreamLock)
         {
-
             for (int i = 0; i < maps.Length; i++)
             {
                 DotrMap map = maps[i];

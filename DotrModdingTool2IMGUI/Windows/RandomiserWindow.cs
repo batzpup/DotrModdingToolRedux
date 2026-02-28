@@ -233,7 +233,11 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             changeLog.Seed = _seed;
 
             //Const must happen before Deck , Leader Ranks must happen after decks
-
+            if (balancedRandom && !balancedDeckCorrectAmount)
+            {
+                modalPopup.Show("Must have exactly 40 cards in balanced random");
+                return;
+            }
             //DO all cards editing together
             RandomiseCardConstData();
             RandomiseLeaderData();
@@ -259,8 +263,11 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             {
                 GameplayPatchesWindow.Instance.CurrentRule = (int)DcRules.NoCheckAll;
                 GameplayPatchesWindow.Instance.bAllKindsExtraSlots = true;
-                GameplayPatchesWindow.Instance.bNineCardLimit = true;
-
+                if (!GameplayPatchesWindow.Instance.bMaxCardLimitInDeck)
+                {
+                    GameplayPatchesWindow.Instance.bMaxCardLimitInDeck = true;
+                    GameplayPatchesWindow.Instance.maxCardLimitInDeck = 9;
+                }
             }
             if (!ignoreConfirmation)
             {
@@ -1106,6 +1113,7 @@ SD:   5000");
 
     void RandomiseDecks()
     {
+        int[] exodiaLimbs = { 54, 55, 56, 57 };
         if (strongBossDeck)
         {
             GetStrongCards();
@@ -1114,7 +1122,6 @@ SD:   5000");
         {
             if (balancedRandom)
             {
-
                 for (var deckIndex = 0; deckIndex < Deck.DeckList.Count; deckIndex++)
                 {
                     int currentMonsterCount = 0;
@@ -1149,22 +1156,20 @@ SD:   5000");
                     int exodiaLimbsAdded = 0;
                     if (isExodiaLeader)
                     {
-                        int[] exodiaLimbs = { 54, 55, 56, 57 };
+
                         for (int i = 0; i < exodiaLimbs.Length && exodiaLimbsAdded < 4; i++)
                         {
-                            if (exodiaLimbsAdded + 1 < deck.CardList.Count)
-                            {
-                                deck.CardList[exodiaLimbsAdded + 1] = new DeckCard(CardConstant.List[exodiaLimbs[i]], 0);
-                                string deckName = deckIndex < 17 ? Deck.NamePrefix(deckIndex) : Deck.CharacterNameDictionary[deckIndex];
-                                changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name.Current);
-                                exodiaLimbsAdded++;
-                                currentMonsterCount++;
-                            }
+                            deck.CardList[exodiaLimbsAdded] = new DeckCard(CardConstant.List[exodiaLimbs[i]], 0);
+                            string deckName = deckIndex < 17 ? Deck.NamePrefix(deckIndex) : Deck.CharacterNameDictionary[deckIndex];
+                            changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name.Current);
+                            exodiaLimbsAdded++;
+                            currentMonsterCount++;
+
                         }
                     }
-                    for (var deckSlot = 1 + exodiaLimbsAdded; deckSlot < deck.CardList.Count; deckSlot++)
+                    Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
+                    for (var deckSlot = exodiaLimbsAdded; deckSlot < deck.CardList.Count; deckSlot++)
                     {
-                        Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
                         if (randomiseStartingDecks)
                         {
                             if (deckIndex < 17)
@@ -1232,17 +1237,22 @@ SD:   5000");
             }
             else
             {
+
+                Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
                 for (var deckIndex = 0; deckIndex < Deck.DeckList.Count; deckIndex++)
                 {
-                    Dictionary<int, int> CurrentDeckCardCount = new Dictionary<int, int>();
+                    bool isExodiaLeader = false;
+                    int exodiaLimbsAdded = 0;
                     Deck? deck = Deck.DeckList[deckIndex];
                     if (randomiseStartingDecks && deckIndex < 17)
                     {
                         deck.DeckLeader = CreateRandomCard("monster", true, DeckLeaderRank.LT2);
+                        if (deck.DeckLeader.CardConstant.Index == 58)
+                        {
+                            isExodiaLeader = true;
+                        }
                         changeLog.DeckChanges.TryAdd(Deck.NamePrefix(deckIndex), new DeckChange());
                         changeLog.DeckChanges[Deck.NamePrefix(deckIndex)].LeaderChange = deck.DeckLeader.Name.Current;
-
-
                     }
                     else if (randomiseOpponentDecks && deckIndex >= 27)
                     {
@@ -1250,7 +1260,17 @@ SD:   5000");
                         changeLog.DeckChanges.TryAdd(Deck.CharacterNameDictionary[deckIndex], new DeckChange());
                         changeLog.DeckChanges[Deck.CharacterNameDictionary[deckIndex]].LeaderChange = deck.DeckLeader.Name.Current;
                     }
-                    for (var deckSlot = 0; deckSlot < deck.CardList.Count; deckSlot++)
+                    if (isExodiaLeader)
+                    {
+                        for (int i = 0; i < exodiaLimbs.Length; i++)
+                        {
+                            deck.CardList[i] = new DeckCard(CardConstant.List[exodiaLimbs[i]], 0);
+                            string deckName = deckIndex < 17 ? Deck.NamePrefix(deckIndex) : Deck.CharacterNameDictionary[deckIndex];
+                            changeLog.DeckChanges[deckName].CardsAdded.Add(CardConstant.List[exodiaLimbs[i]].Name.Current);
+                            exodiaLimbsAdded++;
+                        }
+                    }
+                    for (var deckSlot = exodiaLimbsAdded; deckSlot < deck.CardList.Count; deckSlot++)
                     {
                         if (randomiseStartingDecks)
                         {
@@ -1760,10 +1780,18 @@ SD:   5000");
             }
             if (CurrentDeckCardCount.TryGetValue(card.CardConstant.Index, out int count))
             {
-                if (count >= 3)
+                if (GameplayPatchesWindow.Instance.bMaxCardLimitInDeck)
+                {
+                    if (count >= GameplayPatchesWindow.Instance.maxCardLimitInDeck)
+                    {
+                        continue;
+                    }
+                }
+                else if (count >= 3)
                 {
                     continue;
                 }
+
                 CurrentDeckCardCount[card.CardConstant.Index] = count + 1;
             }
             else
@@ -2361,7 +2389,7 @@ SD:   5000");
                 StringEditor.StringTable[index] = originalEffectTexts[Effects.NonMonsterOwners.ElementAt(cardConstant.EffectId).Key + StringEditor.CardEffectTextOffsetStart];
                 cardConstant.setCardColor();
             }
-            
+
         }
 
         if (randomisePowerUpValues)

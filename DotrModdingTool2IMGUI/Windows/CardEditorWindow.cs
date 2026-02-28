@@ -76,16 +76,18 @@ class CardEditorWindow : IImGuiWindow
         starImagePtr = ImageHelper.LoadImageImgui($"Images.cardExtras.star.png");
         font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
         smallerFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26);
-        cardImageSize = new Vector2(192 * imageScale, 192 * imageScale);
-        frameImageSize = new Vector2(256 * imageScale, 368 * imageScale);
-        textBoxTopLeftInnerOffsetInPixelsScaled = new Vector2(19, 22) * imageScale;
-        innerTextBoxSizeInPixelsScaled = new Vector2(218, 26) * imageScale;
+
+
         EditorWindow.OnIsoLoaded += updateCardChanges;
         EditorWindow.OnIsoLoaded += FilterAndSort;
         selectedCards.Add(Card.cardNameList[currentCardIndex]);
         currentCardIndex = 0;
 
-
+        //TODO add scaling changes
+        cardImageSize = new Vector2(192 * imageScale, 192 * imageScale);
+        frameImageSize = new Vector2(256 * imageScale, 368 * imageScale);
+        textBoxTopLeftInnerOffsetInPixelsScaled = new Vector2(19, 22) * imageScale;
+        innerTextBoxSizeInPixelsScaled = new Vector2(218, 26) * imageScale;
     }
 
 
@@ -135,7 +137,7 @@ class CardEditorWindow : IImGuiWindow
 
         Vector2 windowPos = ImGui.GetWindowPos();
         Vector2 windowSize = ImGui.GetWindowSize();
-        float windowBottom = windowPos.Y + windowSize.Y - 90f * EditorWindow.AspectRatio.Y;
+        float windowBottom = windowPos.Y + windowSize.Y - 110f * EditorWindow.AspectRatio.Y;
 
         _modalPopup.Draw();
         ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, windowSize.Y),
@@ -305,9 +307,11 @@ class CardEditorWindow : IImGuiWindow
 
 
         ImGui.BeginChild("MiddlePanel", new Vector2(windowSize.X / 3, windowSize.Y), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
-        
+
         //Draw card frame
         Vector2 middleWindowSize = ImGui.GetContentRegionAvail();
+
+
         Vector2 pos = new Vector2((middleWindowSize.X / 2f) - frameImageSize.X / 2f, (middleWindowSize.Y / 2f) - frameImageSize.Y / 2f);
         ImGui.SetCursorPos(pos);
         ImGui.Image(cardFrame, frameImageSize);
@@ -1333,8 +1337,8 @@ class CardEditorWindow : IImGuiWindow
 
         if (currentCardConst.CardKind.isMonster())
         {
-            float strongOnToonSize = ImGui.CalcTextSize("Strong on toon").X + ImGui.GetFrameHeight()  + ImGui.GetStyle().ItemSpacing.X;
-            
+            float strongOnToonSize = ImGui.CalcTextSize("Strong on toon").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X;
+
             if (lineWidth > 0 && lineWidth + strongOnToonSize <= maxWidth)
             {
                 ImGui.SameLine();
@@ -1426,7 +1430,15 @@ class CardEditorWindow : IImGuiWindow
                 });
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip(DeckLeaderAbilityInfo.NameAndDescriptions[abilityInstance.Abilities[i].AbilityIndex][1]);
+
+                    ImGui.BeginTooltip();
+                    float wrapWidth = ImGui.GetMainViewport().Size.X
+                                      - ImGui.GetStyle().WindowPadding.X * 2;
+
+                    ImGui.PushTextWrapPos(wrapWidth);
+                    ImGui.TextUnformatted(DeckLeaderAbilityInfo.NameAndDescriptions[abilityInstance.Abilities[i].AbilityIndex][1]);
+                    ImGui.PopTextWrapPos();
+                    ImGui.EndTooltip();
                 }
                 if (abilityInstance.Abilities[i].IsEnabled && i >= 2)
                 {
