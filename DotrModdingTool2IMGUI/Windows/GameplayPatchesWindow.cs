@@ -1,5 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using GameplayPatches;
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
@@ -20,20 +22,22 @@ public class GameplayPatchesWindow : IImGuiWindow
     static int changeTeamStart = 0x1A8F74 - DataAccess.IsoSlusRamOffset;
     static int ComparePlayerSidePatch = 0x1D7A08 - DataAccess.IsoSlusRamOffset;
     static int ChangeTerrainValues = 0x266490 - DataAccess.IsoSlusRamOffset;
-    static int MoreDigitsOnScreen = 0x1A1BD0 - DataAccess.IsoSlusRamOffset;
+
 
     //LP cap
+
     const int ChangeLPCapOffset1 = 0x2508D4 - DataAccess.IsoSlusRamOffset;
     const int ChangeLPCapOffset2 = 0x2508E0 - DataAccess.IsoSlusRamOffset;
     const int ChangeLPCapOffset3 = 0x2508EC - DataAccess.IsoSlusRamOffset;
     const int LpCalc1 = 0x1DF51C - DataAccess.IsoSlusRamOffset;
     const int LpCalc2 = 0x1DF524 - DataAccess.IsoSlusRamOffset;
+
+    const int MoreDigitsOnScreen = 0x1B1BD0 - DataAccess.IsoSlusRamOffset;
     const int DuelDrawMoveLpBoxY = 0x1B13B4 - DataAccess.IsoSlusRamOffset;
     const int DuelDrawMovePlayerTag = 0x1B1BE4 - DataAccess.IsoSlusRamOffset;
     const int DuelDrawWhiteRoseOffsetX = 0x1B13F8 - DataAccess.IsoSlusRamOffset;
     const int DuelDrawMovePlayerPic = 0x1B1B2C - DataAccess.IsoSlusRamOffset;
     const int DuelDrawLpBgWiden = 0x1B1B9C - DataAccess.IsoSlusRamOffset;
-
     const int DuelDrawWidenUiBox = 0x1B1AFC - DataAccess.IsoSlusRamOffset;
 
     //BELOW HERE REQUIRE FAST INTRO TO BE ENABLED:
@@ -63,24 +67,24 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #region Toggle only
 
-    public bool bAiDoubleTap;
-    public bool bFastIntro;
-    public bool bUserToggledFastIntro = false;
-    public bool bUnlockFusions;
-    public bool bCameraFix;
-    public bool bExpandedZoom;
-    public bool bRemoveExpLoss;
-    public bool bRemoveSlotRng;
-    public bool bAllCustomDuels;
-    public bool bKeepReincarnatedCard;
+    [JsonInclude] public bool bAiDoubleTap;
+    [JsonInclude] public bool bFastIntro;
+    [JsonInclude] public bool bUserToggledFastIntro = false;
+    [JsonInclude] public bool bUnlockFusions;
+    [JsonInclude] public bool bCameraFix;
+    [JsonInclude] public bool bExpandedZoom;
+    [JsonInclude] public bool bRemoveExpLoss;
+    [JsonInclude] public bool bRemoveSlotRng;
+    [JsonInclude] public bool bAllCustomDuels;
+    [JsonInclude] public bool bKeepReincarnatedCard;
 
 
-    public bool bToonLeaderLandChange;
-    public bool bAllKindsExtraSlots;
-    public bool bSaveMusic;
-    public bool bSandBoxMode;
+    [JsonInclude] public bool bToonLeaderLandChange;
+    [JsonInclude] public bool bAllKindsExtraSlots;
+    [JsonInclude] public bool bSaveMusic;
+    [JsonInclude] public bool bSandBoxMode;
 
-    public int CurrentRule;
+    [JsonInclude] public int CurrentRule;
     public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
 
     #endregion
@@ -89,44 +93,44 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     public static string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
 
-    public int currentSideToGoFirst;
+    [JsonInclude] public int currentSideToGoFirst;
 
-    public bool bSideToGoFirst;
-    public bool bForceNewStartSide;
-    public bool bLpCap;
-    public bool bReincarnationCount;
-    public bool bTerrainBuff;
-    public bool bDeckLeaderRecovery;
+    [JsonInclude] public bool bSideToGoFirst;
+    [JsonInclude] public bool bForceNewStartSide;
+    [JsonInclude] public bool bChangeLpCap;
+    [JsonInclude] public bool bReincarnationCount;
+    [JsonInclude] public bool bTerrainBuff;
+    [JsonInclude] public bool bDeckLeaderRecovery;
 
-    public bool bStartingLpRed;
-    public bool bSpRecoveryRed;
-    public bool bStartingSpRed;
-    public bool bMaxCardLimitInDeck;
+    [JsonInclude] public bool bStartingLpRed;
+    [JsonInclude] public bool bSpRecoveryRed;
+    [JsonInclude] public bool bStartingSpRed;
+    [JsonInclude] public bool bMaxCardLimitInDeck;
 
-    public int startingSpRed = 4;
-    public int startingLpRed = 4000;
-    public int spRecoveryRed = 3;
+    [JsonInclude] public int startingSpRed = 4;
+    [JsonInclude] public int startingLpRed = 4000;
+    [JsonInclude] public int spRecoveryRed = 3;
 
-    public bool bStartingLpWhite;
-    public bool bSpRecoveryWhite;
-    public bool bStartingSpWhite;
-    public int startingSpWhite = 4;
-    public int startingLpWhite = 4000;
-    public int spRecoveryWhite = 3;
+    [JsonInclude] public bool bStartingLpWhite;
+    [JsonInclude] public bool bSpRecoveryWhite;
+    [JsonInclude] public bool bStartingSpWhite;
+    [JsonInclude] public int startingSpWhite = 4;
+    [JsonInclude] public int startingLpWhite = 4000;
+    [JsonInclude] public int spRecoveryWhite = 3;
 
-    public int forceSideIndex;
-    public int lpCap;
-    public int reincarnationCount;
-    public int terrainBuffAmount;
-    public int leaderRecovery;
+    [JsonInclude] public int forceSideIndex;
+    [JsonInclude] public int lpCap;
+    [JsonInclude] public int reincarnationCount;
+    [JsonInclude] public int terrainBuffAmount;
+    [JsonInclude] public int leaderRecovery;
 
-    public int maxCardLimitInDeck;
+    [JsonInclude] public int maxCardLimitInDeck;
 
     #endregion
 
     #region CustomSlots
 
-    public bool bSaveCustomSlotRewards;
+    [JsonInclude] public bool bSaveCustomSlotRewards;
     Vector4 tableBgColour = UserSettings.CustomSlotTableBgColour;
     Vector4 searchColour = UserSettings.CustomSlotDropdownColour;
 
@@ -134,28 +138,28 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #region AIPatches
 
-    public bool bFixDarkHole;
-    public bool bMaiFeatherDuster;
-    public bool bFixGetMaxApList;
-    public bool bMakoHeavyStorm;
-    public bool bStopPegasusFusion;
-    public bool bDmkFixRevive;
-    public bool bDontReviveEquips;
-    public bool bGiveJoeyReviveMission;
-    public bool bYugiRaigeki;
-    public bool bTeaInsectImitation;
+    [JsonInclude] public bool bFixDarkHole;
+    [JsonInclude] public bool bMaiFeatherDuster;
+    [JsonInclude] public bool bFixGetMaxApList;
+    [JsonInclude] public bool bMakoHeavyStorm;
+    [JsonInclude] public bool bStopPegasusFusion;
+    [JsonInclude] public bool bDmkFixRevive;
+    [JsonInclude] public bool bDontReviveEquips;
+    [JsonInclude] public bool bGiveJoeyReviveMission;
+    [JsonInclude] public bool bYugiRaigeki;
+    [JsonInclude] public bool bTeaInsectImitation;
 
     #endregion
 
-    public int[] SpecialThreeInARows = Enumerable.Repeat(671, 30).ToArray();
-    public int[] SpecialSlotRewards = Enumerable.Repeat(0, 30).ToArray();
+    [JsonInclude] public int[] SpecialThreeInARows = Enumerable.Repeat(671, 30).ToArray();
+    [JsonInclude] public int[] SpecialSlotRewards = Enumerable.Repeat(0, 30).ToArray();
     string filteredStringThreeInARow = "";
     string filteredStringReward = "";
 
     #region Exp Mods
 
     Vector2 rankImageSize = new Vector2(72, 72);
-    public static int[] rankExp = new int[12];
+    [JsonInclude] public static int[] rankExp = new int[12];
     int[] defaultExp = new int[12] { 500, 1000, 2000, 4000, 7000, 11000, 16000, 22000, 30000, 40000, 52000, 65535 };
     int[] casualFriendlyExp = new int[12] { 200, 500, 900, 1400, 2000, 2700, 3500, 4500, 5700, 7000, 8500, 10000 };
 
@@ -440,9 +444,9 @@ public class GameplayPatchesWindow : IImGuiWindow
             }
         }
 
-        ImGui.Checkbox("Change LP cap", ref bLpCap);
+        ImGui.Checkbox("Change LP cap", ref bChangeLpCap);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Exceed the 9999 LP Cap");
-        if (bLpCap)
+        if (bChangeLpCap)
         {
 
             ImGui.InputInt("##lpCap", ref lpCap, 100, 1000);
@@ -600,9 +604,15 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Fixes the hardcoded issue of only allowing specific Kinds to properly use the Extra Slots Ability ");
 
-        // ImGui.Checkbox("New game sandbox mode", ref bSandBoxMode);
-        // if (ImGui.IsItemHovered())
-        //     ImGui.SetTooltip("All duels are available at all times");
+        ImGui.Checkbox("New game sandbox mode", ref bSandBoxMode);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text("Unlocks all duels at all times");
+            ImGui.TextColored(new GuiColour(Color.Orange).value, "NOTE: This only works when pressing continue.\nTo work with a new game:\nCreate a new game save and then press continue from the menu screen.");
+            ImGui.EndTooltip();
+        }
+
 
         ImGui.Separator();
         ImGui.Text("AI Patches");
@@ -725,15 +735,15 @@ public class GameplayPatchesWindow : IImGuiWindow
                 forceSideIndex = 1;
             }
         }
-        int CapValue = BitConverter.ToUInt16(dataAccess.ReadBytes(0x2508D4 - DataAccess.IsoSlusRamOffset, 2), 0);
+        int CapValue = BitConverter.ToUInt16(dataAccess.ReadBytes(ChangeLPCapOffset1, 2), 0);
         if (CapValue != 10000)
         {
-            bLpCap = true;
+            bChangeLpCap = true;
             lpCap = CapValue - 1;
         }
         else
         {
-            bLpCap = false;
+            bChangeLpCap = false;
             lpCap = 9999;
         }
         int reincarnationAmount = dataAccess.ReadBytes(Patcher.ChangeReincarnationAmount.Offset, 1)[0];
@@ -958,7 +968,7 @@ public class GameplayPatchesWindow : IImGuiWindow
 
 
         //TODO investigate Ui not being updated
-        if (bLpCap)
+        if (bChangeLpCap)
         {
             if (lpCap > 9999)
             {
@@ -988,6 +998,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 dataAccess.ApplyPatch(DuelDrawWidenUiBox, new byte[4] { 0x2a, 0x00, 0x0a, 0x24 });
                 //Make UI Taller
                 //Mem.PatchEx(0x201b1b00, "\x10\x00\x0b\x24", 4);
+
             }
             //Changes stat cap function
             byte[] CapBytes = BitConverter.GetBytes((int)lpCap + 1);
@@ -1005,7 +1016,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         else
         {
-            //Force 4 digits ui
+            // Force 4 digits ui
             dataAccess.ApplyPatch(MoreDigitsOnScreen, new byte[4] { 0x04, 0x00, 0x07, 0x24 });
             dataAccess.ApplyPatch(DuelDrawMoveLpBoxY, new byte[4] { 0x14, 0x00, 0x04, 0x24 });
             dataAccess.ApplyPatch(DuelDrawMovePlayerTag, new byte[4] { 0x7f, 0x00, 0x03, 0x24 });
@@ -1022,7 +1033,6 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         if (bReincarnationCount)
         {
-
             //Could optimise by using location but is fine for now
             Byte[] bytes = Patcher.ChangeReincarnationAmount.Patch;
             bytes[0] = Convert.ToByte(reincarnationCount);
@@ -1478,6 +1488,130 @@ public class GameplayPatchesWindow : IImGuiWindow
         return bSaveCustomSlotRewards || bAiDoubleTap || bAllCustomDuels ||
                CurrentRule == 1 || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
                bUserToggledFastIntro;
+    }
+
+    //AI generated
+    public void ImportFromJson(string path)
+    {
+        string json = File.ReadAllText(path);
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+
+        // -------- Toggle only --------
+        if (root.TryGetProperty("bAiDoubleTap", out JsonElement e)) bAiDoubleTap = e.GetBoolean();
+        if (root.TryGetProperty("bFastIntro", out e)) bFastIntro = e.GetBoolean();
+        if (root.TryGetProperty("bUserToggledFastIntro", out e)) bUserToggledFastIntro = e.GetBoolean();
+        if (root.TryGetProperty("bUnlockFusions", out e)) bUnlockFusions = e.GetBoolean();
+        if (root.TryGetProperty("bCameraFix", out e)) bCameraFix = e.GetBoolean();
+        if (root.TryGetProperty("bExpandedZoom", out e)) bExpandedZoom = e.GetBoolean();
+        if (root.TryGetProperty("bRemoveExpLoss", out e)) bRemoveExpLoss = e.GetBoolean();
+        if (root.TryGetProperty("bRemoveSlotRng", out e)) bRemoveSlotRng = e.GetBoolean();
+        if (root.TryGetProperty("bAllCustomDuels", out e)) bAllCustomDuels = e.GetBoolean();
+        if (root.TryGetProperty("bKeepReincarnatedCard", out e)) bKeepReincarnatedCard = e.GetBoolean();
+        if (root.TryGetProperty("bToonLeaderLandChange", out e)) bToonLeaderLandChange = e.GetBoolean();
+        if (root.TryGetProperty("bAllKindsExtraSlots", out e)) bAllKindsExtraSlots = e.GetBoolean();
+        if (root.TryGetProperty("bSaveMusic", out e)) bSaveMusic = e.GetBoolean();
+        if (root.TryGetProperty("bSandBoxMode", out e)) bSandBoxMode = e.GetBoolean();
+
+        if (root.TryGetProperty("CurrentRule", out e)) CurrentRule = e.GetInt32();
+
+        // -------- Toggle and value --------
+        if (root.TryGetProperty("currentSideToGoFirst", out e)) currentSideToGoFirst = e.GetInt32();
+
+        if (root.TryGetProperty("bSideToGoFirst", out e)) bSideToGoFirst = e.GetBoolean();
+        if (root.TryGetProperty("bForceNewStartSide", out e)) bForceNewStartSide = e.GetBoolean();
+        if (root.TryGetProperty("bChangeLpCap", out e)) bChangeLpCap = e.GetBoolean();
+        if (root.TryGetProperty("bReincarnationCount", out e)) bReincarnationCount = e.GetBoolean();
+        if (root.TryGetProperty("bTerrainBuff", out e)) bTerrainBuff = e.GetBoolean();
+        if (root.TryGetProperty("bDeckLeaderRecovery", out e)) bDeckLeaderRecovery = e.GetBoolean();
+
+        if (root.TryGetProperty("bStartingLpRed", out e)) bStartingLpRed = e.GetBoolean();
+        if (root.TryGetProperty("bSpRecoveryRed", out e)) bSpRecoveryRed = e.GetBoolean();
+        if (root.TryGetProperty("bStartingSpRed", out e)) bStartingSpRed = e.GetBoolean();
+        if (root.TryGetProperty("bMaxCardLimitInDeck", out e)) bMaxCardLimitInDeck = e.GetBoolean();
+
+        if (root.TryGetProperty("startingSpRed", out e)) startingSpRed = e.GetInt32();
+        if (root.TryGetProperty("startingLpRed", out e)) startingLpRed = e.GetInt32();
+        if (root.TryGetProperty("spRecoveryRed", out e)) spRecoveryRed = e.GetInt32();
+
+        if (root.TryGetProperty("bStartingLpWhite", out e)) bStartingLpWhite = e.GetBoolean();
+        if (root.TryGetProperty("bSpRecoveryWhite", out e)) bSpRecoveryWhite = e.GetBoolean();
+        if (root.TryGetProperty("bStartingSpWhite", out e)) bStartingSpWhite = e.GetBoolean();
+
+        if (root.TryGetProperty("startingSpWhite", out e)) startingSpWhite = e.GetInt32();
+        if (root.TryGetProperty("startingLpWhite", out e)) startingLpWhite = e.GetInt32();
+        if (root.TryGetProperty("spRecoveryWhite", out e)) spRecoveryWhite = e.GetInt32();
+
+        if (root.TryGetProperty("forceSideIndex", out e)) forceSideIndex = e.GetInt32();
+        if (root.TryGetProperty("lpCap", out e)) lpCap = e.GetInt32();
+        if (root.TryGetProperty("reincarnationCount", out e)) reincarnationCount = e.GetInt32();
+        if (root.TryGetProperty("terrainBuffAmount", out e)) terrainBuffAmount = e.GetInt32();
+        if (root.TryGetProperty("leaderRecovery", out e)) leaderRecovery = e.GetInt32();
+        if (root.TryGetProperty("maxCardLimitInDeck", out e)) maxCardLimitInDeck = e.GetInt32();
+
+        // -------- CustomSlots --------
+        if (root.TryGetProperty("bSaveCustomSlotRewards", out e)) bSaveCustomSlotRewards = e.GetBoolean();
+
+        // -------- AIPatches --------
+        if (root.TryGetProperty("bFixDarkHole", out e)) bFixDarkHole = e.GetBoolean();
+        if (root.TryGetProperty("bMaiFeatherDuster", out e)) bMaiFeatherDuster = e.GetBoolean();
+        if (root.TryGetProperty("bFixGetMaxApList", out e)) bFixGetMaxApList = e.GetBoolean();
+        if (root.TryGetProperty("bMakoHeavyStorm", out e)) bMakoHeavyStorm = e.GetBoolean();
+        if (root.TryGetProperty("bStopPegasusFusion", out e)) bStopPegasusFusion = e.GetBoolean();
+        if (root.TryGetProperty("bDmkFixRevive", out e)) bDmkFixRevive = e.GetBoolean();
+        if (root.TryGetProperty("bDontReviveEquips", out e)) bDontReviveEquips = e.GetBoolean();
+        if (root.TryGetProperty("bGiveJoeyReviveMission", out e)) bGiveJoeyReviveMission = e.GetBoolean();
+        if (root.TryGetProperty("bYugiRaigeki", out e)) bYugiRaigeki = e.GetBoolean();
+        if (root.TryGetProperty("bTeaInsectImitation", out e)) bTeaInsectImitation = e.GetBoolean();
+
+        // -------- Arrays --------
+        if (root.TryGetProperty("SpecialThreeInARows", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            SpecialThreeInARows = ReadIntArray(e, SpecialThreeInARows?.Length ?? 30);
+        }
+
+        if (root.TryGetProperty("SpecialSlotRewards", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            SpecialSlotRewards = ReadIntArray(e, SpecialSlotRewards?.Length ?? 30);
+        }
+        
+        if (root.TryGetProperty("rankExp", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            int desiredLen = (rankExp != null && rankExp.Length > 0) ? rankExp.Length : 12;
+            rankExp = ReadIntArray(e, desiredLen);
+        }
+    }
+
+    //AI generated
+    public void ExportToJson(string path)
+    {
+        JsonSerializerOptions options = new JsonSerializerOptions {
+            WriteIndented = true,
+        };
+
+        string json = JsonSerializer.Serialize(this, options);
+        File.WriteAllText(path, json);
+    }
+
+    static int[] ReadIntArray(JsonElement arrayElement, int desiredLength)
+    {
+        int[] result = new int[desiredLength];
+        int i = 0;
+
+        foreach (JsonElement item in arrayElement.EnumerateArray())
+        {
+            if (i >= desiredLength)
+            {
+                break;
+            }
+
+            if (item.ValueKind == JsonValueKind.Number)
+            {
+                result[i] = item.GetInt32();
+                i++;
+            }
+        }
+        return result;
     }
 }
 

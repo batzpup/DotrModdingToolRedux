@@ -11,101 +11,124 @@ public class RandomiserWindow : IImGuiWindow
 {
     ImFontPtr monoSpaceFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
 
-    bool randomiseStartingDecks;
-    bool randomiseOpponentDecks;
-    bool randomiseCardAcquisition;
-    bool randomiseMaps;
-    bool randomiseHiddenCardLocation;
-    bool randomiseHiddenCardValue;
-    bool randomiseLeaderRanks;
-    bool randomiseLeaderAbilities;
-    bool randomiseCardATKDEF;
-    bool balancedRandom;
-    bool lowPowerLevelRandom;
-    bool randomiseMonsterEffects;
-    bool randomiseMagicEffects;
-    bool randomisePowerUpValues;
-    bool randomiseMapsTiles;
-    bool randomiseOpponentLeaderRanks;
-    bool randomiseSummoningPower;
-    bool randomiseAttributes;
-    bool randomiseKinds;
-    bool randomiseRareDrop;
-    bool randomiseReincarnation;
-    bool randomiseSlots;
-    bool balancedDeckCorrectAmount = true;
-    bool randomiseDecks;
-    bool strongBossDeck;
-    bool swapTiles = true;
-    bool hasRandomised = false;
-    bool banSpecificCards;
-    bool banForPlayerOnly = false;
-    bool banForEnemyOnly = false;
-    bool bossesBypassBan;
-    bool randomiseAI = false;
-    bool randomiseEquip = false;
-    bool randomiseStrongOnToon;
-    bool randomiseMusic = false;
-    bool SpBasedOnPower;
-    bool bRecommendedExp;
-    bool bRandomiseStartingSp;
-    bool bRandomiseSpRecovery;
-    bool bRandomiseHealth;
-    bool bRandomiseTerrainStatValues;
-    bool bRoundValuesTo50 = true;
+    [JsonInclude] bool randomiseStartingDecks;
+    [JsonInclude] bool randomiseOpponentDecks;
+    [JsonInclude] bool randomiseCardAcquisition;
+    [JsonInclude] bool randomiseMaps;
+    [JsonInclude] bool randomiseHiddenCardLocation;
+    [JsonInclude] bool randomiseHiddenCardValue;
+    [JsonInclude] bool randomiseLeaderRanks;
+    [JsonInclude] bool randomiseLeaderAbilities;
+    [JsonInclude] bool randomiseCardATKDEF;
+    [JsonInclude] bool balancedRandom;
+    [JsonInclude] bool lowPowerLevelRandom;
+    [JsonInclude] bool randomiseMonsterEffects;
+    [JsonInclude] bool randomiseMagicEffects;
+    [JsonInclude] bool randomisePowerUpValues;
+    [JsonInclude] bool randomiseMapsTiles;
+    [JsonInclude] bool randomiseOpponentLeaderRanks;
+    [JsonInclude] bool randomiseSummoningPower;
+    [JsonInclude] bool randomiseAttributes;
+    [JsonInclude] bool randomiseKinds;
+    [JsonInclude] bool randomiseRareDrop;
+    [JsonInclude] bool randomiseReincarnation;
+    [JsonInclude] bool randomiseSlots;
+    [JsonInclude] bool balancedDeckCorrectAmount = true;
+    [JsonInclude] bool randomiseDecks;
+    [JsonInclude] bool strongBossDeck;
+    [JsonInclude] bool swapTiles = true;
+    [JsonInclude] bool hasRandomised = false;
+    [JsonInclude] bool banSpecificCards;
+    [JsonInclude] bool banForPlayerOnly = false;
+    [JsonInclude] bool banForEnemyOnly = false;
+    [JsonInclude] bool bossesBypassBan;
+    [JsonInclude] bool randomiseAI = false;
+    [JsonInclude] bool randomiseEquip = false;
+    [JsonInclude] bool randomiseStrongOnToon;
+    [JsonInclude] bool randomiseMusic = false;
+    [JsonInclude] bool SpBasedOnPower;
+    [JsonInclude] bool bRecommendedExp;
+    [JsonInclude] bool bRandomiseStartingSp;
+    [JsonInclude] bool bRandomiseSpRecovery;
+    [JsonInclude] bool bRandomiseHealth;
+    [JsonInclude] bool bRandomiseTerrainStatValues;
+    [JsonInclude] bool bRoundValuesTo50 = true;
 
-    int strongOnToonChance = 20;
-    int maxCrushTiles = 16;
-    int maxLabTiles = 16;
-    int maxToonTiles = 49;
+    [JsonInclude] int strongOnToonChance = 20;
+    [JsonInclude] int maxCrushTiles = 16;
+    [JsonInclude] int maxLabTiles = 16;
+    [JsonInclude] int maxToonTiles = 49;
 
-    int monsterCount = 25;
-    int spellCount = 5;
-    int trapCount = 5;
-    int equipCount = 3;
-    int ritualCount = 2;
-    int randomEffectChance = 15;
-    int maxRandomRank = 12;
-    int maxLeaderAbilities = 16;
-    int weakLeaderAbilityChance = 30;
-    int strongLeaderAbilityChance = 30;
-    int OPLeaderAbilityChance = 30;
-    int bannedDcLimit = 99;
-    int bannedLevelLimit = 12;
-    int bannedDefLimit = 8000;
-    int bannedAtkLimit = 8000;
+    [JsonInclude] int monsterCount = 25;
+    [JsonInclude] int spellCount = 5;
+    [JsonInclude] int trapCount = 5;
+    [JsonInclude] int equipCount = 3;
+    [JsonInclude] int ritualCount = 2;
+    [JsonInclude] int randomEffectChance = 15;
+    [JsonInclude] int maxRandomRank = 12;
+    [JsonInclude] int maxLeaderAbilities = 16;
+    [JsonInclude] int weakLeaderAbilityChance = 30;
+    [JsonInclude] int strongLeaderAbilityChance = 30;
+    [JsonInclude] int OPLeaderAbilityChance = 30;
+    [JsonInclude] int bannedDcLimit = 99;
+    [JsonInclude] int bannedLevelLimit = 12;
+    [JsonInclude] int bannedDefLimit = 8000;
+    [JsonInclude] int bannedAtkLimit = 8000;
 
-    int EquipPercentChance = 10;
-    int slotChance = 50;
+    [JsonInclude] int EquipPercentChance = 10;
+    [JsonInclude] int slotChance = 50;
 
     //Default delta Random Values
-    bool randomSPRange;
-    bool randomAtkDefRange;
-    int powerUpDelta = 1000;
-    int defenseDelta = 1000;
-    int attackDelta = 1000;
-    int levelDelta = 3;
+    [JsonInclude] bool randomSPRange;
+    [JsonInclude] bool randomAtkDefRange;
+    [JsonInclude] int powerUpDelta = 1000;
+    [JsonInclude] int defenseDelta = 1000;
+    [JsonInclude] int attackDelta = 1000;
+    [JsonInclude] int levelDelta = 3;
 
     //Cap style random
-    bool randomSPCap;
-    bool randomAtkDefCap;
+    [JsonInclude] bool randomSPCap;
+    [JsonInclude] bool randomAtkDefCap;
 
-    int levelCap = 12;
-    int attackCap = 8000;
-    int defenseCap = 8000;
+    [JsonInclude] int levelCap = 12;
+    [JsonInclude] int attackCap = 8000;
+    [JsonInclude] int defenseCap = 8000;
 
-    bool bBreakDefaultLpCap;
-    int maxStartingLP = 9999;
-    int maxStartingSp = 12;
-    int maxSpRecovery = 12;
-    int minStartingSp = 0;
-    int minSpRecovery = 1;
+    [JsonInclude] bool bBreakDefaultLpCap;
+    [JsonInclude] int maxStartingLP = 9999;
+    [JsonInclude] int maxStartingSp = 12;
+    [JsonInclude] int maxSpRecovery = 12;
+    [JsonInclude] int minStartingSp = 0;
+    [JsonInclude] int minSpRecovery = 1;
 
-    int minimumTerrainValue = 100;
-    int maximumTerrainValue = 1000;
+    [JsonInclude] int minimumTerrainValue = 100;
+    [JsonInclude] int maximumTerrainValue = 1000;
+    [JsonInclude] HashSet<int> bannedCards = new HashSet<int>();
+
     Random _random;
     int _seed;
 
+
+    string weakLeaderAbilitiesTooltip = null;
+    string strongLeaderAbilitiesTooltip = null;
+    string opLeaderAbilitiesTooltip = null;
+
+    List<ModdedStringName> bannedCardFilteredList = new List<ModdedStringName>();
+    HashSet<ModdedStringName> selectedCards = new HashSet<ModdedStringName>();
+    int currentBannedCardIndex = 0;
+    string cardSearch = "";
+    int? bannedCardToRemove = null;
+    string SearchSortField = "ID";
+    bool SearchAscending = true;
+    EnemyEditorWindow _enemyEditorWindow;
+    MusicEditorWindow _musicEditorWindow;
+    Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
+    public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
+    bool ignoreConfirmation;
+
+    Dictionary<int, string> originalEffectTexts = new Dictionary<int, string>();
+
+    const string toonText = "<SPECIAL POWER UP>\nStrong in TOON terrain!\n";
     List<int> bossDecks = new List<int>() { 27, 45, 46, 47 };
     List<(int index, float strength)> strongestMonsters = new List<(int index, float strength)>();
     List<(int index, byte deckCost)> strongestSpells = new List<(int index, byte deckCost)>();
@@ -134,26 +157,6 @@ public class RandomiserWindow : IImGuiWindow
         DeckLeaderAbilityType.IncreasedMovement
     };
 
-    string weakLeaderAbilitiesTooltip = null;
-    string strongLeaderAbilitiesTooltip = null;
-    string opLeaderAbilitiesTooltip = null;
-    HashSet<int> bannedCards = new HashSet<int>();
-    List<ModdedStringName> bannedCardFilteredList = new List<ModdedStringName>();
-    HashSet<ModdedStringName> selectedCards = new HashSet<ModdedStringName>();
-    int currentBannedCardIndex = 0;
-    string cardSearch = "";
-    int? bannedCardToRemove = null;
-    string SearchSortField = "ID";
-    bool SearchAscending = true;
-    EnemyEditorWindow _enemyEditorWindow;
-    MusicEditorWindow _musicEditorWindow;
-    Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
-    public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
-    bool ignoreConfirmation;
-
-    Dictionary<int, string> originalEffectTexts = new Dictionary<int, string>();
-
-    const string toonText = "<SPECIAL POWER UP>\nStrong in TOON terrain!\n";
     RandomiserChangeLog changeLog;
 
     int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
@@ -822,7 +825,7 @@ SD:   5000");
             if (value > 9999)
             {
 
-                GameplayPatchesWindow.Instance.bLpCap = true;
+                GameplayPatchesWindow.Instance.bChangeLpCap = true;
                 GameplayPatchesWindow.Instance.lpCap = 32000;
             }
 
@@ -2748,6 +2751,136 @@ SD:   5000");
             }
             return SearchAscending ? result : -result;
         });
+    }
+
+    //AI generated
+    public void ExportToJson(string path)
+    {
+        JsonSerializerOptions options = new JsonSerializerOptions {
+            WriteIndented = true,
+        };
+
+        string json = JsonSerializer.Serialize(this, options);
+        File.WriteAllText(path, json);
+    }
+
+    //AI generated
+    public void ImportFromJson(string path)
+    {
+        string json = File.ReadAllText(path);
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+
+        // bools
+        if (root.TryGetProperty("randomiseStartingDecks", out JsonElement e)) randomiseStartingDecks = e.GetBoolean();
+        if (root.TryGetProperty("randomiseOpponentDecks", out e)) randomiseOpponentDecks = e.GetBoolean();
+        if (root.TryGetProperty("randomiseCardAcquisition", out e)) randomiseCardAcquisition = e.GetBoolean();
+        if (root.TryGetProperty("randomiseMaps", out e)) randomiseMaps = e.GetBoolean();
+        if (root.TryGetProperty("randomiseHiddenCardLocation", out e)) randomiseHiddenCardLocation = e.GetBoolean();
+        if (root.TryGetProperty("randomiseHiddenCardValue", out e)) randomiseHiddenCardValue = e.GetBoolean();
+        if (root.TryGetProperty("randomiseLeaderRanks", out e)) randomiseLeaderRanks = e.GetBoolean();
+        if (root.TryGetProperty("randomiseLeaderAbilities", out e)) randomiseLeaderAbilities = e.GetBoolean();
+        if (root.TryGetProperty("randomiseCardATKDEF", out e)) randomiseCardATKDEF = e.GetBoolean();
+        if (root.TryGetProperty("balancedRandom", out e)) balancedRandom = e.GetBoolean();
+        if (root.TryGetProperty("lowPowerLevelRandom", out e)) lowPowerLevelRandom = e.GetBoolean();
+        if (root.TryGetProperty("randomiseMonsterEffects", out e)) randomiseMonsterEffects = e.GetBoolean();
+        if (root.TryGetProperty("randomiseMagicEffects", out e)) randomiseMagicEffects = e.GetBoolean();
+        if (root.TryGetProperty("randomisePowerUpValues", out e)) randomisePowerUpValues = e.GetBoolean();
+        if (root.TryGetProperty("randomiseMapsTiles", out e)) randomiseMapsTiles = e.GetBoolean();
+        if (root.TryGetProperty("randomiseOpponentLeaderRanks", out e)) randomiseOpponentLeaderRanks = e.GetBoolean();
+        if (root.TryGetProperty("randomiseSummoningPower", out e)) randomiseSummoningPower = e.GetBoolean();
+        if (root.TryGetProperty("randomiseAttributes", out e)) randomiseAttributes = e.GetBoolean();
+        if (root.TryGetProperty("randomiseKinds", out e)) randomiseKinds = e.GetBoolean();
+        if (root.TryGetProperty("randomiseRareDrop", out e)) randomiseRareDrop = e.GetBoolean();
+        if (root.TryGetProperty("randomiseReincarnation", out e)) randomiseReincarnation = e.GetBoolean();
+        if (root.TryGetProperty("randomiseSlots", out e)) randomiseSlots = e.GetBoolean();
+        if (root.TryGetProperty("balancedDeckCorrectAmount", out e)) balancedDeckCorrectAmount = e.GetBoolean();
+        if (root.TryGetProperty("randomiseDecks", out e)) randomiseDecks = e.GetBoolean();
+        if (root.TryGetProperty("strongBossDeck", out e)) strongBossDeck = e.GetBoolean();
+        if (root.TryGetProperty("swapTiles", out e)) swapTiles = e.GetBoolean();
+        if (root.TryGetProperty("hasRandomised", out e)) hasRandomised = e.GetBoolean();
+        if (root.TryGetProperty("banSpecificCards", out e)) banSpecificCards = e.GetBoolean();
+        if (root.TryGetProperty("banForPlayerOnly", out e)) banForPlayerOnly = e.GetBoolean();
+        if (root.TryGetProperty("banForEnemyOnly", out e)) banForEnemyOnly = e.GetBoolean();
+        if (root.TryGetProperty("bossesBypassBan", out e)) bossesBypassBan = e.GetBoolean();
+        if (root.TryGetProperty("randomiseAI", out e)) randomiseAI = e.GetBoolean();
+        if (root.TryGetProperty("randomiseEquip", out e)) randomiseEquip = e.GetBoolean();
+        if (root.TryGetProperty("randomiseStrongOnToon", out e)) randomiseStrongOnToon = e.GetBoolean();
+        if (root.TryGetProperty("randomiseMusic", out e)) randomiseMusic = e.GetBoolean();
+        if (root.TryGetProperty("SpBasedOnPower", out e)) SpBasedOnPower = e.GetBoolean();
+        if (root.TryGetProperty("bRecommendedExp", out e)) bRecommendedExp = e.GetBoolean();
+        if (root.TryGetProperty("bRandomiseStartingSp", out e)) bRandomiseStartingSp = e.GetBoolean();
+        if (root.TryGetProperty("bRandomiseSpRecovery", out e)) bRandomiseSpRecovery = e.GetBoolean();
+        if (root.TryGetProperty("bRandomiseHealth", out e)) bRandomiseHealth = e.GetBoolean();
+        if (root.TryGetProperty("bRandomiseTerrainStatValues", out e)) bRandomiseTerrainStatValues = e.GetBoolean();
+        if (root.TryGetProperty("bRoundValuesTo50", out e)) bRoundValuesTo50 = e.GetBoolean();
+
+        // ints
+        if (root.TryGetProperty("strongOnToonChance", out e)) strongOnToonChance = e.GetInt32();
+        if (root.TryGetProperty("maxCrushTiles", out e)) maxCrushTiles = e.GetInt32();
+        if (root.TryGetProperty("maxLabTiles", out e)) maxLabTiles = e.GetInt32();
+        if (root.TryGetProperty("maxToonTiles", out e)) maxToonTiles = e.GetInt32();
+
+        if (root.TryGetProperty("monsterCount", out e)) monsterCount = e.GetInt32();
+        if (root.TryGetProperty("spellCount", out e)) spellCount = e.GetInt32();
+        if (root.TryGetProperty("trapCount", out e)) trapCount = e.GetInt32();
+        if (root.TryGetProperty("equipCount", out e)) equipCount = e.GetInt32();
+        if (root.TryGetProperty("ritualCount", out e)) ritualCount = e.GetInt32();
+
+        if (root.TryGetProperty("randomEffectChance", out e)) randomEffectChance = e.GetInt32();
+        if (root.TryGetProperty("maxRandomRank", out e)) maxRandomRank = e.GetInt32();
+        if (root.TryGetProperty("maxLeaderAbilities", out e)) maxLeaderAbilities = e.GetInt32();
+        if (root.TryGetProperty("weakLeaderAbilityChance", out e)) weakLeaderAbilityChance = e.GetInt32();
+        if (root.TryGetProperty("strongLeaderAbilityChance", out e)) strongLeaderAbilityChance = e.GetInt32();
+        if (root.TryGetProperty("OPLeaderAbilityChance", out e)) OPLeaderAbilityChance = e.GetInt32();
+
+        if (root.TryGetProperty("bannedDcLimit", out e)) bannedDcLimit = e.GetInt32();
+        if (root.TryGetProperty("bannedLevelLimit", out e)) bannedLevelLimit = e.GetInt32();
+        if (root.TryGetProperty("bannedDefLimit", out e)) bannedDefLimit = e.GetInt32();
+        if (root.TryGetProperty("bannedAtkLimit", out e)) bannedAtkLimit = e.GetInt32();
+
+        if (root.TryGetProperty("EquipPercentChance", out e)) EquipPercentChance = e.GetInt32();
+        if (root.TryGetProperty("slotChance", out e)) slotChance = e.GetInt32();
+
+        if (root.TryGetProperty("powerUpDelta", out e)) powerUpDelta = e.GetInt32();
+        if (root.TryGetProperty("defenseDelta", out e)) defenseDelta = e.GetInt32();
+        if (root.TryGetProperty("attackDelta", out e)) attackDelta = e.GetInt32();
+        if (root.TryGetProperty("levelDelta", out e)) levelDelta = e.GetInt32();
+
+        if (root.TryGetProperty("levelCap", out e)) levelCap = e.GetInt32();
+        if (root.TryGetProperty("attackCap", out e)) attackCap = e.GetInt32();
+        if (root.TryGetProperty("defenseCap", out e)) defenseCap = e.GetInt32();
+
+        if (root.TryGetProperty("maxStartingLP", out e)) maxStartingLP = e.GetInt32();
+        if (root.TryGetProperty("maxStartingSp", out e)) maxStartingSp = e.GetInt32();
+        if (root.TryGetProperty("maxSpRecovery", out e)) maxSpRecovery = e.GetInt32();
+        if (root.TryGetProperty("minStartingSp", out e)) minStartingSp = e.GetInt32();
+        if (root.TryGetProperty("minSpRecovery", out e)) minSpRecovery = e.GetInt32();
+
+        if (root.TryGetProperty("minimumTerrainValue", out e)) minimumTerrainValue = e.GetInt32();
+        if (root.TryGetProperty("maximumTerrainValue", out e)) maximumTerrainValue = e.GetInt32();
+
+        // ranges/caps flags
+        if (root.TryGetProperty("randomSPRange", out e)) randomSPRange = e.GetBoolean();
+        if (root.TryGetProperty("randomAtkDefRange", out e)) randomAtkDefRange = e.GetBoolean();
+        if (root.TryGetProperty("randomSPCap", out e)) randomSPCap = e.GetBoolean();
+        if (root.TryGetProperty("randomAtkDefCap", out e)) randomAtkDefCap = e.GetBoolean();
+        if (root.TryGetProperty("randomAtkDefCap", out e)) randomAtkDefCap = e.GetBoolean();
+        if (root.TryGetProperty("randomSPCap", out e)) randomSPCap = e.GetBoolean();
+        if (root.TryGetProperty("bBreakDefaultLpCap", out e)) bBreakDefaultLpCap = e.GetBoolean();
+
+        // HashSet<int>
+        if (root.TryGetProperty("bannedCards", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            bannedCards.Clear();
+            foreach (JsonElement item in e.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Number)
+                {
+                    bannedCards.Add(item.GetInt32());
+                }
+            }
+        }
     }
 
     public void Free()

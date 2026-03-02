@@ -229,12 +229,75 @@ public class EditorWindow
                 {
                     ImGui.BeginDisabled();
                 }
+                if (ImGui.BeginMenu("Save"))
+                {
+                    if (ImGui.MenuItem("Save data"))
+                    {
+                        if (dataAccess.IsIsoLoaded)
+                        {
+                            SaveChanges(false);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("No ISO open to save to");
+                        }
+                    }
+                    ImGui.Spacing();
 
-                if (ImGui.MenuItem("Save"))
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Saves all non string data");
+                        ImGui.Text("Ctrl + S");
+                        ImGui.EndTooltip();
+                    }
+                    if (ImGui.MenuItem("Save Strings"))
+                    {
+                        if (dataAccess.IsIsoLoaded)
+                        {
+                            SaveStringAsync();
+                        }
+                        else
+                        {
+                            _modalPopup.Show("No ISO open to save to");
+                        }
+                    }
+                    ImGui.Spacing();
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Saves string changes");
+                        ImGui.EndTooltip();
+                    }
+                    if (ImGui.MenuItem("Save all data"))
+                    {
+                        if (dataAccess.IsIsoLoaded)
+                        {
+                            SaveChanges(true);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("No ISO open to save to");
+                        }
+                    }
+                    ImGui.Spacing();
+
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Saves data including strings");
+                        ImGui.Text("Ctrl + Alt + S");
+                        ImGui.EndTooltip();
+                    }
+                    ImGui.EndMenu();
+                }
+
+
+                if (ImGui.MenuItem("Print passwords"))
                 {
                     if (dataAccess.IsIsoLoaded)
                     {
-                        SaveChanges();
+                        PrintPasswords();
                     }
                     else
                     {
@@ -242,25 +305,6 @@ public class EditorWindow
                     }
                 }
                 ImGui.Spacing();
-                //if (ImGui.MenuItem("Print passwords"))
-                //{
-                //    if (dataAccess.IsIsoLoaded)
-                //    {
-                //        PrintPasswords();
-                //    }
-                //    else
-                //    {
-                //        _modalPopup.Show("No ISO open to save to");
-                //    }
-                //}
-                //ImGui.Spacing();
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.BeginTooltip();
-                    ImGui.Text("Saves All data");
-                    ImGui.Text("Ctrl + S");
-                    ImGui.EndTooltip();
-                }
                 if (dataAccess.IsIsoLoaded)
                 {
                     if (ImGui.BeginMenu("Changelog"))
@@ -322,24 +366,7 @@ public class EditorWindow
                     ImGui.Spacing();
                 }
 
-                if (ImGui.MenuItem("Save Strings"))
-                {
-                    if (dataAccess.IsIsoLoaded)
-                    {
-                        SaveStringAsync();
-                    }
-                    else
-                    {
-                        _modalPopup.Show("No ISO open to save to");
-                    }
-                }
-                ImGui.Spacing();
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.BeginTooltip();
-                    ImGui.Text("Saves string changes");
-                    ImGui.EndTooltip();
-                }
+
                 if (ImGui.BeginMenu("Import"))
                 {
                     if (ImGui.MenuItem("Import Strings"))
@@ -387,7 +414,7 @@ public class EditorWindow
                             }
                         }
                     }
-                    if (ImGui.MenuItem("Import maps"))
+                    if (ImGui.MenuItem("Import Maps"))
                     {
                         var result = Dialog.FileOpen("txt");
                         if (result.IsOk)
@@ -399,7 +426,33 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import map txt file");
                         }
                     }
+                    
+                    if (ImGui.MenuItem("Import Randomiser Settings"))
+                    {
+                        var result = Dialog.FileOpen("json");
+                        if (result.IsOk)
+                        {
+                            _randomiserWindow.ImportFromJson(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to import randomiser settings");
+                        }
+                    }
+                    if (ImGui.MenuItem("Import Patches"))
+                    {
+                        var result = Dialog.FileOpen("json");
+                        if (result.IsOk)
+                        {
+                            _gameplayPatchesWindow.ImportFromJson(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to import patches");
+                        }
+                    }
                     ImGui.EndMenu();
+                    
                 }
                 if (ImGui.BeginMenu("Export"))
                 {
@@ -452,6 +505,30 @@ public class EditorWindow
                         else
                         {
                             _modalPopup.Show("Failed to export map text file");
+                        }
+                    }
+                    if (ImGui.MenuItem("Export Randomiser Settings"))
+                    {
+                        var result = Dialog.FileSave("json");
+                        if (result.IsOk)
+                        {
+                            _randomiserWindow.ExportToJson(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to export randomiser settings");
+                        }
+                    }
+                    if (ImGui.MenuItem("Export Patches"))
+                    {
+                        var result = Dialog.FileSave("json");
+                        if (result.IsOk)
+                        {
+                            _gameplayPatchesWindow.ExportToJson(result.Path);
+                        }
+                        else
+                        {
+                            _modalPopup.Show("Failed to export patches");
                         }
                     }
                     ImGui.EndMenu();
@@ -652,7 +729,11 @@ public class EditorWindow
     {
         if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.S, ImGuiInputFlags.RouteGlobal))
         {
-            SaveChanges();
+            SaveChanges(false);
+        }
+        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.S | ImGuiKey.LeftAlt, ImGuiInputFlags.RouteGlobal))
+        {
+            SaveChanges(true);
         }
         if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.O, ImGuiInputFlags.RouteGlobal))
         {
@@ -802,7 +883,7 @@ public class EditorWindow
     }
 
 
-    public void SaveChanges()
+    public void SaveChanges(bool saveStrings)
     {
         if (!dataAccess.IsIsoLoaded)
         {
@@ -832,8 +913,15 @@ public class EditorWindow
             File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt", changelogText);
         }
 
+        if (saveStrings)
+        {
+            SaveStringAsync(printComplete, false);
+        }
+        else
+        {
+            printComplete();
+        }
 
-        SaveStringAsync(printComplete, false);
 
 
     }

@@ -47,7 +47,7 @@
             DataAccess.Instance.NopInstructions(SkipYugi1, 1);
             DataAccess.Instance.ApplyPatch(SkipYugi2, new byte[4] { 0x05, 0x00, 0x03, 0x24 });
 
-            DataAccess.Instance.NopInstructions(RemoveTutorialOptions1, 1);
+            //DataAccess.Instance.NopInstructions(RemoveTutorialOptions1, 1);
             DataAccess.Instance.NopInstructions(RemoveTutorialOptions2, 1);
         }
 
@@ -70,7 +70,7 @@
             DataAccess.Instance.ApplyPatch(SkipYugi1, new byte[4] { 0xc5, 0x0e, 0x83, 0x14 });
             DataAccess.Instance.ApplyPatch(SkipYugi2, new byte[4] { 0x01, 0x00, 0x63, 0x24 });
 
-            DataAccess.Instance.ApplyPatch(RemoveTutorialOptions1, new byte[4] { 0x38, 0xef, 0x08, 0x0c });
+            DataAccess.Instance.ApplyPatch(RemoveTutorialOptions1, new byte[4] { 0x00, 0x00, 0xcb, 0x86 });
             DataAccess.Instance.ApplyPatch(RemoveTutorialOptions2, new byte[4] { 0x20, 0xef, 0x08, 0x0c });
         }
     }

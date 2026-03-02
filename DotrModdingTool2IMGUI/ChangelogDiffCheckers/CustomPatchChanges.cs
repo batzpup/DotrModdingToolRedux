@@ -105,7 +105,7 @@ public class CustomPatchSnapshot
         currentSideToGoFirst = patches.currentSideToGoFirst;
         bSideToGoFirst = patches.bSideToGoFirst;
         bForceNewStartSide = patches.bForceNewStartSide;
-        bLpCap = patches.bLpCap;
+        bLpCap = patches.bChangeLpCap;
         bReincarnationCount = patches.bReincarnationCount;
         bTerrainBuff = patches.bTerrainBuff;
         bDeckLeaderRecovery = patches.bDeckLeaderRecovery;
