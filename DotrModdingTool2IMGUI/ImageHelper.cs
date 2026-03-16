@@ -22,7 +22,7 @@ public static class ImageHelper
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
         string resourceName = $"{assembly.GetName().Name}.{resourcePath}";
-        //Console.WriteLine($"Loading resource: {resourceName}");
+        Console.WriteLine($"Loading resource: {resourceName}");
         using (Stream stream = assembly.GetManifestResourceStream(resourceName))
         {
             if (stream is null)
