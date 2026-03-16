@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -121,7 +122,7 @@ public class RandomiserWindow : IImGuiWindow
     string SearchSortField = "ID";
     bool SearchAscending = true;
     EnemyEditorWindow _enemyEditorWindow;
-    MusicEditorWindow _musicEditorWindow;
+    
     Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
     bool ignoreConfirmation;
@@ -161,12 +162,12 @@ public class RandomiserWindow : IImGuiWindow
 
     int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
 
-    public RandomiserWindow(EnemyEditorWindow enemyEditorWindow, MusicEditorWindow musicEditorWindow)
+    public RandomiserWindow(EnemyEditorWindow enemyEditorWindow)
     {
         EditorWindow.OnIsoLoaded += FilterAndSort;
         EditorWindow.OnIsoLoaded += LoadLeaderRanks;
         _enemyEditorWindow = enemyEditorWindow;
-        _musicEditorWindow = musicEditorWindow;
+        
         CreateLeaderAbilityTooltips();
 
     }
@@ -840,24 +841,28 @@ SD:   5000");
 
     void RandomiseMusic()
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+        }
         if (randomiseMusic)
         {
 
             HashSet<int> bannedMusic = new HashSet<int> { 1, 6, 23, 39, 42, 43 };
-            foreach (var key in _musicEditorWindow.DuelistMusic.Keys)
+            foreach (var key in MusicEditorWindow.Instance.DuelistMusic.Keys)
             {
 
-                _musicEditorWindow.DuelistMusic[key] = GetRandomValue(2, 45);
-                while (bannedMusic.Contains(_musicEditorWindow.DuelistMusic[key]))
+                MusicEditorWindow.Instance.DuelistMusic[key] = GetRandomValue(2, 45);
+                while (bannedMusic.Contains(MusicEditorWindow.Instance.DuelistMusic[key]))
                 {
-                    _musicEditorWindow.DuelistMusic[key] = GetRandomValue(2, 45);
+                    MusicEditorWindow.Instance.DuelistMusic[key] = GetRandomValue(2, 45);
 
 
                 }
                 changeLog.MusicChanges.Add(new MusicChange(MusicEditorWindow.MusicTargets[key].Current,
-                    MusicEditorWindow.musicTracks[_musicEditorWindow.DuelistMusic[key] - 1]));
+                    MusicEditorWindow.musicTracks[MusicEditorWindow.Instance.DuelistMusic[key] - 1]));
             }
-            _musicEditorWindow.bSaveMusicChanges = true;
+            MusicEditorWindow.Instance.bSaveMusicChanges = true;
             GameplayPatchesWindow.Instance.bSaveMusic = true;
         }
     }

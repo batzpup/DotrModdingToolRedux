@@ -8,6 +8,7 @@ namespace DotrModdingTool2IMGUI;
 public static class ImageHelper
 {
     public static Vector2 DefaultImageSize;
+
     public static Vector4 ColorToVec4(Color color)
     {
         return new Vector4(color.R, color.G, color.B, color.A);
@@ -21,13 +22,18 @@ public static class ImageHelper
     public static IntPtr LoadImageImgui(string resourcePath)
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
-        string resourceName = $"{assembly.GetName().Name}.{resourcePath}";
-        //Console.WriteLine($"Loading resource: {resourceName}");
+        //Needed for linux
+        string sanitizedPath = resourcePath
+            .Trim()
+            .Replace("\r", "")
+            .Replace("\n", "");
+        string resourceName = $"{assembly.GetName().Name}.{sanitizedPath}";
+       // Console.WriteLine($"Loading resource: {resourceName}");
         using (Stream stream = assembly.GetManifestResourceStream(resourceName))
         {
             if (stream is null)
             {
-                Console.Error.WriteLine($"No resource exists with the name {resourceName}");
+                Console.WriteLine($"No resource exists with the name {resourceName}");
                 return -1;
             }
             byte[] imageData = new byte[stream.Length];
@@ -48,7 +54,7 @@ public static class ImageHelper
         }
     }
 
-    
+
     public static Image LoadImageRaylib(string resourcePath)
     {
         Assembly assembly = Assembly.GetExecutingAssembly();

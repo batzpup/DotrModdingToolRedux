@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using DotrModdingTool2IMGUI.ChangelogDiffCheckers;
@@ -73,16 +74,19 @@ public class EditorWindow
 
     public EditorWindow()
     {
-        //PrintEmbeddedResources();
+      //  PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
 
         _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
         _cardEditorWindow = new CardEditorWindow();
         _gameplayPatchesWindow = new GameplayPatchesWindow();
-        _musicEditorWindow = new MusicEditorWindow();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _musicEditorWindow = new MusicEditorWindow();
+        }
         _fusionEditorWindow = new FusionEditorWindow();
-        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow, _musicEditorWindow);
+        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
 
@@ -426,7 +430,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import map txt file");
                         }
                     }
-                    
+
                     if (ImGui.MenuItem("Import Randomiser Settings"))
                     {
                         var result = Dialog.FileOpen("json");
@@ -452,7 +456,7 @@ public class EditorWindow
                         }
                     }
                     ImGui.EndMenu();
-                    
+
                 }
                 if (ImGui.BeginMenu("Export"))
                 {
@@ -783,6 +787,14 @@ public class EditorWindow
             {
                 ImGui.PushStyleColor(ImGuiCol.Button, new GuiColour(0, 189, 0).value);
             }
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (modeButtonPair.Key == EditorContentMode.MusicEditor)
+                {
+                    ImGui.PopStyleColor();
+                    continue;
+                }
+            }
             if (ImGui.Button(modeButtonPair.Value, new Vector2(buttonWidthScaled, buttonHeightRatio)))
             {
                 if (currentMode == EditorContentMode.MusicEditor)
@@ -895,7 +907,12 @@ public class EditorWindow
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
-        _musicEditorWindow.SaveMusicChanges();
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _musicEditorWindow.SaveMusicChanges();
+        }
+
         dataAccess.SaveCardDeckLeaderAbilities(CardDeckLeaderAbilities.Bytes);
         dataAccess.SaveMonsterEnchantData(MonsterEnchantData.Bytes);
         dataAccess.SaveDeckLeaderThresholds();
@@ -968,7 +985,11 @@ public class EditorWindow
         _enemyEditorWindow.MapEditorWindow.LoadMapData();
         _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
         _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
-        _musicEditorWindow.LoadMusicFromIso();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _musicEditorWindow.LoadMusicFromIso();
+        }
+
         dataAccess.LoadMonsterEquipCardData();
         dataAccess.LoadCardDeckLeaderAbilities();
         dataAccess.LoadEffectData();

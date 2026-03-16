@@ -1,10 +1,22 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
+
 namespace Updater;
 
 class Program
 {
-    static string[] filesToNotReplace = new[] { "Updater.deps.json", "Updater.dll", "Updater.exe", "Updater.runtimeconfig.json" };
+    static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    static readonly string MainExeFile = IsWindows ? "DotrModdingTool2IMGUI.exe" : "DotrModdingTool2IMGUI";
+
+    // Files belonging to the updater itself — never overwrite these while running
+    static readonly string[] filesToNotReplace = new[]
+    {
+        "Updater.deps.json",
+        "Updater.dll",
+        IsWindows ? "Updater.exe" : "Updater",
+        "Updater.runtimeconfig.json"
+    };
 
     static string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
     static string LogFile = Path.Combine(LogDirectory, "standalone-updater.txt");
@@ -36,8 +48,6 @@ class Program
         {
             File.AppendAllText(LogFile, fullMessage + Environment.NewLine);
             Console.WriteLine(fullMessage);
-
-
         }
         catch (Exception ex)
         {
@@ -52,6 +62,7 @@ class Program
     {
         string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         string fullMessage = $"{timestamp} [StandaloneUpdater] {message}";
+
         try
         {
             File.AppendAllText(location, fullMessage + Environment.NewLine);
@@ -70,14 +81,17 @@ class Program
     static void Main(string[] args)
     {
         Console.Title = "DotrModdingTool Updater";
-        string tempLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "DotrUpdaterStarted.txt");
-        using (File.Create(tempLocation))
-        {
-        }
+
+        // Use a temp file in the system temp directory instead of assuming a Desktop exists.
+        // Desktop may not exist on headless Linux systems or servers.
+        string tempLocation = Path.Combine(Path.GetTempPath(), "DotrUpdaterStarted.txt");
+        using (File.Create(tempLocation)) { }
+
         LogToFile("Start StandAlone updater logs");
         LogToFile("Updater started", tempLocation);
         LogToFile($"Current directory: {Environment.CurrentDirectory}", tempLocation);
         LogToFile($"BaseDirectory/Updater Directory: {AppDomain.CurrentDomain.BaseDirectory}", tempLocation);
+        LogToFile($"Platform: {RuntimeInformation.OSDescription}", tempLocation);
 
         if (args.Length < 2)
         {
@@ -93,10 +107,8 @@ class Program
             Console.WriteLine("Too many arguments. Expected: <target_directory> <process_id>");
             StringBuilder argString = new StringBuilder();
             foreach (var arg in args)
-            {
                 argString.AppendLine(arg);
-            }
-            LogToFile($"Expected 2 arguments, got {args.Length} {argString} ", tempLocation);
+            LogToFile($"Expected 2 arguments, got {args.Length}: {argString}", tempLocation);
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
             return;
@@ -104,15 +116,17 @@ class Program
 
         LogToFile($"Target directory: {args[0]}", tempLocation);
         LogToFile($"Main process ID: {args[1]}", tempLocation);
+
         string targetDir;
         int mainProcessId;
+
         try
         {
             targetDir = args[0];
             mainProcessId = int.Parse(args[1]);
-            LogToFile($"Creating file in: {args[0]}", tempLocation);
-            File.Create(Path.Combine(targetDir, "UpdaterWorks.txt"));
-            LogToFile($"UpdaterWorks.txt created at : {args[0]}", tempLocation);
+            LogToFile($"Creating UpdaterWorks.txt in: {targetDir}", tempLocation);
+            File.Create(Path.Combine(targetDir, "UpdaterWorks.txt")).Dispose();
+            LogToFile($"UpdaterWorks.txt created at: {targetDir}", tempLocation);
         }
         catch (Exception e)
         {
@@ -121,16 +135,21 @@ class Program
             Console.ReadKey();
             throw;
         }
-        LogToFile($"$moving log from{LogFile} to {Path.Combine(Path.Combine(targetDir, "Logs"), "standalone-updater.txt")}", tempLocation);
+
+        // Move the log file into the target app's Logs directory
+        string targetLogDir = Path.Combine(targetDir, "Logs");
+        string targetLogFile = Path.Combine(targetLogDir, "standalone-updater.txt");
+        LogToFile($"Moving log from {LogFile} to {targetLogFile}", tempLocation);
+
         try
         {
-            string logsFile = Path.Combine(Path.Combine(targetDir, "Logs"), "standalone-updater.txt");
-            if (File.Exists(logsFile))
-            {
-                File.Delete(logsFile);
-            }
-            File.Move(LogFile, logsFile);
+            if (!Directory.Exists(targetLogDir))
+                Directory.CreateDirectory(targetLogDir);
 
+            if (File.Exists(targetLogFile))
+                File.Delete(targetLogFile);
+
+            File.Move(LogFile, targetLogFile);
         }
         catch (Exception e)
         {
@@ -139,23 +158,27 @@ class Program
             Console.ReadKey();
             throw;
         }
-        LogDirectory = Path.Combine(targetDir, "Logs");
-        LogFile = Path.Combine(LogDirectory, "standalone-updater.txt");
 
+        LogDirectory = targetLogDir;
+        LogFile = targetLogFile;
+
+        // Wait for the main application process to exit before overwriting files
         try
         {
-            LogToFile($"waiting for modding tool to close");
+            LogToFile("Waiting for main application to close...");
             Process mainProcess = Process.GetProcessById(mainProcessId);
             mainProcess.WaitForExit();
-
         }
         catch
         {
             LogToFile("Main application already closed.");
             Console.WriteLine("Main application already closed.");
         }
+
         Thread.Sleep(1000);
-        //THIS IS IN TEMP DIRECTORY
+
+        // Copy all updated files from the temp updater directory into the target directory,
+        // skipping the updater's own files to avoid overwriting ourselves while running.
         string updaterDir = AppDomain.CurrentDomain.BaseDirectory;
         foreach (var file in Directory.GetFiles(updaterDir))
         {
@@ -164,16 +187,75 @@ class Program
                 string destFile = Path.Combine(targetDir, Path.GetFileName(file));
                 File.Copy(file, destFile, true);
                 Console.WriteLine($"Updated: {destFile}");
-                LogToFile($"Updated: {file} saved to  {destFile}");
+                LogToFile($"Updated: {file} -> {destFile}");
             }
         }
-        File.Delete(tempLocation );
-        string mainExe = Path.Combine(targetDir, "DotrModdingTool2IMGUI.exe");
-        LogToFile($"Starting DotrModdingTool2IMGUI.exe ");
-        Process.Start(new ProcessStartInfo {
-            FileName = mainExe,
-            UseShellExecute = true
-        });
-        LogToFile($"update complete ");
+        
+        string mainExe = Path.Combine(targetDir, MainExeFile);
+        if (!IsWindows && File.Exists(mainExe))
+        {
+            SetExecutable(mainExe);
+        }
+
+
+        try
+        {
+            File.Delete(tempLocation);
+        }
+        catch
+        {
+            LogToFile($"Failed to Delete Temp data");
+        }
+
+        LogToFile($"Launching {MainExeFile}");
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = mainExe,
+                UseShellExecute = IsWindows // UseShellExecute = false is more reliable on Linux
+            });
+        }
+        catch (Exception ex)
+        {
+            LogToFile($"Failed to launch main application: {ex.Message}");
+            Console.WriteLine($"Failed to launch {mainExe}: {ex.Message}");
+            Console.WriteLine("\nPress any key to exit...");
+            Console.ReadKey();
+        }
+
+        LogToFile("Update complete.");
+    }
+
+    /// <summary>
+    /// Sets the executable bit on Linux/macOS.
+    /// Uses File.SetUnixFileMode on .NET 7+, falls back to shelling out to chmod.
+    /// </summary>
+    static void SetExecutable(string filePath)
+    {
+        try
+        {
+#if NET7_0_OR_GREATER
+            var mode = File.GetUnixFileMode(filePath);
+            mode |= UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+            File.SetUnixFileMode(filePath, mode);
+            LogToFile($"Set executable bit via UnixFileMode on: {filePath}");
+#else
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "chmod",
+                Arguments = $"+x \"{filePath}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            })?.WaitForExit();
+            LogToFile($"Set executable bit via chmod on: {filePath}");
+#endif
+        }
+        catch (Exception ex)
+        {
+            LogToFile($"Failed to set executable bit on {filePath}: {ex.Message}");
+        }
     }
 }
