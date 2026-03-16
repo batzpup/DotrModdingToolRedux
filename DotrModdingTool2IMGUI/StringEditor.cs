@@ -98,6 +98,7 @@ public static class StringEditor
         Effects.ReloadStrings();
         //Arena names
         StringEditorWindow.ReloadStrings();
+        
         MusicEditorWindow.ReloadStrings();
     }
 

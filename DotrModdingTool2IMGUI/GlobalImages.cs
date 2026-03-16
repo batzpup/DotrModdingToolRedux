@@ -69,7 +69,7 @@ public class GlobalImages
         foreach (var name in Card.cardNameList)
         {
             //Always use default names for images
-            Cards.Add(name.Default, ImageHelper.LoadImageImgui($"Images.MonsterImages.{name}.png"));
+            Cards.Add(name.Default, ImageHelper.LoadImageImgui($"Images.MonsterImages.{name.Default}.png"));
         }
     }
 

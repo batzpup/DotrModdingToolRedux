@@ -9,6 +9,7 @@ namespace DotrModdingTool2IMGUI;
 
 public class MusicEditorWindow : IImGuiWindow
 {
+    
     public static MusicEditorWindow Instance;
     
     //Music

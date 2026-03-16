@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 namespace DotrModdingTool2IMGUI.ChangelogDiffCheckers;
 
@@ -112,7 +113,11 @@ public class ModSnapshot
         CustomPatchSnapshot = new CustomPatchSnapshot(GameplayPatchesWindow.Instance);
         FusionSnapshot = new(FusionData.FusionTableData);
         MapSnapshot = new MapSnapshot(DataAccess.Instance.maps);
-        MusicSnapshot = new MusicSnapshot(MusicEditorWindow.Instance.DuelistMusic, MusicEditorWindow.MusicTargets);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+             MusicSnapshot = new MusicSnapshot(MusicEditorWindow.Instance.DuelistMusic, MusicEditorWindow.MusicTargets);
+        }
+       
         StringSnapshot = new StringSnapshot(StringEditor.StringTable.Values.ToList());
     }
 }
