@@ -74,7 +74,7 @@ public class EditorWindow
 
     public EditorWindow()
     {
-        PrintEmbeddedResources();
+      //  PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
 
