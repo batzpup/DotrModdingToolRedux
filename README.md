@@ -24,6 +24,8 @@ Wouldnt be possible without:
 2. **Run the Application**:
    - After downloading, extract the contents of the ZIP file.
    - Navigate to the extracted folder and run `DotrModdingTool2IMGUI.exe`.
+  
+3. If it doesnt open, go to the runtimes folder, copy and paste the folder matching your operation system into main DotrModdingToolRedux directory (next to DotrModdingTool2IMGUI.exe)
 
 ## New Features
 ### In built map and hidden card editor
