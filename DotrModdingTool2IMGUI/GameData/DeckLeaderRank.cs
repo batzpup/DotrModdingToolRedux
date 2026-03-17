@@ -15,5 +15,5 @@ public enum DeckLeaderRank
     VADM, // Vice Admiral
     ADM, // Admiral
     SADM, // Senior Admiral
-    SD // Supreme Director
+    SD // Secretary of defense
 }
