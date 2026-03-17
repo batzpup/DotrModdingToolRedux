@@ -6,15 +6,22 @@ public class EnemyEditorWindow : IImGuiWindow
 {
     public MapEditorWindow MapEditorWindow;
     public DeckEditorWindow DeckEditorWindow;
+    public NameCalculatorWindow NameCalculatorWindow;
     DataAccess _dataAccess;
-    
+
+
+    int currentDeckListIndex;
+    Deck currentDeck;
     public EnemyEditorWindow(ImFontPtr mapEditorFont)
     {
         _dataAccess = DataAccess.Instance;
-    
         MapEditorWindow = new MapEditorWindow(mapEditorFont);
         DeckEditorWindow = new DeckEditorWindow();
+        NameCalculatorWindow = new NameCalculatorWindow();
+        
     }
+
+    
 
     public void Render()
     {
@@ -25,7 +32,6 @@ public class EnemyEditorWindow : IImGuiWindow
         {
             if (ImGui.BeginTabItem("Deck Editor"))
             {
-             
                 DeckEditorWindow.Render();
                 ImGui.EndTabItem();
             }
@@ -36,8 +42,13 @@ public class EnemyEditorWindow : IImGuiWindow
                 ImGui.EndTabItem();
                 ImGui.PopFont();
             }
+            if (ImGui.BeginTabItem("Name Calculator"))
+            {
+                NameCalculatorWindow.Render();
+                ImGui.EndTabItem();
+            }
             ImGui.EndTabBar();
-       
+
         }
 
 
@@ -46,6 +57,9 @@ public class EnemyEditorWindow : IImGuiWindow
         ImGui.PopStyleColor(2);
 
     }
+
+    
+    
 
     public void Free()
     {

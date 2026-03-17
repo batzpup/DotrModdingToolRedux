@@ -149,7 +149,7 @@ public class EditorWindow
     }
 
     public Dictionary<EditorContentMode, string> ButtonModeTable = new Dictionary<EditorContentMode, string>() {
-        { EditorContentMode.EnemyEditor, "Enemy Editor" },
+        { EditorContentMode.EnemyEditor, "Deck & Map Editor" },
         { EditorContentMode.CardEditor, "Card Editor" },
         { EditorContentMode.FusionEditor, "Fusion Editor" },
         { EditorContentMode.Patches, "Patches" },
@@ -410,7 +410,7 @@ public class EditorWindow
                             if (result.Path.EndsWith(".csv"))
                             {
                                 FusionData.ImportFromCSV(isoPath);
-                                _fusionEditorWindow.sortedData = FusionData.FusionTableData.ToList();
+                                _fusionEditorWindow.AllFusionData = FusionData.FusionTableData.ToList();
                             }
                             else
                             {

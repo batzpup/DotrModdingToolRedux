@@ -624,7 +624,7 @@ public class DeckEditorWindow : IImGuiWindow
 
     }
 
-    GuiColour CardConstantRowColor(CardConstant cardConstant)
+   public static GuiColour CardConstantRowColor(CardConstant cardConstant)
     {
         if (UserSettings.deckEditorUseColours)
         {
