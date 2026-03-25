@@ -7,18 +7,21 @@ public class EnemyEditorWindow : IImGuiWindow
     public MapEditorWindow MapEditorWindow;
     public DeckEditorWindow DeckEditorWindow;
     public NameCalculatorWindow NameCalculatorWindow;
-    DataAccess _dataAccess;
+    public DestinyDrawEditorWindow DestinyDrawEditorWindow;
+    
 
 
     int currentDeckListIndex;
     Deck currentDeck;
     public EnemyEditorWindow(ImFontPtr mapEditorFont)
     {
-        _dataAccess = DataAccess.Instance;
+        
         MapEditorWindow = new MapEditorWindow(mapEditorFont);
         DeckEditorWindow = new DeckEditorWindow();
         NameCalculatorWindow = new NameCalculatorWindow();
-        
+        DestinyDrawEditorWindow = new DestinyDrawEditorWindow();
+
+
     }
 
     
@@ -45,6 +48,11 @@ public class EnemyEditorWindow : IImGuiWindow
             if (ImGui.BeginTabItem("Name Calculator"))
             {
                 NameCalculatorWindow.Render();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Destiny Draw"))
+            {
+                DestinyDrawEditorWindow.Render();
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();

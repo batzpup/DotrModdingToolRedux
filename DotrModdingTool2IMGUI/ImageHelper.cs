@@ -2,6 +2,7 @@
 using System.Reflection;
 using ImGuiNET;
 using Raylib_cs;
+using SkiaSharp;
 
 namespace DotrModdingTool2IMGUI;
 
@@ -28,7 +29,7 @@ public static class ImageHelper
             .Replace("\r", "")
             .Replace("\n", "");
         string resourceName = $"{assembly.GetName().Name}.{sanitizedPath}";
-       // Console.WriteLine($"Loading resource: {resourceName}");
+        // Console.WriteLine($"Loading resource: {resourceName}");
         using (Stream stream = assembly.GetManifestResourceStream(resourceName))
         {
             if (stream is null)
@@ -79,5 +80,34 @@ public static class ImageHelper
             return new Image();
         }
 
+    }
+
+    public static Texture2D SKBitmapToRaylibTexture(SKBitmap bitmap)
+    {
+        Image raylibImage = new Image {
+            Width = bitmap.Width,
+            Height = bitmap.Height,
+            Format = PixelFormat.UncompressedR8G8B8A8,
+            Mipmaps = 1
+        };
+
+        // SKBitmap is BGRA, Raylib expects RGBA so we need to swizzle
+        byte[] pixels = new byte[bitmap.Width * bitmap.Height * 4];
+        for (int i = 0; i < bitmap.Width * bitmap.Height; i++)
+        {
+            int src = i * 4;
+            pixels[src + 0] = bitmap.Bytes[src + 2]; // R (from B)
+            pixels[src + 1] = bitmap.Bytes[src + 1]; // G
+            pixels[src + 2] = bitmap.Bytes[src + 0]; // B (from R)
+            pixels[src + 3] = bitmap.Bytes[src + 3]; // A
+        }
+
+        unsafe
+        {
+            fixed (byte* ptr = pixels)
+                raylibImage.Data = ptr;
+
+            return Raylib.LoadTextureFromImage(raylibImage);
+        }
     }
 }

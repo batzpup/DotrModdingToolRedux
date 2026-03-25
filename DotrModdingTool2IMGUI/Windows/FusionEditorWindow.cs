@@ -27,11 +27,11 @@ class FusionEditorWindow : IImGuiWindow
 
     public FusionEditorWindow()
     {
-        EditorWindow.OnIsoLoaded += OnIsoLoaded;
+        EditorWindow.OnIsoLoaded += HandleIsoLoaded;
 
     }
 
-    public void OnIsoLoaded()
+    public void HandleIsoLoaded()
     {
         AllFusionData = FusionData.FusionTableData.ToList();
         currentDeck = Deck.DeckList[currentDeckListIndex];

@@ -11,6 +11,7 @@ public class Card
     public const int MonsterCardEndIndex = 682;
 
     public static ModdedStringName[] cardNameList;
+    
     static string[] currentCardNameCache;
     static string[] defaultCardNameCache;
 

@@ -42,7 +42,7 @@ public class EditorWindow
     CardEditorWindow _cardEditorWindow;
     GameplayPatchesWindow _gameplayPatchesWindow;
     FusionEditorWindow _fusionEditorWindow;
-    MiscEditorWindow _miscEditorWindow;
+    ImageEditorWindow _imageEditorWindow;
     RandomiserWindow _randomiserWindow;
     MusicEditorWindow _musicEditorWindow;
     StringEditorWindow _stringEditorWindow;
@@ -86,9 +86,11 @@ public class EditorWindow
             _musicEditorWindow = new MusicEditorWindow();
         }
         _fusionEditorWindow = new FusionEditorWindow();
+        
         _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+        _imageEditorWindow = new ImageEditorWindow();
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
         //IS here so you can open an iso before the updater gives you a result
@@ -149,11 +151,12 @@ public class EditorWindow
     }
 
     public Dictionary<EditorContentMode, string> ButtonModeTable = new Dictionary<EditorContentMode, string>() {
-        { EditorContentMode.EnemyEditor, "Deck & Map Editor" },
+        { EditorContentMode.EnemyEditor, "General Editor" },
         { EditorContentMode.CardEditor, "Card Editor" },
         { EditorContentMode.FusionEditor, "Fusion Editor" },
         { EditorContentMode.Patches, "Patches" },
         { EditorContentMode.StringEditor, "String Editor" },
+        { EditorContentMode.Misc, "Preloaded Images" },
         { EditorContentMode.MusicEditor, "Music Editor" },
         { EditorContentMode.Randomiser, "Randomiser" },
     };
@@ -838,7 +841,7 @@ public class EditorWindow
                 _stringEditorWindow.Render();
                 break;
             case EditorContentMode.Misc:
-                _miscEditorWindow.Render();
+                _imageEditorWindow.Render();
                 break;
             case EditorContentMode.Randomiser:
                 _randomiserWindow.Render();
@@ -907,7 +910,7 @@ public class EditorWindow
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
-
+        
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _musicEditorWindow.SaveMusicChanges();
@@ -918,8 +921,10 @@ public class EditorWindow
         dataAccess.SaveDeckLeaderThresholds();
         dataAccess.SaveEnemyAiData(Enemies.AiBytes);
         dataAccess.SaveEnchantData();
-        _fusionEditorWindow.SaveFusionChanges();
+        dataAccess.SaveDestinyDrawCards();
+        dataAccess.SaveImageData();
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
+        _fusionEditorWindow.SaveFusionChanges();
         UserSettings.SaveSettings();
 
         if (UserSettings.AutoChangelog)
@@ -982,6 +987,7 @@ public class EditorWindow
         CardConstant.LoadFromBytes(dataAccess.LoadCardConstantData());
         dataAccess.LoadEnemyAIData();
         dataAccess.LoadDecksData();
+        dataAccess.LoadDestinyDrawCards();
         _enemyEditorWindow.MapEditorWindow.LoadMapData();
         _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
         _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
@@ -996,6 +1002,7 @@ public class EditorWindow
         dataAccess.LoadLeaderThresholdData();
         dataAccess.LoadFusionData();
         dataAccess.LoadEnchantData();
+        dataAccess.LoadImageData();
         Map.Initialise();
         OnIsoLoaded?.Invoke();
         StringEditor.ReloadStrings();

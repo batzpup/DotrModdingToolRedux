@@ -59,7 +59,7 @@ class Program
                 if (Raylib.IsWindowFullscreen())
                 {
                    Raylib.SetWindowSize(screenWidth, screenHeight);
-                    //Raylib.SetWindowSize(1920, 1080);
+                    //Raylib.SetWindowSize(1920, 1080); 
                 }
                 else
                 {

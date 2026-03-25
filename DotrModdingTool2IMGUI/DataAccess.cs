@@ -55,12 +55,18 @@ public class DataAccess
     public const int EnchantScoresOffset = 0x29D512 - IsoSlusRamOffset;
     public const int EnchantScoresSize = 2;
 
+    public const int DestinyCardsOffset = 0x002b8706 - IsoSlusRamOffset;
+    public const int DestinyPoolCount = 7;
+    public const int DestinyPoolSize = 6;
+
     public const int PicPackSize = 0x4410;
 
     public const int PictureSize = 0x4800;
 
-    //These is not on the slus
-    public const int PickPackOffset = 0xe9b800;
+    public const int PictureIsoOffset = 0x1250800;
+    public const int PickPackIsoOffset = 0xe9b800;
+
+
     public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
 
@@ -90,11 +96,11 @@ public class DataAccess
     public static int ToRamOffset(int offset) => offset + 0x2FF00;
     public static int ToIsoOffset(int ramAddress) => ramAddress - 0x2FF00;
 
-    public static DataAccess Instance 
+    public static DataAccess Instance
     {
         get
         {
-            
+
             if (instance == null)
             {
                 instance = new DataAccess();
@@ -108,7 +114,8 @@ public class DataAccess
     {
     }
 
-    public void SaveMaps() {
+    public void SaveMaps()
+    {
 
         if (maps[0] == null)
         {
@@ -577,6 +584,7 @@ public class DataAccess
             fileStream.Read(buffer, 0, buffer.Length);
         }
 
+
         return buffer;
     }
 
@@ -604,6 +612,41 @@ public class DataAccess
                 fileStream.Write(TreasureCards.Instance.Treasures[i].Bytes, 0, TreasureCardByteSize);
             }
             fileStream.Flush();
+        }
+    }
+
+    public void LoadDestinyDrawCards()
+    {
+
+        byte[] buffer = new byte[DestinyPoolSize * DestinyPoolCount];
+
+        lock (FileStreamLock)
+        {
+            fileStream.Seek(DestinyCardsOffset, SeekOrigin.Begin);
+            fileStream.Read(buffer, 0, buffer.Length);
+        }
+        for (int i = 0; i < DestinyPoolCount; i++)
+        {
+            int byteOffset = i * DestinyPoolSize;
+            ushort[] ushorts = new ushort[DestinyPoolSize / 2];
+            Buffer.BlockCopy(buffer, byteOffset, ushorts, 0, DestinyPoolSize);
+            DestinyDrawData.DestinyCardPools[i] = Array.ConvertAll(ushorts, x => (int)x);
+        }
+    }
+
+    public void SaveDestinyDrawCards()
+    {
+        for (var i = 0; i < DestinyDrawData.DestinyCardPools.Length; i++)
+        {
+            lock (FileStreamLock)
+            {
+                int writeOffset = DestinyCardsOffset + (i * DestinyPoolSize);
+                byte[] buffer = new byte[DestinyPoolSize];
+                ushort[] ushorts = Array.ConvertAll(DestinyDrawData.DestinyCardPools[i], x => (ushort)x);
+                Buffer.BlockCopy(ushorts, 0, buffer, 0, buffer.Length);
+                fileStream.Seek(writeOffset, SeekOrigin.Begin);
+                fileStream.Write(buffer, 0, buffer.Length);
+            }
         }
     }
 
@@ -702,75 +745,68 @@ public class DataAccess
         {
             lock (FileStreamLock)
             {
-                fileStream.Seek(PickPackOffset + PicPackIndex * PicPackSize, SeekOrigin.Begin);
+                fileStream.Seek(PickPackIsoOffset + PicPackIndex * PicPackSize, SeekOrigin.Begin);
                 fileStream.Write(PreLoadImageEditor.ConvertPictureToPicPack(picture), 0, PicPackSize);
                 fileStream.Flush();
             }
         }
     }
 
-    public static void LoadImageData()
+    public void LoadImageData()
     {
         lock (FileStreamLock)
         {
-            CDReader isoFile = new CDReader(fileStream, true);
-            // Get the file from inside the ISO
-            PreLoadImageEditor.fileEntries = isoFile.GetFiles($"Data");
-            if (PreLoadImageEditor.fileEntries == null)
+            fileStream.Seek(PictureIsoOffset, SeekOrigin.Begin);
+            for (int i = 0; i < 871; i++)
             {
-                return;
+                byte[] picture = new byte[PictureSize];
+                fileStream.ReadExactly(picture, 0, PictureSize);
+                PreLoadImageEditor.CardArtBytes[i] = picture;
             }
-            foreach (var file in PreLoadImageEditor.fileEntries)
+
+            fileStream.Seek(PickPackIsoOffset, SeekOrigin.Begin);
+            for (int i = 0; i < 223; i++)
             {
-
-                if (file == "Data\\PICTURE.MRG;1")
-                {
-
-                    var data = isoFile.OpenFile(file, FileMode.Open);
-                    for (int i = 0; i < 871; i++)
-                    {
-                        byte[] picture = new byte[PictureSize];
-                        data.ReadExactly(picture, 0, PictureSize);
-                        PreLoadImageEditor.CardArtBytes[i] = picture;
-                        CreateImageFromBytes(picture);
-                    }
-                }
-                else if (file == "Data\\PICPACK.MRG;1")
-                {
-
-                    var data = isoFile.OpenFile(file, FileMode.Open);
-                    for (int i = 0; i < 223; i++)
-                    {
-                        byte[] picture = new byte[PicPackSize];
-
-                        data.ReadExactly(picture, 0, PicPackSize);
-                        PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
-
-                    }
-                }
+                byte[] picture = new byte[PicPackSize];
+                fileStream.ReadExactly(picture, 0, PicPackSize);
+                PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
+                PreLoadImageEditor.Images.TryAdd(i, PreLoadImageEditor.GetPicNumber(PreLoadImageEditor.PreloadCardArtBytes[i]));
             }
+            //var sw = Stopwatch.StartNew();
+
+            ImageCreator.CreateImageFromBytes(PreLoadImageEditor.CardArtBytes[0], Path.Combine(Directory.GetCurrentDirectory(), "blue-eyes.png"));
+
+            //sw.Stop();
+            //Console.WriteLine($"Took {sw.ElapsedMilliseconds}ms");
         }
     }
 
-    static void CreateImageFromBytes(byte[] picture)
-    {
 
-    }
-
-    public void SavePreloadImages(Dictionary<int, int> images)
+    public void SaveImageData()
     {
         if (fileStream != null)
         {
             lock (FileStreamLock)
             {
-                for (int i = 0; i < images.Count; i++)
+                PreLoadImageEditor.CardArtBytes[0]=ImageSaver.SaveImageToBytes(PreLoadImageEditor.CardArtBytes[0], Path.Combine(Directory.GetCurrentDirectory(), "canvas_export.png"));
+                ImageCreator.CreateImageFromBytes(PreLoadImageEditor.CardArtBytes[0],Path.Combine(Directory.GetCurrentDirectory(), "TestResult.png"));
+                fileStream.Seek(PictureIsoOffset, SeekOrigin.Begin);
+                for (int i = 0; i < 871; i++)
                 {
-                    if (images[i] == -1)
+                    fileStream.Seek(PictureIsoOffset + i * 0x4800, SeekOrigin.Begin);
+                    byte[] picture = PreLoadImageEditor.CardArtBytes[i];
+                    fileStream.Write(picture, 0, PictureSize);
+
+                }
+
+                for (int i = 0; i < PreLoadImageEditor.Images.Count; i++)
+                {
+                    if (PreLoadImageEditor.Images[i] == -1)
                     {
                         continue;
                     }
-                    WritePicPackImage(images[i], i);
-                    byte[] bytes = BitConverter.GetBytes((ushort)images[i]);
+                    WritePicPackImage(PreLoadImageEditor.Images[i], i);
+                    byte[] bytes = BitConverter.GetBytes((ushort)PreLoadImageEditor.Images[i]);
                     lock (FileStreamLock)
                     {
                         fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
@@ -780,10 +816,5 @@ public class DataAccess
                 }
             }
         }
-    }
-
-    public void ApplyPatches()
-    {
-
     }
 }

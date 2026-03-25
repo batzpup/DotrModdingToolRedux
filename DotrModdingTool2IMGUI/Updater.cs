@@ -14,7 +14,7 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    public static readonly string currentVersion = "v1.2.7-beta";
+    public static readonly string currentVersion = "v1.2.9-beta";
 
     // Platform-aware executable names
     static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);

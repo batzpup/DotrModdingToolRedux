@@ -8,6 +8,7 @@ public static class ChangelogManager
     public static ModSnapshot NewSnapshot;
 
     static DeckDiffChecker Decks = new DeckDiffChecker();
+    static AiDiffChecker Ai = new AiDiffChecker();
     static CardDataDiffChecker CardData = new CardDataDiffChecker();
     static MapDiffChecker Maps = new MapDiffChecker();
     static FusionDiffChecker Fusions = new FusionDiffChecker();
@@ -49,6 +50,7 @@ public static class ChangelogManager
     {
         var results = new List<DiffResult>();
         results.Add(Decks.CompareSnapshots(OldSnapshot.DeckSnapshot, NewSnapshot.DeckSnapshot));
+        results.Add(Ai.CompareSnapshots(OldSnapshot.AiSnapshot,NewSnapshot.AiSnapshot));
         results.Add(CardData.CompareSnapshots(OldSnapshot.CardConstantSnapshot, NewSnapshot.CardConstantSnapshot));
         results.Add(Maps.CompareSnapshots(OldSnapshot.MapSnapshot, NewSnapshot.MapSnapshot));
         results.Add(CustomPatches.CompareSnapshots(OldSnapshot.CustomPatchSnapshot, NewSnapshot.CustomPatchSnapshot));
@@ -98,7 +100,7 @@ public class ModSnapshot
     public CardConstSnapshot CardConstantSnapshot;
     public MapSnapshot MapSnapshot;
     public FusionSnapshot FusionSnapshot;
-
+    public AiSnapshot AiSnapshot;
     public CustomPatchSnapshot CustomPatchSnapshot;
 
     public StringSnapshot StringSnapshot;
@@ -115,9 +117,9 @@ public class ModSnapshot
         MapSnapshot = new MapSnapshot(DataAccess.Instance.maps);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-             MusicSnapshot = new MusicSnapshot(MusicEditorWindow.Instance.DuelistMusic, MusicEditorWindow.MusicTargets);
+            MusicSnapshot = new MusicSnapshot(MusicEditorWindow.Instance.DuelistMusic, MusicEditorWindow.MusicTargets);
         }
-       
+        AiSnapshot = new AiSnapshot();
         StringSnapshot = new StringSnapshot(StringEditor.StringTable.Values.ToList());
     }
 }
