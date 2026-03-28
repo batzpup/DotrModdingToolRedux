@@ -1,8 +1,7 @@
 # DotrModdingToolRedux
 
 A new and improved set of modding tools for Yu-Gi-Oh! The Duelists of the Roses NTSC-U / USA.
-This should be cross platform but requires .NET 8 (updater is not cross platform yet)
-
+This should be cross platform but requires .NET 8
 ## Credits
 Wouldnt be possible without:  
 [Blayr](https://github.com/Blayr) the creator of the [original modding tool](https://github.com/Blayr/DOTR-Modding-Tool)  
