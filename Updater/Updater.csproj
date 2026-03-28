@@ -9,6 +9,11 @@
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <DebugSymbols>false</DebugSymbols>
+      <DebugType>full</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DebugType>none</DebugType>
     </PropertyGroup>
 
 </Project>

@@ -59,13 +59,20 @@ public class DataAccess
     public const int DestinyPoolCount = 7;
     public const int DestinyPoolSize = 6;
 
-    public const int PicPackSize = 0x4410;
-
-    public const int PictureSize = 0x4800;
-
+    
     public const int PictureIsoOffset = 0x1250800;
-    public const int PickPackIsoOffset = 0xe9b800;
-
+    public const int PictureSize = 0x4800;
+    public const int PictureCount = 871;
+    
+    public const int PicPackIsoOffset = 0xe9b800;
+    public const int PicPackSize = 0x4410;
+    public const int PicPackCount = 223;
+    
+    
+    
+    public const int PicMiniOffset = 0xBE0800;
+    public const int PicMiniSize = 0x1000;
+    public const int PicMiniCount = 699;
 
     public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
@@ -702,51 +709,16 @@ public class DataAccess
         }
     }
 
-    public void ModifyMrgFile(string mrgPath)
-    {
-        try
-        {
-            string directoryPath = Path.GetDirectoryName(mrgPath);
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            using (FileStream fs = new FileStream(mrgPath, FileMode.Create, FileAccess.Write))
-            {
-                for (int i = 0; i < 871; i++)
-                {
-                    byte[] picture = PreLoadImageEditor.CardArtBytes[i];
-                    if (picture.Length == PictureSize)
-                    {
-                        lock (FileStreamLock)
-                        {
-                            fs.Seek(i * PicPackSize, SeekOrigin.Begin);
-                            fs.Write(PreLoadImageEditor.ConvertPictureToPicPack(picture), 0, PicPackSize);
-                        }
-                    }
-                    else
-                    {
-                        //MessageBox.Show($"Card: #{i}'s picture length is not 0x4800");
-                    }
-                }
-            }
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            //   MessageBox.Show("Access to the path is denied. Details: " + ex.Message);
-        }
-    }
 
     public void WritePicPackImage(int CardArtIndex, int PicPackIndex)
     {
-        byte[] picture = PreLoadImageEditor.CardArtBytes[CardArtIndex];
+        byte[] picture = GameImageManager.PictureBytes[CardArtIndex];
         if (picture.Length == PictureSize)
         {
             lock (FileStreamLock)
             {
-                fileStream.Seek(PickPackIsoOffset + PicPackIndex * PicPackSize, SeekOrigin.Begin);
-                fileStream.Write(PreLoadImageEditor.ConvertPictureToPicPack(picture), 0, PicPackSize);
+                fileStream.Seek(PicPackIsoOffset + PicPackIndex * PicPackSize, SeekOrigin.Begin);
+                fileStream.Write(GameImageManager.ConvertPictureToPicPack(picture), 0, PicPackSize);
                 fileStream.Flush();
             }
         }
@@ -757,27 +729,31 @@ public class DataAccess
         lock (FileStreamLock)
         {
             fileStream.Seek(PictureIsoOffset, SeekOrigin.Begin);
-            for (int i = 0; i < 871; i++)
+            for (int i = 0; i < PictureCount; i++)
             {
                 byte[] picture = new byte[PictureSize];
                 fileStream.ReadExactly(picture, 0, PictureSize);
-                PreLoadImageEditor.CardArtBytes[i] = picture;
+                GameImageManager.PictureBytes[i] = picture;
             }
 
-            fileStream.Seek(PickPackIsoOffset, SeekOrigin.Begin);
-            for (int i = 0; i < 223; i++)
+            fileStream.Seek(PicPackIsoOffset, SeekOrigin.Begin);
+            for (int i = 0; i < PicPackCount; i++)
             {
                 byte[] picture = new byte[PicPackSize];
                 fileStream.ReadExactly(picture, 0, PicPackSize);
-                PreLoadImageEditor.PreloadCardArtBytes[i] = picture;
-                PreLoadImageEditor.Images.TryAdd(i, PreLoadImageEditor.GetPicNumber(PreLoadImageEditor.PreloadCardArtBytes[i]));
+                GameImageManager.PicPackBytes[i] = picture;
+                GameImageManager.PicPackImages.TryAdd(i, GameImageManager.GetPicNumber(GameImageManager.PicPackBytes[i]));
             }
-            //var sw = Stopwatch.StartNew();
+            fileStream.Seek(PicMiniOffset, SeekOrigin.Begin);
+            for (int i = 0; i < PicMiniCount; i++)
+            {
+                byte[] picture = new byte[PicMiniSize];
+                fileStream.ReadExactly(picture, 0, PicMiniSize);
+                GameImageManager.PicMiniBytes[i] = picture;
+            }
+            ImageCreator.CreateImageFromBytes(GameImageManager.PictureBytes[0], ImageMrgFile.Picture, Path.Combine(Directory.GetCurrentDirectory(), ""), false);
 
-            ImageCreator.CreateImageFromBytes(PreLoadImageEditor.CardArtBytes[0], Path.Combine(Directory.GetCurrentDirectory(), "blue-eyes.png"));
 
-            //sw.Stop();
-            //Console.WriteLine($"Took {sw.ElapsedMilliseconds}ms");
         }
     }
 
@@ -788,31 +764,37 @@ public class DataAccess
         {
             lock (FileStreamLock)
             {
-                PreLoadImageEditor.CardArtBytes[0]=ImageSaver.SaveImageToBytes(PreLoadImageEditor.CardArtBytes[0], Path.Combine(Directory.GetCurrentDirectory(), "canvas_export.png"));
-                ImageCreator.CreateImageFromBytes(PreLoadImageEditor.CardArtBytes[0],Path.Combine(Directory.GetCurrentDirectory(), "TestResult.png"));
-                fileStream.Seek(PictureIsoOffset, SeekOrigin.Begin);
-                for (int i = 0; i < 871; i++)
+                
+                for (int i = 0; i < PictureCount; i++)
                 {
-                    fileStream.Seek(PictureIsoOffset + i * 0x4800, SeekOrigin.Begin);
-                    byte[] picture = PreLoadImageEditor.CardArtBytes[i];
+                    fileStream.Seek(PictureIsoOffset + i * PictureSize, SeekOrigin.Begin);
+                    byte[] picture = GameImageManager.PictureBytes[i];
                     fileStream.Write(picture, 0, PictureSize);
-
+                    fileStream.Flush();
                 }
 
-                for (int i = 0; i < PreLoadImageEditor.Images.Count; i++)
+                for (int i = 0; i < GameImageManager.PicPackImages.Count; i++)
                 {
-                    if (PreLoadImageEditor.Images[i] == -1)
+                    if (GameImageManager.PicPackImages[i] == -1)
                     {
                         continue;
                     }
-                    WritePicPackImage(PreLoadImageEditor.Images[i], i);
-                    byte[] bytes = BitConverter.GetBytes((ushort)PreLoadImageEditor.Images[i]);
+                    WritePicPackImage(GameImageManager.PicPackImages[i], i);
+                    byte[] bytes = BitConverter.GetBytes((ushort)GameImageManager.PicPackImages[i]);
                     lock (FileStreamLock)
                     {
                         fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
                         fileStream.Write(bytes, 0, 2);
                         fileStream.Flush();
                     }
+                }
+                
+                for (int i = 0; i < PicMiniCount; i++)
+                {
+                    fileStream.Seek(PicMiniOffset + i * PicMiniSize, SeekOrigin.Begin);
+                    byte[] picture = GameImageManager.PicMiniBytes[i];
+                    fileStream.Write(picture, 0, PicMiniSize);
+                    fileStream.Flush();
                 }
             }
         }

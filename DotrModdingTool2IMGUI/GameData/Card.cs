@@ -11,10 +11,29 @@ public class Card
     public const int MonsterCardEndIndex = 682;
 
     public static ModdedStringName[] cardNameList;
-    
+
     static string[] currentCardNameCache;
     static string[] defaultCardNameCache;
 
+    public static readonly List<ModdedStringName> AltArtNames = new List<ModdedStringName> {
+        new ModdedStringName("AA Blue-Eyes White Dragon", "AA Blue-Eyes White Dragon"),
+        new ModdedStringName("AA Flame Swordsman", "AA Flame Swordsman"),
+        new ModdedStringName("AA Summoned Skull", "AA Summoned Skull"),
+        new ModdedStringName("AA Dark Magician", "AA Dark Magician"),
+        new ModdedStringName("AA Gaia The Fierce Knight", "AA Gaia The Fierce Knight"),
+        new ModdedStringName("AA Celtic Guardian", "AA Celtic Guardian"),
+        new ModdedStringName("AA Kuriboh", "AA Kuriboh"),
+        new ModdedStringName("AA Tiger Axe", "AA Tiger Axe"),
+        new ModdedStringName("AA Thousand Dragon", "AA Thousand Dragon"),
+        new ModdedStringName("AA Red Eyes Black Dragon 1", "AA Red Eyes Black Dragon 1"),
+        new ModdedStringName("AA Red Eyes Black Dragon 2", "AA Red Eyes Black Dragon 2"),
+        new ModdedStringName("AA Blue-Eyes Ultimate Dragon", "AA Blue-Eyes Ultimate Dragon"),
+        new ModdedStringName("AA Pendulum Machine", "AA Pendulum Machine"),
+        new ModdedStringName("AA Launcher Spider", "AA Launcher Spider"),
+        new ModdedStringName("AA Gemini Elf", "AA Gemini Elf"),
+        new ModdedStringName("AA The Unhappy Maiden", "AA The Unhappy Maiden"),
+        new ModdedStringName("AA Crush Card", "AA Crush Card"), // Picture only
+    };
 
     static Card()
     {
@@ -49,7 +68,7 @@ public class Card
     {
         for (int i = 0; i < Card.cardNameList.Length; i++)
         {
-            Card.cardNameList[i].Edited =StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart];
+            Card.cardNameList[i].Edited = StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart];
         }
         RebuildStringCache();
 

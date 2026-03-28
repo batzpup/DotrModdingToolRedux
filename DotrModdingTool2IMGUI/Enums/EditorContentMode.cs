@@ -7,7 +7,7 @@ public enum EditorContentMode
     FusionEditor,
     Patches,
     MusicEditor,
-    Misc,
+    ImageEditor,
     Randomiser,
     StringEditor,
 }

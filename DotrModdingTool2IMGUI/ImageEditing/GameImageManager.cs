@@ -1,15 +1,20 @@
 using System.Reflection;
+using SkiaSharp;
 namespace DotrModdingTool2IMGUI;
 
-public static class PreLoadImageEditor
+public static class GameImageManager
 {
-    public static byte[][] CardArtBytes = new byte[871][];
-    public static byte[][] PreloadCardArtBytes = new byte[223][];
-    public static Dictionary<int, int> Images = new Dictionary<int, int>();
+    public static byte[][] PictureBytes = new byte[871][];
+    public static byte[][] PicPackBytes = new byte[223][];
+    public static byte[][] PicMiniBytes = new byte[699][];
+
+    public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
     public static ModdedStringName[] PreloadDefaultImageNameList;
+    public static GameTexture CurrentTexture = new();
+    
 
 
-    static PreLoadImageEditor()
+    static GameImageManager()
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
         string resourceName = $"{assembly.GetName().Name}.GameData.DefaultPreloadNames.txt";
@@ -29,7 +34,7 @@ public static class PreLoadImageEditor
                     var name = defaultNameList[index];
                     PreloadDefaultImageNameList[index] = new ModdedStringName(name, name);
                 }
-                
+
             }
         }
     }
@@ -44,7 +49,7 @@ public static class PreLoadImageEditor
     {
         for (int i = 0; i < 871; i++)
         {
-            byte[] bytes = ConvertPictureToPicPack(CardArtBytes[i]);
+            byte[] bytes = ConvertPictureToPicPack(PictureBytes[i]);
             if (ByteArraysEqual(PicPackBytes, bytes))
             {
                 return i;
@@ -65,4 +70,33 @@ public static class PreLoadImageEditor
         Array.Copy(picture, pictureBytes, DataAccess.PicPackSize);
         return pictureBytes;
     }
+}
+
+public class GameTexture
+{
+    public SKBitmap Bitmap = new SKBitmap();
+    public uint[] Palette = Array.Empty<uint>();
+    public ImageMetaData MetaData;
+}
+
+public struct ImageMetaData
+{
+    //Infile
+    public int TotalImageSize;
+    public int HeaderSize;
+    public int PalleteSize;
+    public int PalleteSize2;
+    public int Width;
+    public int Height;
+    public int NumberOfSections;
+    public int Padding;
+
+
+    //Derived
+    public int StartOfImage;
+    public int PalleteOffset;
+
+    public static Dictionary<ImageMrgFile, ImageMetaData> KnownMetaData = new() {
+
+    };
 }

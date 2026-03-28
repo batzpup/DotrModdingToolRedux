@@ -156,7 +156,7 @@ public class EditorWindow
         { EditorContentMode.FusionEditor, "Fusion Editor" },
         { EditorContentMode.Patches, "Patches" },
         { EditorContentMode.StringEditor, "String Editor" },
-        { EditorContentMode.Misc, "Preloaded Images" },
+        { EditorContentMode.ImageEditor, "Image Editor" },
         { EditorContentMode.MusicEditor, "Music Editor" },
         { EditorContentMode.Randomiser, "Randomiser" },
     };
@@ -840,7 +840,7 @@ public class EditorWindow
             case EditorContentMode.StringEditor:
                 _stringEditorWindow.Render();
                 break;
-            case EditorContentMode.Misc:
+            case EditorContentMode.ImageEditor:
                 _imageEditorWindow.Render();
                 break;
             case EditorContentMode.Randomiser:
