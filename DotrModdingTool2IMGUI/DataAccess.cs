@@ -59,20 +59,46 @@ public class DataAccess
     public const int DestinyPoolCount = 7;
     public const int DestinyPoolSize = 6;
 
-    
+
     public const int PictureIsoOffset = 0x1250800;
     public const int PictureSize = 0x4800;
     public const int PictureCount = 871;
-    
+
     public const int PicPackIsoOffset = 0xe9b800;
     public const int PicPackSize = 0x4410;
     public const int PicPackCount = 223;
-    
-    
-    
+
+
     public const int PicMiniOffset = 0xBE0800;
     public const int PicMiniSize = 0x1000;
     public const int PicMiniCount = 699;
+
+    public const int NonMonsterModelTextureOffset = 0x6B96000;
+    public const int NonMonsterModelTextureCount = 625;
+    public const int NonMonsterModelTexturesSize = 0x19B3800;
+
+
+    public const int TexEtcOffset = 0xB36000;
+    public const int TexEtcSize = 0xAA800;
+    public const int TexEtcCount = 5;
+
+
+    public const int TexEffOffset = 0x508000;
+    public const int TexEffSize = 0x44800;
+    public const int TexEffCount = 15;
+
+    public const int TexAnmOffset = 0x54C800;
+    public const int TexAnmSize = 0x16A800;
+    public const int TexAnmCount = 22;
+
+    public const int TexEveOffset = 0x6B7000;
+    public const int TexEveSize = 0x47F000;
+    public const int TexEveCount = 27;
+
+    public const int TexSysOffset = 0x3E9800;
+    public const int TexSysSize = 0x11E800;
+    public const int TexSysCount = 8;
+
 
     public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
@@ -98,6 +124,7 @@ public class DataAccess
 
     public string currentIsoPath;
     public string CurrentHash = String.Empty;
+
     public const string VanillaHash = "ca838dae26ff750936c0814d1c2d33f1";
 
     public static int ToRamOffset(int offset) => offset + 0x2FF00;
@@ -751,10 +778,68 @@ public class DataAccess
                 fileStream.ReadExactly(picture, 0, PicMiniSize);
                 GameImageManager.PicMiniBytes[i] = picture;
             }
+
+
+
+            LoadGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
+            LoadGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
+            LoadGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
+            LoadGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
+            LoadGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
+            LoadGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
+
             ImageCreator.CreateImageFromBytes(GameImageManager.PictureBytes[0], ImageMrgFile.Picture, Path.Combine(Directory.GetCurrentDirectory(), ""), false);
 
 
         }
+    }
+
+    void LoadGenericTextureData(int size, int offset, int count, byte[][] targetArray)
+    {
+        byte[] fileData = new byte[size];
+        fileStream.Seek(offset, SeekOrigin.Begin);
+        fileStream.ReadExactly(fileData, 0, size);
+
+        int imagesLoaded = 0;
+
+        for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+        {
+            if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
+
+            int imageSize = BitConverter.ToInt32(fileData, i + 8);
+            if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+
+            targetArray[imagesLoaded] = new byte[imageSize];
+            Buffer.BlockCopy(fileData, i, targetArray[imagesLoaded], 0, imageSize);
+
+            i += imageSize - 1;
+            if (++imagesLoaded >= count) break;
+        }
+    }
+
+    void SaveGenericTextureData(int size, int offset, int count, byte[][] sourceArray)
+    {
+        byte[] fileData = new byte[size];
+        fileStream.Seek(offset, SeekOrigin.Begin);
+        fileStream.ReadExactly(fileData, 0, size);
+
+        int imageIndex = 0;
+
+        for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+        {
+            if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
+
+            int imageSize = BitConverter.ToInt32(fileData, i + 8);
+            if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+
+            Buffer.BlockCopy(sourceArray[imageIndex], 0, fileData, i, imageSize);
+
+            i += imageSize - 1;
+            if (++imageIndex >= count) break;
+        }
+
+        fileStream.Seek(offset, SeekOrigin.Begin);
+        fileStream.Write(fileData, 0, size);
     }
 
 
@@ -764,7 +849,7 @@ public class DataAccess
         {
             lock (FileStreamLock)
             {
-                
+
                 for (int i = 0; i < PictureCount; i++)
                 {
                     fileStream.Seek(PictureIsoOffset + i * PictureSize, SeekOrigin.Begin);
@@ -788,7 +873,7 @@ public class DataAccess
                         fileStream.Flush();
                     }
                 }
-                
+
                 for (int i = 0; i < PicMiniCount; i++)
                 {
                     fileStream.Seek(PicMiniOffset + i * PicMiniSize, SeekOrigin.Begin);
@@ -796,6 +881,17 @@ public class DataAccess
                     fileStream.Write(picture, 0, PicMiniSize);
                     fileStream.Flush();
                 }
+
+                SaveGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
+                SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
+                SaveGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
+
+
+                SaveGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
+                SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
+                SaveGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
+                SaveGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
+
             }
         }
     }

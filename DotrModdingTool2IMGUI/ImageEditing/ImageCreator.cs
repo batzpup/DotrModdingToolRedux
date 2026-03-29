@@ -9,6 +9,52 @@ public static class ImageCreator
     public static readonly byte[] endOfSectionSig = { 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 
+    public static void CreateImageFromBytes(byte[] bytes, ImageMrgFile mrgFile, string outputPath, bool saveToPath)
+    {
+        ImageMetaData metaData = new ImageMetaData();
+        switch (mrgFile)
+        {
+
+            case ImageMrgFile.Picture:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.PicMini:
+                LoadPicMini(bytes, ref metaData);
+                break;
+            case ImageMrgFile.TexSys:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.Model:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.TexAnm:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.TexEff:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.TexEtc:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.TexEve:
+                LoadPicture(bytes, ref metaData);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mrgFile), mrgFile, null);
+        }
+
+
+        if (!saveToPath)
+        {
+            return;
+        }
+        using SKImage image = SKImage.FromBitmap(GameImageManager.CurrentTexture.Bitmap);
+        using SKData skData = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var stream = File.OpenWrite(outputPath);
+        skData.SaveTo(stream);
+
+    }
+
     public static List<SKColor> ExtractPalette()
     {
 
@@ -90,7 +136,7 @@ public static class ImageCreator
         GameImageManager.CurrentTexture.Palette = finalPalette;
     }
 
-    private static (byte R, byte G, byte B) FindNearestColor(
+    static (byte R, byte G, byte B) FindNearestColor(
         List<(byte R, byte G, byte B)> palette, byte r, byte g, byte b)
     {
         var best = palette[0];
@@ -248,76 +294,6 @@ public static class ImageCreator
         }
     }
 
-    public static void CreateImageFromBytes(byte[] bytes, ImageMrgFile mrgFile, string outputPath, bool saveToPath)
-    {
-        ImageMetaData metaData = new ImageMetaData();
-        switch (mrgFile)
-        {
-
-            case ImageMrgFile.Picture:
-                LoadPicture(bytes, ref metaData);
-                break;
-            case ImageMrgFile.PicMini:
-                LoadPicMini(bytes, ref metaData);
-                break;
-            case ImageMrgFile.TexSys:
-                break;
-            case ImageMrgFile.Model:
-                break;
-            case ImageMrgFile.TexAnm:
-                break;
-            case ImageMrgFile.TexEff:
-                break;
-            case ImageMrgFile.TexEtc:
-                break;
-            case ImageMrgFile.TexEve:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(mrgFile), mrgFile, null);
-        }
-
-
-        if (!saveToPath)
-        {
-            return;
-        }
-        using SKImage image = SKImage.FromBitmap(GameImageManager.CurrentTexture.Bitmap);
-        using SKData skData = image.Encode(SKEncodedImageFormat.Png, 100);
-        using var stream = File.OpenWrite(outputPath);
-        skData.SaveTo(stream);
-
-    }
-
-    static void LoadPicMini(byte[] bytes, ref ImageMetaData metaData)
-    {
-        metaData.TotalImageSize = 0x880;
-        metaData.Width = 40;
-        metaData.Height = 32;
-        metaData.NumberOfSections = 1;
-        metaData.PalleteOffset = 0x120;
-        metaData.StartOfImage = 0x380;
-
-        var (paletteOffset, paletteSize) = FindPaletteStartAndSize(bytes, metaData.TotalImageSize);
-        if (paletteOffset == -1) return;
-        metaData.PalleteOffset = paletteOffset;
-        metaData.PalleteSize = paletteSize;
-        if (!IsValidPalletSize(metaData.PalleteSize))
-        {
-            return;
-        }
-
-        GameImageManager.CurrentTexture.Palette = ReadPalette(bytes, paletteOffset, paletteSize);
-
-        GameImageManager.CurrentTexture.Bitmap?.Dispose();
-        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-        unsafe
-        {
-            uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
-            LoadPicMiniSection(bytes, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
-
-        }
-        GameImageManager.CurrentTexture.MetaData = metaData;
-    }
 
     unsafe static void LoadPicMiniSection(byte[] bytes, uint[] palette, uint* pixels, int startOfImage, int width, int height)
     {
@@ -361,10 +337,47 @@ public static class ImageCreator
         unsafe
         {
             uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
-            for (int i = 0; i < metaData.NumberOfSections - 1; i++)
+            if (metaData.Width <= 64)
             {
-                LoadImgSection(picture, GameImageManager.CurrentTexture.Palette, pixels, i, metaData.StartOfImage, partialImageSize, paletteSize, metaData.Width, metaData.Height);
+                LoadPicMiniSection(picture, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
             }
+            else
+            {
+                for (int i = 0; i < metaData.NumberOfSections - 1; i++)
+                {
+                    LoadImgSection(picture, GameImageManager.CurrentTexture.Palette, pixels, i, metaData.StartOfImage, partialImageSize, paletteSize, metaData.Width, metaData.Height);
+                }
+            }
+        }
+        GameImageManager.CurrentTexture.MetaData = metaData;
+    }
+
+    static void LoadPicMini(byte[] bytes, ref ImageMetaData metaData)
+    {
+        metaData.TotalImageSize = 0x880;
+        metaData.Width = 40;
+        metaData.Height = 32;
+        metaData.NumberOfSections = 1;
+        metaData.PalleteOffset = 0x120;
+        metaData.StartOfImage = 0x380;
+
+        var (paletteOffset, paletteSize) = FindPaletteStartAndSize(bytes, metaData.TotalImageSize);
+        if (paletteOffset == -1) return;
+        metaData.PalleteOffset = paletteOffset;
+        metaData.PalleteSize = paletteSize;
+        if (!IsValidPalletSize(metaData.PalleteSize))
+        {
+            return;
+        }
+
+        GameImageManager.CurrentTexture.Palette = ReadPalette(bytes, paletteOffset, paletteSize);
+
+        GameImageManager.CurrentTexture.Bitmap?.Dispose();
+        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        unsafe
+        {
+            uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
+            LoadPicMiniSection(bytes, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
 
         }
         GameImageManager.CurrentTexture.MetaData = metaData;
@@ -559,7 +572,6 @@ public static class ImageSaver
         if (paletteSize != 0x200 && paletteSize != 0x400) throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
 
         int startOfImage = paletteOffset + paletteSize + paddingSize;
-        int partialImageSize = GetPartialImageSize(originalData, totalImageSize, startOfImage, paddingSize);
         uint[] palette = ReadPalette(originalData, paletteOffset, paletteSize);
 
         SKBitmap src = LoadSourceBitmap(bitmap, pngPath, imageWidth, imageHeight);
@@ -571,20 +583,31 @@ public static class ImageSaver
         var colourCache = new Dictionary<uint, int>();
         byte[] output = (byte[])originalData.Clone();
 
-        for (int sec = 0; sec < numberOfSections - 1; sec++)
+        if (imageWidth <= 64)
         {
-            int sectionOffset = startOfImage + (partialImageSize + paddingSize) * sec;
-            var map = BuildSectionMap(sec, partialImageSize, imageWidth, imageHeight);
-
-            for (int i = 0; i < partialImageSize; i++)
+            int pixelCount = imageWidth * imageHeight;
+            for (int i = 0; i < pixelCount; i++)
             {
-                var (px, py) = map[i];
-                if (px == -1) continue;
-                //Not sure if nearest colour is still needed?
-                uint argb = pixels[px + py * imageWidth];
-                int nearestIdx = FindNearestPaletteIndex(argb, palette, colourCache);
-               
-                output[sectionOffset + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+                int nearestIdx = FindNearestPaletteIndex(pixels[i], palette, colourCache);
+                output[startOfImage + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+            }
+        }
+        else
+        {
+            int partialImageSize = GetPartialImageSize(originalData, totalImageSize, startOfImage, paddingSize);
+            for (int sec = 0; sec < numberOfSections - 1; sec++)
+            {
+                int sectionOffset = startOfImage + (partialImageSize + paddingSize) * sec;
+                var map = BuildSectionMap(sec, partialImageSize, imageWidth, imageHeight);
+
+                for (int i = 0; i < partialImageSize; i++)
+                {
+                    var (px, py) = map[i];
+                    if (px == -1) continue;
+                    uint argb = pixels[px + py * imageWidth];
+                    int nearestIdx = FindNearestPaletteIndex(argb, palette, colourCache);
+                    output[sectionOffset + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+                }
             }
         }
 
@@ -640,7 +663,7 @@ public static class ImageSaver
         {
             throw new InvalidDataException($"Image size {src.Width}x{src.Height} doesn't match target {expectedWidth}x{expectedHeight}.");
         }
-        
+
         return src;
     }
 

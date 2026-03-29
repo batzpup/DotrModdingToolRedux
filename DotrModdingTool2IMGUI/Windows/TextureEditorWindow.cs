@@ -11,11 +11,21 @@ public class TextureEditorWindow : IImGuiWindow
     float opacity = 1f;
     Vector4 brushColor = new(0, 0, 0, 1);
     bool wasPainting;
-    int currentPictureIndex;
-    int currentPicPackId;
-    int currentPicMiniId;
     int currentPalleteIndex = -1;
     List<SKColor> palette = new List<SKColor>();
+
+
+    int currentPictureIndex;
+    int currentPicPackIndex;
+    int currentPicMiniIndex;
+    int currentModelTexIndex;
+    int currentTexEtcIndex;
+    int currentTexSysIndex;
+    int currentTexAnmIndex;
+    int currentTexEffIndex;
+    int currentTexEveIndex;
+
+
     bool cropImageOnLoad;
     string cardSearch = String.Empty;
     ImageMrgFile currentMrgFile = ImageMrgFile.Picture;
@@ -41,11 +51,26 @@ public class TextureEditorWindow : IImGuiWindow
         switch (currentMrgFile)
         {
             case ImageMrgFile.Picture: return ref currentPictureIndex;
-            case ImageMrgFile.PicPack: return ref currentPicPackId;
-            case ImageMrgFile.PicMini: return ref currentPicMiniId;
-            // case ImageMrgFile.TexSys: return ref currentTexSysId;
+            case ImageMrgFile.PicPack: return ref currentPicPackIndex;
+            case ImageMrgFile.PicMini: return ref currentPicMiniIndex;
+            case ImageMrgFile.Model: return ref currentModelTexIndex;
+            case ImageMrgFile.TexEtc: return ref currentTexEtcIndex;
+            case ImageMrgFile.TexSys: return ref currentTexSysIndex;
+            case ImageMrgFile.TexAnm: return ref currentTexAnmIndex;
+            case ImageMrgFile.TexEff: return ref currentTexEffIndex;
+            case ImageMrgFile.TexEve: return ref currentTexEveIndex;
             default: return ref currentPictureIndex;
         }
+    }
+
+    ModdedStringName[] GetNumberedNames(string prefix, int count)
+    {
+        ModdedStringName[] names = new ModdedStringName[count];
+        for (int i = 0; i < count; i++)
+        {
+            names[i] = new ModdedStringName($"{prefix} {i}", $"{prefix} {i}");
+        }
+        return names;
     }
 
     void RefreshCurrentSource()
@@ -59,6 +84,30 @@ public class TextureEditorWindow : IImGuiWindow
             case ImageMrgFile.PicMini:
                 currentNameList = Card.cardNameList.Take(683).Concat(Card.AltArtNames.Take(16)).ToArray();
                 currentImageByteArray = GameImageManager.PicMiniBytes;
+                break;
+            case ImageMrgFile.Model:
+                currentNameList = GetNumberedNames("ModelTexture", 625);
+                currentImageByteArray = GameImageManager.ModelTextureBytes;
+                break;
+            case ImageMrgFile.TexEtc:
+                currentNameList = GetNumberedNames("TexEtc", DataAccess.TexEtcCount);
+                currentImageByteArray = GameImageManager.TexEtcBytes;
+                break;
+            case ImageMrgFile.TexSys:
+                currentNameList = GetNumberedNames("TexSys", DataAccess.TexSysCount);
+                currentImageByteArray = GameImageManager.TexSysBytes;
+                break;
+            case ImageMrgFile.TexAnm:
+                currentNameList = GetNumberedNames("TexAnm", DataAccess.TexAnmCount);
+                currentImageByteArray = GameImageManager.TexAnmBytes;
+                break;
+            case ImageMrgFile.TexEff:
+                currentNameList = GetNumberedNames("TexEff", DataAccess.TexEffCount);
+                currentImageByteArray = GameImageManager.TexEffBytes;
+                break;
+            case ImageMrgFile.TexEve:
+                currentNameList = GetNumberedNames("TexEve", DataAccess.TexEveCount);
+                currentImageByteArray = GameImageManager.TexEveBytes;
                 break;
             default:
                 currentNameList = Card.cardNameList;
@@ -274,7 +323,7 @@ public class TextureEditorWindow : IImGuiWindow
         {
             foreach (ImageMrgFile val in Enum.GetValues<ImageMrgFile>())
             {
-                if (val != ImageMrgFile.Picture && val != ImageMrgFile.PicMini)
+                if (val == ImageMrgFile.PicPack)
                 {
                     continue;
                 }

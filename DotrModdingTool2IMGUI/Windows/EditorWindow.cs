@@ -92,17 +92,17 @@ public class EditorWindow
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
         _imageEditorWindow = new ImageEditorWindow();
 
-        Updater.NeedsUpdate += HandleNeedsUpdate;
-        //IS here so you can open an iso before the updater gives you a result
-        Disabled = true;
-        _modalPopup.Show($"Checking for updates",
-            "Updater", null, ImGuiModalPopup.ShowType.NoButton);
-        Task.Run(async () =>
-        {
-            await Updater.CheckForUpdates(true);
-            Disabled = false;
-
-        });
+        //Updater.NeedsUpdate += HandleNeedsUpdate;
+        ////IS here so you can open an iso before the updater gives you a result
+        //Disabled = true;
+        //_modalPopup.Show($"Checking for updates",
+        //    "Updater", null, ImGuiModalPopup.ShowType.NoButton);
+        //Task.Run(async () =>
+        //{
+        //    await Updater.CheckForUpdates(true);
+        //    Disabled = false;
+//
+        //});
 
 
     }
