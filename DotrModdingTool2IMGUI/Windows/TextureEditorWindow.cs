@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text;
 using ImGuiNET;
 using SkiaSharp;
 namespace DotrModdingTool2IMGUI;
@@ -24,6 +25,7 @@ public class TextureEditorWindow : IImGuiWindow
     int currentTexAnmIndex;
     int currentTexEffIndex;
     int currentTexEveIndex;
+    int currentMonsterTexIndex;
 
 
     bool cropImageOnLoad;
@@ -39,6 +41,15 @@ public class TextureEditorWindow : IImGuiWindow
     SKPointI picMiniCropOrigin = new(0, 0);
     PaintCanvas? picMiniFullCanvas = null;
 
+    static readonly HashSet<ImageMrgFile> AllImagesLoadedOnly = new() {
+        ImageMrgFile.Model,
+        ImageMrgFile.TexEtc,
+        ImageMrgFile.TexSys,
+        ImageMrgFile.TexAnm,
+        ImageMrgFile.TexEff,
+        ImageMrgFile.TexEve,
+        ImageMrgFile.Monster,
+    };
 
     public TextureEditorWindow()
     {
@@ -48,6 +59,10 @@ public class TextureEditorWindow : IImGuiWindow
 
     ref int GetCurrentIndex()
     {
+        if (AllImagesLoadedOnly.Contains(currentMrgFile) && !DataAccess.Instance.AllImagesLoaded)
+        {
+            currentMrgFile = ImageMrgFile.Picture;
+        }
         switch (currentMrgFile)
         {
             case ImageMrgFile.Picture: return ref currentPictureIndex;
@@ -59,6 +74,7 @@ public class TextureEditorWindow : IImGuiWindow
             case ImageMrgFile.TexAnm: return ref currentTexAnmIndex;
             case ImageMrgFile.TexEff: return ref currentTexEffIndex;
             case ImageMrgFile.TexEve: return ref currentTexEveIndex;
+            case ImageMrgFile.Monster: return ref currentMonsterTexIndex;
             default: return ref currentPictureIndex;
         }
     }
@@ -75,6 +91,10 @@ public class TextureEditorWindow : IImGuiWindow
 
     void RefreshCurrentSource()
     {
+        if (AllImagesLoadedOnly.Contains(currentMrgFile) && !DataAccess.Instance.AllImagesLoaded)
+        {
+            currentMrgFile = ImageMrgFile.Picture;
+        }
         switch (currentMrgFile)
         {
             case ImageMrgFile.Picture:
@@ -109,6 +129,10 @@ public class TextureEditorWindow : IImGuiWindow
                 currentNameList = GetNumberedNames("TexEve", DataAccess.TexEveCount);
                 currentImageByteArray = GameImageManager.TexEveBytes;
                 break;
+            case ImageMrgFile.Monster:
+                currentNameList = GetNumberedNames("Monster", DataAccess.MonsterModelCount);
+                currentImageByteArray = GameImageManager.MonsterModelBytes;
+                break;
             default:
                 currentNameList = Card.cardNameList;
                 currentImageByteArray = GameImageManager.PictureBytes;
@@ -125,6 +149,13 @@ public class TextureEditorWindow : IImGuiWindow
         if (paintCanvas == null)
         {
             paintCanvas = new PaintCanvas(256, 256, SKColors.White);
+        }
+
+        if (!DataAccess.Instance.AllImagesLoaded && AllImagesLoadedOnly.Contains(currentMrgFile))
+        {
+            currentMrgFile = ImageMrgFile.Picture;
+            currentIndex = ref GetCurrentIndex();
+            RefreshCurrentSource();
         }
 
         bool isPicMini = currentMrgFile == ImageMrgFile.PicMini;
@@ -169,7 +200,7 @@ public class TextureEditorWindow : IImGuiWindow
                     (byte)(brushColor.W * 255));
 
                 GameImageManager.CurrentTexture.Palette[currentPalleteIndex] =
-                    (uint)(0xFF000000 | (newColour.Red << 16) | (newColour.Green << 8) | newColour.Blue);
+                    (uint)((newColour.Alpha << 24) | (newColour.Red << 16) | (newColour.Green << 8) | newColour.Blue);
 
                 ImageCreator.RemapColourInBitmap(paintCanvas.Bitmap, oldColour, newColour);
                 palette = ImageCreator.ExtractPalette();
@@ -185,16 +216,34 @@ public class TextureEditorWindow : IImGuiWindow
         ImGui.Spacing();
         ImGui.Spacing();
 
+        if (ImGui.Button("Load All Textures"))
+        {
+            currentMrgFile = ImageMrgFile.Picture;
+            RefreshCurrentSource();
+            GetCurrentIndex();
+            ImageCreator.CreateImageFromBytes(currentImageByteArray[currentIndex], currentMrgFile, "", false);
+            paintCanvas.LoadBitmap(GameImageManager.CurrentTexture.Bitmap);
+            paintCanvas.ClearStack();
+            palette = ImageCreator.ExtractPalette();
+            EditorWindow._modalPopup.Show($"Loading images in background make take a few seconds",
+                "Image Loader", null, ImGuiModalPopup.ShowType.OneButton);
+            Task.Run(async () =>
+            {
+                await DataAccess.Instance.LoadAllImages();
+                EditorWindow._modalPopup.Show($"Images Loaded",
+                    "Loader", null, ImGuiModalPopup.ShowType.OneButton);
 
+            });
+
+        }
 
 
         if (ImGui.Button("Save Pic Buffer"))
         {
-            if (paintCanvas == null || isPicMini && picMiniFullCanvas == null)
+            if (paintCanvas == null || picMiniCropMode && picMiniFullCanvas == null)
             {
                 return;
             }
-
             currentImageByteArray[currentIndex] = ImageSaver.SavePaletteToBytes(currentImageByteArray[currentIndex]);
             currentImageByteArray[currentIndex] = ImageSaver.SaveImageToBytes(currentImageByteArray[currentIndex], currentMrgFile, paintCanvas.Bitmap);
         }
@@ -327,9 +376,15 @@ public class TextureEditorWindow : IImGuiWindow
                 {
                     continue;
                 }
+                if (!DataAccess.Instance.AllImagesLoaded && AllImagesLoadedOnly.Contains(val))
+                {
+                    continue;
+                }
+
                 bool selected = val == currentMrgFile;
                 if (ImGui.Selectable(val.ToString(), selected))
                 {
+                    currentPalleteIndex = -1;
                     currentMrgFile = val;
                     picMiniCropMode = false;
                     cardSearch = "";
@@ -365,6 +420,7 @@ public class TextureEditorWindow : IImGuiWindow
                 bool selected = originalIndex == currentIndex;
                 if (ImGui.Selectable(name, selected))
                 {
+                    currentPalleteIndex = -1;
                     cardSearch = "";
                     currentIndex = originalIndex;
                     picMiniCropMode = false;
@@ -564,7 +620,7 @@ public class TextureEditorWindow : IImGuiWindow
                 picMiniCropOrigin.X = newX;
                 picMiniCropOrigin.Y = newY;
 
-                using var cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Premul);
+                using var cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul);
                 using var cropCanvas = new SKCanvas(cropped);
                 var srcRect = new SKRectI(picMiniCropOrigin.X, picMiniCropOrigin.Y,
                     picMiniCropOrigin.X + 40, picMiniCropOrigin.Y + 32);

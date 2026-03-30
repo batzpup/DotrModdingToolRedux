@@ -14,6 +14,7 @@ public static class GameImageManager
     public static byte[][] TexAnmBytes = new byte[DataAccess.TexAnmCount][];
     public static byte[][] TexEveBytes = new byte[DataAccess.TexEveCount][];
     public static byte[][] TexSysBytes = new byte[DataAccess.TexSysCount][];
+    public static byte[][] MonsterModelBytes = new byte[DataAccess.MonsterModelCount][];
 
     public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
     public static ModdedStringName[] PreloadDefaultImageNameList;
@@ -102,8 +103,5 @@ public struct ImageMetaData
     //Derived
     public int StartOfImage;
     public int PalleteOffset;
-
-    public static Dictionary<ImageMrgFile, ImageMetaData> KnownMetaData = new() {
-
-    };
+    
 }

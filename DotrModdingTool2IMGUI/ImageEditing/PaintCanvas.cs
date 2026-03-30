@@ -41,7 +41,7 @@ public class PaintCanvas
 
     public PaintCanvas(int width, int height, SKColor? background = null)
     {
-        Bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        Bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
         using var canvas = new SKCanvas(Bitmap);
         canvas.Clear(background ?? SKColors.White);
 

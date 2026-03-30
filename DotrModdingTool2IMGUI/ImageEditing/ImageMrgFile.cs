@@ -6,9 +6,10 @@ public enum ImageMrgFile
     PicPack,
     PicMini,
     TexSys,
-    Model,
     TexAnm,
     TexEff,
     TexEtc,
     TexEve,
+    Model,
+    Monster,
 }

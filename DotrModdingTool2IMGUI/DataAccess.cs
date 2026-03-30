@@ -99,6 +99,9 @@ public class DataAccess
     public const int TexSysSize = 0x11E800;
     public const int TexSysCount = 8;
 
+    public const int MonsterModelOffset = 0x8549800;
+    public const int MonsterModelSize = 0x2AB00000;
+    public const int MonsterModelCount = 5961;
 
     public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
@@ -124,6 +127,7 @@ public class DataAccess
 
     public string currentIsoPath;
     public string CurrentHash = String.Empty;
+    public bool AllImagesLoaded = false;
 
     public const string VanillaHash = "ca838dae26ff750936c0814d1c2d33f1";
 
@@ -178,7 +182,7 @@ public class DataAccess
     {
         CurrentHash = string.Empty;
 
-        lock (fileStream)
+        lock (FileStreamLock)
         {
             fileStream.Seek(0, SeekOrigin.Begin);
         }
@@ -194,7 +198,7 @@ public class DataAccess
     {
         CurrentHash = string.Empty;
 
-        lock (fileStream)
+        lock (FileStreamLock)
         {
             fileStream.Seek(0, SeekOrigin.Begin);
             var sw = Stopwatch.StartNew();
@@ -779,119 +783,148 @@ public class DataAccess
                 GameImageManager.PicMiniBytes[i] = picture;
             }
 
-
-
-            LoadGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
-            LoadGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
-            LoadGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
-            LoadGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
-            LoadGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
-            LoadGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
-
             ImageCreator.CreateImageFromBytes(GameImageManager.PictureBytes[0], ImageMrgFile.Picture, Path.Combine(Directory.GetCurrentDirectory(), ""), false);
 
 
         }
     }
 
-    void LoadGenericTextureData(int size, int offset, int count, byte[][] targetArray)
+    public async Task LoadAllImages()
     {
-        byte[] fileData = new byte[size];
-        fileStream.Seek(offset, SeekOrigin.Begin);
-        fileStream.ReadExactly(fileData, 0, size);
-
-        int imagesLoaded = 0;
-
-        for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+        AllImagesLoaded = false;
+        await Task.Run(() =>
         {
-            if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
+            LoadGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
+            LoadGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
+            LoadGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
+            LoadGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
+            LoadGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
+            LoadGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
+            LoadGenericTextureData(MonsterModelSize, MonsterModelOffset, MonsterModelCount, GameImageManager.MonsterModelBytes);
+        });
+        AllImagesLoaded = true;
+    }
 
-            int imageSize = BitConverter.ToInt32(fileData, i + 8);
-            if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+    public static void LoadGenericTextureData(int size, int offset, int count, byte[][] targetArray)
+    {
+        lock (FileStreamLock)
+        {
 
-            targetArray[imagesLoaded] = new byte[imageSize];
-            Buffer.BlockCopy(fileData, i, targetArray[imagesLoaded], 0, imageSize);
 
-            i += imageSize - 1;
-            if (++imagesLoaded >= count) break;
+            byte[] fileData = new byte[size];
+            fileStream.Seek(offset, SeekOrigin.Begin);
+            fileStream.ReadExactly(fileData, 0, size);
+
+            int imagesLoaded = 0;
+
+            for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+            {
+                if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
+
+                int imageSize = BitConverter.ToInt32(fileData, i + 8);
+                if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+
+                targetArray[imagesLoaded] = new byte[imageSize];
+                Buffer.BlockCopy(fileData, i, targetArray[imagesLoaded], 0, imageSize);
+
+                i += imageSize - 1;
+                if (++imagesLoaded >= count) break;
+            }
         }
     }
 
     void SaveGenericTextureData(int size, int offset, int count, byte[][] sourceArray)
     {
-        byte[] fileData = new byte[size];
-        fileStream.Seek(offset, SeekOrigin.Begin);
-        fileStream.ReadExactly(fileData, 0, size);
-
-        int imageIndex = 0;
-
-        for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+        lock (FileStreamLock)
         {
-            if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
 
-            int imageSize = BitConverter.ToInt32(fileData, i + 8);
-            if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+            byte[] fileData = new byte[size];
+            fileStream.Seek(offset, SeekOrigin.Begin);
+            fileStream.ReadExactly(fileData, 0, size);
 
-            Buffer.BlockCopy(sourceArray[imageIndex], 0, fileData, i, imageSize);
+            int imageIndex = 0;
 
-            i += imageSize - 1;
-            if (++imageIndex >= count) break;
+            for (int i = 0; i < fileData.Length - ImageCreator.startOfImageSig.Length; i++)
+            {
+                if (!fileData.AsSpan(i, ImageCreator.startOfImageSig.Length).SequenceEqual(ImageCreator.startOfImageSig)) continue;
+
+                int imageSize = BitConverter.ToInt32(fileData, i + 8);
+                if (imageSize <= 0 || i + imageSize > fileData.Length) continue;
+
+                Buffer.BlockCopy(sourceArray[imageIndex], 0, fileData, i, imageSize);
+
+                i += imageSize - 1;
+                if (++imageIndex >= count) break;
+            }
+
+            fileStream.Seek(offset, SeekOrigin.Begin);
+            fileStream.Write(fileData, 0, size);
         }
-
-        fileStream.Seek(offset, SeekOrigin.Begin);
-        fileStream.Write(fileData, 0, size);
     }
 
 
-    public void SaveImageData()
+    public async Task SaveImageData()
     {
+
         if (fileStream != null)
         {
+
             lock (FileStreamLock)
             {
-
                 for (int i = 0; i < PictureCount; i++)
                 {
+
                     fileStream.Seek(PictureIsoOffset + i * PictureSize, SeekOrigin.Begin);
                     byte[] picture = GameImageManager.PictureBytes[i];
                     fileStream.Write(picture, 0, PictureSize);
                     fileStream.Flush();
                 }
+            }
 
-                for (int i = 0; i < GameImageManager.PicPackImages.Count; i++)
+
+            for (int i = 0; i < GameImageManager.PicPackImages.Count; i++)
+            {
+                if (GameImageManager.PicPackImages[i] == -1)
                 {
-                    if (GameImageManager.PicPackImages[i] == -1)
-                    {
-                        continue;
-                    }
-                    WritePicPackImage(GameImageManager.PicPackImages[i], i);
-                    byte[] bytes = BitConverter.GetBytes((ushort)GameImageManager.PicPackImages[i]);
-                    lock (FileStreamLock)
-                    {
-                        fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
-                        fileStream.Write(bytes, 0, 2);
-                        fileStream.Flush();
-                    }
+                    continue;
                 }
+                WritePicPackImage(GameImageManager.PicPackImages[i], i);
+                byte[] bytes = BitConverter.GetBytes((ushort)GameImageManager.PicPackImages[i]);
+                lock (FileStreamLock)
+                {
+                    fileStream.Seek(picPackArtsSLUSArray + i * 2, SeekOrigin.Begin);
+                    fileStream.Write(bytes, 0, 2);
+                    fileStream.Flush();
 
+                }
+            }
+            lock (FileStreamLock)
+            {
                 for (int i = 0; i < PicMiniCount; i++)
                 {
+
                     fileStream.Seek(PicMiniOffset + i * PicMiniSize, SeekOrigin.Begin);
                     byte[] picture = GameImageManager.PicMiniBytes[i];
                     fileStream.Write(picture, 0, PicMiniSize);
                     fileStream.Flush();
+
                 }
+            }
 
-                SaveGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
-                SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
-                SaveGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
-
-
-                SaveGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
-                SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
-                SaveGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
-                SaveGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
-
+            if (AllImagesLoaded)
+            {
+                EditorWindow.Disabled = true;
+                await Task.Run(() =>
+                {
+                    SaveGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
+                    SaveGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
+                    SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);
+                    SaveGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
+                    SaveGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
+                    SaveGenericTextureData(TexSysSize, TexSysOffset, TexSysCount, GameImageManager.TexSysBytes);
+                    SaveGenericTextureData(MonsterModelSize, MonsterModelOffset, MonsterModelCount, GameImageManager.MonsterModelBytes);
+                });
+                EditorWindow.Disabled = false;
             }
         }
     }
