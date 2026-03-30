@@ -236,63 +236,82 @@ class CardEditorWindow : IImGuiWindow
                 FilterAndSort();
             }
 
-            foreach (ModdedStringName filteredName in filteredList)
+            if (ImGui.BeginTable("##CardListTable", 2, ImGuiTableFlags.None))
             {
-                bool isSelected = selectedCards.Contains(filteredName);
+                ImGui.TableSetupColumn("##ID", ImGuiTableColumnFlags.WidthFixed, 45);
+                ImGui.TableSetupColumn("##Name", ImGuiTableColumnFlags.WidthStretch);
 
-                ImGui.PushFont(FontManager.GetBestFitFont(filteredName.Current, availArea.X, availArea.Y, FontManager.FontFamily.NotoSansJP));
-                if (ImGui.Selectable($"{filteredName}", isSelected, ImGuiSelectableFlags.AllowDoubleClick))
+
+                foreach (ModdedStringName filteredName in filteredList)
                 {
+                    bool isSelected = selectedCards.Contains(filteredName);
+                    int cardId = CardConstant.CardLookup[filteredName].Index;
 
-                    if (ImGui.GetIO().KeyShift)
+                    ImGui.TableNextRow();
+                    ImGui.TableSetColumnIndex(0);
+
+                    ImGui.PushFont(FontManager.GetBestFitFont(filteredName.Current, availArea.X, availArea.Y, FontManager.FontFamily.NotoSansJP));
+                    if (ImGui.Selectable($"##{filteredName}", isSelected, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick))
                     {
-                        int startIndex = filteredList.IndexOf(Card.GetNameByIndex(currentCardIndex));
-                        int endIndex = filteredList.IndexOf(filteredName);
-                        if (startIndex != -1 && endIndex != -1)
+
+                        if (ImGui.GetIO().KeyShift)
                         {
-                            for (int i = Math.Min(startIndex, endIndex); i <= Math.Max(startIndex, endIndex); i++)
+                            int startIndex = filteredList.IndexOf(Card.GetNameByIndex(currentCardIndex));
+                            int endIndex = filteredList.IndexOf(filteredName);
+                            if (startIndex != -1 && endIndex != -1)
                             {
-                                if (CanSelectCard(CardConstant.CardLookup[filteredList[i]]))
+                                for (int i = Math.Min(startIndex, endIndex); i <= Math.Max(startIndex, endIndex); i++)
                                 {
-                                    selectedCards.Add(filteredList[i]);
+                                    if (CanSelectCard(CardConstant.CardLookup[filteredList[i]]))
+                                    {
+                                        selectedCards.Add(filteredList[i]);
+
+                                    }
+                                }
+                                if (CanSelectCard(CardConstant.CardLookup[filteredName]))
+                                {
+                                    currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
 
                                 }
                             }
+                        }
+                        else if (ImGui.GetIO().KeyCtrl)
+                        {
                             if (CanSelectCard(CardConstant.CardLookup[filteredName]))
                             {
-                                currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
-
+                                if (selectedCards.Add(filteredName))
+                                {
+                                    currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
+                                }
+                                else
+                                {
+                                    selectedCards.Remove(filteredName);
+                                    currentCardIndex = Array.IndexOf(Card.cardNameList, selectedCards.Last());
+                                }
                             }
                         }
-                    }
-                    else if (ImGui.GetIO().KeyCtrl)
-                    {
-                        if (CanSelectCard(CardConstant.CardLookup[filteredName]))
+                        else
                         {
-                            if (selectedCards.Add(filteredName))
-                            {
-                                currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
-                            }
-                            else
-                            {
-                                selectedCards.Remove(filteredName);
-                                currentCardIndex = Array.IndexOf(Card.cardNameList, selectedCards.Last());
-                            }
+                            selectedCards.Clear();
+                            selectedCards.Add(filteredName);
+                            currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
                         }
-                    }
-                    else
-                    {
-                        selectedCards.Clear();
-                        selectedCards.Add(filteredName);
-                        currentCardIndex = Array.IndexOf(Card.cardNameList, filteredName);
-                    }
 
+                    }
+                    bool hovered = ImGui.IsItemHovered();
+                    ImGui.SameLine();
+                    ImGui.Text($"{cardId}");
+
+                    ImGui.TableSetColumnIndex(1);
+                    ImGui.Text($"{filteredName}");
+                    ImGui.PopFont();
+
+                    if (hovered)
+                    {
+                        GlobalImgui.RenderTooltipCardImage(filteredName.Default);
+                    }
                 }
-                ImGui.PopFont();
-                if (ImGui.IsItemHovered())
-                {
-                    GlobalImgui.RenderTooltipCardImage(filteredName.Default);
-                }
+                ImGui.EndTable();
             }
             ImGui.EndListBox();
         }
