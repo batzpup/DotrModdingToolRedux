@@ -183,7 +183,7 @@ class CardEditorWindow : IImGuiWindow
             Vector2 buttonSize = ImGui.CalcTextSize(field);
             buttonSize.X += ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().ItemSpacing.X;
 
-            // If adding this button would exceed width, start new line
+
             if (lineWidth + buttonSize.X > maxWidth && lineWidth > 0)
             {
                 lineWidth = 0;
@@ -232,6 +232,9 @@ class CardEditorWindow : IImGuiWindow
         {
             FilterAndSort();
         }
+        Vector4 listBoxBg = ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
+        ImGui.PushStyleColor(ImGuiCol.TableRowBg,listBoxBg);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt,listBoxBg);
         ImGui.SetNextItemWidth(availArea.X);
         if (ImGui.BeginTable("##CardListTable", 2, ImGuiTableFlags.ScrollY))
         {
@@ -312,7 +315,8 @@ class CardEditorWindow : IImGuiWindow
 
         }
         ImGui.PopStyleVar(1);
-
+        ImGui.PopStyleColor(2);
+        
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
