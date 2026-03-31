@@ -183,7 +183,7 @@ class CardEditorWindow : IImGuiWindow
             Vector2 buttonSize = ImGui.CalcTextSize(field);
             buttonSize.X += ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().ItemSpacing.X;
 
-            // If adding this button would exceed width, start new line
+
             if (lineWidth + buttonSize.X > maxWidth && lineWidth > 0)
             {
                 lineWidth = 0;
@@ -223,25 +223,35 @@ class CardEditorWindow : IImGuiWindow
         ImGui.PushItemWidth(windowSize.X / 3f);
 
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
-        ;
 
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.BeginListBox("##Cards", new Vector2(0, availableHeight)))
+
+        ImGui.Text("Card Search");
+        Vector2 availArea = ImGui.GetContentRegionAvail();
+        ImGui.SetNextItemWidth(availArea.X);
+        if (ImGui.InputText("##CardSearch", ref cardSearch, 32))
         {
-            ImGui.Text("Card Search");
-            Vector2 availArea = ImGui.GetContentRegionAvail();
-            ImGui.SetNextItemWidth(availArea.X);
-            if (ImGui.InputText("##CardSearch", ref cardSearch, 32))
-            {
-                FilterAndSort();
-            }
+            FilterAndSort();
+        }
+        Vector4 listBoxBg = ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
+        ImGui.PushStyleColor(ImGuiCol.TableRowBg,listBoxBg);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt,listBoxBg);
+        ImGui.SetNextItemWidth(availArea.X);
+        if (ImGui.BeginTable("##CardListTable", 2, ImGuiTableFlags.ScrollY))
+        {
+            ImGui.TableSetupColumn("##ID", ImGuiTableColumnFlags.WidthFixed, 45);
+            ImGui.TableSetupColumn("##Name", ImGuiTableColumnFlags.WidthStretch);
+
 
             foreach (ModdedStringName filteredName in filteredList)
             {
                 bool isSelected = selectedCards.Contains(filteredName);
+                int cardId = CardConstant.CardLookup[filteredName].Index;
+
+                ImGui.TableNextRow();
+                ImGui.TableSetColumnIndex(0);
 
                 ImGui.PushFont(FontManager.GetBestFitFont(filteredName.Current, availArea.X, availArea.Y, FontManager.FontFamily.NotoSansJP));
-                if (ImGui.Selectable($"{filteredName}", isSelected, ImGuiSelectableFlags.AllowDoubleClick))
+                if (ImGui.Selectable($"##{filteredName}", isSelected, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick))
                 {
 
                     if (ImGui.GetIO().KeyShift)
@@ -288,16 +298,25 @@ class CardEditorWindow : IImGuiWindow
                     }
 
                 }
+                bool hovered = ImGui.IsItemHovered();
+                ImGui.SameLine();
+                ImGui.Text($"{cardId}");
+
+                ImGui.TableSetColumnIndex(1);
+                ImGui.Text($"{filteredName}");
                 ImGui.PopFont();
-                if (ImGui.IsItemHovered())
+
+                if (hovered)
                 {
                     GlobalImgui.RenderTooltipCardImage(filteredName.Default);
                 }
             }
-            ImGui.EndListBox();
+            ImGui.EndTable();
+
         }
         ImGui.PopStyleVar(1);
-
+        ImGui.PopStyleColor(2);
+        
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
