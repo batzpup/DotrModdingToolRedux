@@ -19,6 +19,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
         public int slot2;
     }
 
+    //TODO update to have its own or a general dropdown background or something
     Vector4 tableBgColour = UserSettings.FusionTableBgColour;
     Vector4 searchColour = UserSettings.FusionDropdownColour;
 
@@ -158,11 +159,11 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                         lowerFocusInput = false;
                     }
                     ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
-                    ImGui.InputText($"##searchInputLower_{i}", ref filter1Text, 64);
+                    ImGui.InputText($"##searchInputLower_{i}", ref filter2Text, 64);
                     ImGui.PopStyleColor();
 
                     List<ModdedStringName> filteredList = Card.cardNameList
-                        .Where(cardName => cardName.Current.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
+                        .Where(cardName => cardName.Current.Contains(filter2Text, StringComparison.OrdinalIgnoreCase))
                         .ToList();
                     bool anyVisible = false;
                     foreach (var cardName in filteredList)
@@ -172,7 +173,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                         if (ImGui.Selectable(cardName.Current, isSelected))
                         {
                             pool[1] = index;
-                            filter1Text = "";
+                            filter2Text = "";
                         }
                         if (ImGui.IsItemVisible())
                         {
@@ -191,7 +192,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                     }
                     if (!anyVisible)
                     {
-                        filter1Text = "";
+                        filter2Text = "";
                         lowerFocusInput = true;
                     }
                     ImGui.EndCombo();
@@ -214,11 +215,11 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                         lowerFocusInput = false;
                     }
                     ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
-                    ImGui.InputText($"##searchInputLower_{i}", ref filter1Text, 64);
+                    ImGui.InputText($"##searchInputLower_{i}", ref filter3Text, 64);
                     ImGui.PopStyleColor();
 
                     List<ModdedStringName> filteredList = Card.cardNameList
-                        .Where(cardName => cardName.Current.Contains(filter1Text, StringComparison.OrdinalIgnoreCase))
+                        .Where(cardName => cardName.Current.Contains(filter3Text, StringComparison.OrdinalIgnoreCase))
                         .ToList();
                     bool anyVisible = false;
                     foreach (var cardName in filteredList)
@@ -227,8 +228,8 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                         bool isSelected = pool[2] == index;
                         if (ImGui.Selectable(cardName.Current, isSelected))
                         {
-                            pool[0] = index;
-                            filter1Text = "";
+                            pool[2] = index;
+                            filter3Text = "";
                         }
                         if (ImGui.IsItemVisible())
                         {
@@ -247,7 +248,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                     }
                     if (!anyVisible)
                     {
-                        filter1Text = "";
+                        filter3Text = "";
                         lowerFocusInput = true;
                     }
                     ImGui.EndCombo();

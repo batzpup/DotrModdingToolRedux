@@ -235,10 +235,10 @@ class CardEditorWindow : IImGuiWindow
             FilterAndSort();
         }
         Vector4 listBoxBg = ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
-        ImGui.PushStyleColor(ImGuiCol.TableRowBg,listBoxBg);
-        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt,listBoxBg);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBg, listBoxBg);
+        ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, listBoxBg);
         ImGui.SetNextItemWidth(availArea.X);
-        if (ImGui.BeginTable("##CardListTable", 2, ImGuiTableFlags.ScrollY))
+        if (ImGui.BeginTable("##CardListTable", 2, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg))
         {
             ImGui.TableSetupColumn("##ID", ImGuiTableColumnFlags.WidthFixed, 45);
             ImGui.TableSetupColumn("##Name", ImGuiTableColumnFlags.WidthStretch);
@@ -318,7 +318,7 @@ class CardEditorWindow : IImGuiWindow
         }
         ImGui.PopStyleVar(1);
         ImGui.PopStyleColor(2);
-        
+
         updateCardChanges();
         ImGui.PopFont();
         ImGui.EndChild();
@@ -361,9 +361,9 @@ class CardEditorWindow : IImGuiWindow
 
             ImGui.PushItemWidth(100 * imageScale - xTextPadding);
             ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0)); 
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f)); 
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f)); 
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f));
 
 
 
@@ -463,26 +463,29 @@ class CardEditorWindow : IImGuiWindow
 
     void FilterAndSort()
     {
-
         if (UserSettings.UseDefaultNames)
         {
             filteredList = Card.cardNameList
-                .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                .Where(cardName => cardName.Default.Contains(cardSearch, StringComparison.OrdinalIgnoreCase)
+                                   || CardConstant.CardLookup[cardName].Index.ToString().Contains(cardSearch))
                 .ToList();
         }
         else
         {
-            //TODO FIX
             filteredList = Card.cardNameList
-                .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                .Where(cardName => cardName.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase)
+                                   || CardConstant.CardLookup[cardName].Index.ToString().Contains(cardSearch))
                 .ToList();
         }
 
-
         filteredList.Sort((a, b) =>
         {
-            if (!CardConstant.CardLookup.TryGetValue(a, out var cardA) || !CardConstant.CardLookup.TryGetValue(b, out var cardB))
+            if (!CardConstant.CardLookup.TryGetValue(a, out var cardA)
+                || !CardConstant.CardLookup.TryGetValue(b, out var cardB))
+            {
                 return 0;
+            }
+
 
             int result = 0;
             switch (cardEditorSearchSortField)
@@ -817,7 +820,7 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.Separator();
 
                 ImGui.Checkbox("Show note", ref showMonsterEditNote);
-                
+
                 if (showMonsterEditNote)
                 {
 
