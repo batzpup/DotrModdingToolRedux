@@ -4,10 +4,21 @@ namespace DotrModdingTool2IMGUI;
 
 public static class GameImageManager
 {
+    
     public static byte[][] PictureBytes = new byte[871][];
     public static byte[][] PicPackBytes = new byte[223][];
     public static byte[][] PicMiniBytes = new byte[699][];
+    public static byte[][] ModelTextureBytes = new byte[625][];
+    public static byte[][] TexEtcBytes = new byte[DataAccess.TexEtcCount][];
+    public static byte[][] TexEffBytes = new byte[DataAccess.TexEffCount][];
+    public static byte[][] TexAnmBytes = new byte[DataAccess.TexAnmCount][];
+    public static byte[][] TexEveBytes = new byte[DataAccess.TexEveCount][];
+    public static byte[][] TexSysBytes = new byte[DataAccess.TexSysCount][];
+    public static byte[][] MonsterModelBytes = new byte[DataAccess.MonsterModelCount][];
+    public static byte[][] IconImageBytes = new byte[DataAccess.IconImageCount][];
 
+
+    public static HashSet<int> MonsterModelExlusions = new HashSet<int>(); 
     public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
     public static ModdedStringName[] PreloadDefaultImageNameList;
     public static GameTexture CurrentTexture = new();
@@ -95,8 +106,5 @@ public struct ImageMetaData
     //Derived
     public int StartOfImage;
     public int PalleteOffset;
-
-    public static Dictionary<ImageMrgFile, ImageMetaData> KnownMetaData = new() {
-
-    };
+    
 }

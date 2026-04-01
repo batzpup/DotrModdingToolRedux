@@ -41,13 +41,14 @@ public class PaintCanvas
 
     public PaintCanvas(int width, int height, SKColor? background = null)
     {
-        Bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        Bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
         using var canvas = new SKCanvas(Bitmap);
         canvas.Clear(background ?? SKColors.White);
 
         CreateTexture();
         UploadToTexture();
     }
+
 
 
     public void loadImage(byte[][] currentByteArray, int currentIndex, bool crop)
@@ -168,7 +169,7 @@ public class PaintCanvas
         var targetColor = Bitmap.GetPixel(x, y);
         var fillColor = new SKColor(
             ActiveColor.Red, ActiveColor.Green, ActiveColor.Blue,
-            (byte)(ActiveColor.Alpha * Opacity));
+            (byte)(ActiveColor.Alpha));
 
         if (targetColor == fillColor) return;
         FloodFillInternal(x, y, targetColor, fillColor);
@@ -214,9 +215,8 @@ public class PaintCanvas
         }
         else
         {
-            byte alpha = (byte)(ActiveColor.Alpha * Opacity);
-            paint.Color = ActiveColor.WithAlpha(alpha);
-            paint.BlendMode = alpha >= 255 ? SKBlendMode.Src : SKBlendMode.SrcOver;
+            paint.Color = ActiveColor;
+            paint.BlendMode = ActiveColor.Alpha >= 255 ? SKBlendMode.Src : SKBlendMode.SrcOver;
         }
 
         return paint;
@@ -268,6 +268,57 @@ public class PaintCanvas
             (object)handle);
     }
 
+
+    public async Task SaveAll()
+    {
+        DialogResult result = Dialog.FolderPicker();
+        if (!result.IsOk) return;
+
+        string folder = result.Path;
+
+        var sources = new (string prefix, byte[][] bytes, ImageMrgFile mrgFile)[] {
+            ("Picture", GameImageManager.PictureBytes, ImageMrgFile.Picture),
+            ("PicMini", GameImageManager.PicMiniBytes, ImageMrgFile.PicMini),
+            ("ModelTexture", GameImageManager.ModelTextureBytes, ImageMrgFile.Model),
+            ("TexEtc", GameImageManager.TexEtcBytes, ImageMrgFile.TexEtc),
+            ("TexSys", GameImageManager.TexSysBytes, ImageMrgFile.TexSys),
+            ("TexAnm", GameImageManager.TexAnmBytes, ImageMrgFile.TexAnm),
+            ("TexEff", GameImageManager.TexEffBytes, ImageMrgFile.TexEff),
+            ("TexEve", GameImageManager.TexEveBytes, ImageMrgFile.TexEve),
+            ("Monster", GameImageManager.MonsterModelBytes, ImageMrgFile.Monster),
+        };
+        EditorWindow.Disabled = true;
+        EditorWindow._modalPopup.Show($"Exporting images to {result.Path}", "Exporter", null, ImGuiModalPopup.ShowType.NoButton);
+        await Task.Run(() =>
+        {
+            foreach (var (prefix, bytes, mrgFile) in sources)
+            {
+                string subFolder = Path.Combine(folder, prefix);
+                Directory.CreateDirectory(subFolder);
+
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    if (bytes[i] == null || bytes[i].Length == 0) continue;
+
+                    try
+                    {
+                        ImageCreator.CreateImageFromBytes(bytes[i], mrgFile, "", false);
+                        string path = Path.Combine(subFolder, $"{prefix}_{i}.png");
+                        using var image = SKImage.FromBitmap(GameImageManager.CurrentTexture.Bitmap);
+                        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                        using var stream = File.Create(path);
+                        data.SaveTo(stream);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+            EditorWindow.Disabled = false;
+            EditorWindow._modalPopup.Hide();
+        });
+    }
 
     public void SaveAs()
     {

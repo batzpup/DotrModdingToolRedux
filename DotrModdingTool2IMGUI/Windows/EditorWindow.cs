@@ -61,9 +61,8 @@ public class EditorWindow
     public static void PrintEmbeddedResources()
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
-        // Get all the embedded resource names
+
         string[] resourceNames = assembly.GetManifestResourceNames();
-        // Print each resource name
         Console.WriteLine("Embedded Resources:");
         foreach (string resourceName in resourceNames)
         {
@@ -74,7 +73,7 @@ public class EditorWindow
 
     public EditorWindow()
     {
-      //  PrintEmbeddedResources();
+        //  PrintEmbeddedResources();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
 
@@ -86,7 +85,7 @@ public class EditorWindow
             _musicEditorWindow = new MusicEditorWindow();
         }
         _fusionEditorWindow = new FusionEditorWindow();
-        
+
         _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
@@ -138,8 +137,18 @@ public class EditorWindow
             Disabled = true;
             _modalPopup.Show($"Downloading Update.\nThe tool will close, then command prompt will appear swap the files, and re-open the tool",
                 "Updater");
-            await Updater.DownloadUpdate();
-            Disabled = false;
+            try
+            {
+                await Updater.CheckForUpdates(true);
+            }
+            catch (Exception)
+            {
+                
+            }
+            finally
+            {
+                Disabled = false;
+            }
         });
 
     }
@@ -910,7 +919,7 @@ public class EditorWindow
         _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
-        
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _musicEditorWindow.SaveMusicChanges();
@@ -922,7 +931,9 @@ public class EditorWindow
         dataAccess.SaveEnemyAiData(Enemies.AiBytes);
         dataAccess.SaveEnchantData();
         dataAccess.SaveDestinyDrawCards();
-        dataAccess.SaveImageData();
+
+        Task.Run(async () => { await dataAccess.SaveImageData(); });
+
         dataAccess.SaveEffectData(Effects.MonsterEffectBytes, Effects.MagicEffectBytes);
         _fusionEditorWindow.SaveFusionChanges();
         UserSettings.SaveSettings();
@@ -952,7 +963,15 @@ public class EditorWindow
     {
         if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
-            _modalPopup.Show("Changes have been saved", "Save successful");
+            if (dataAccess.AllImagesLoaded)
+            {
+                _modalPopup.Show("Slow saving due to images", "Save successful");
+            }
+            else
+            {
+                _modalPopup.Show("Changes have been saved", "Save successful");
+            }
+
         }
     }
 

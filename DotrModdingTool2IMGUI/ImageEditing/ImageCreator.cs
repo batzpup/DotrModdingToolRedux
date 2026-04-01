@@ -9,6 +9,45 @@ public static class ImageCreator
     public static readonly byte[] endOfSectionSig = { 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 
+    public static void CreateImageFromBytes(byte[] bytes, ImageMrgFile mrgFile, string outputPath, bool saveToPath)
+    {
+        ImageMetaData metaData = new ImageMetaData();
+        switch (mrgFile)
+        {
+
+            case ImageMrgFile.PicMini:
+                LoadPicMini(bytes, ref metaData);
+                break;
+            case ImageMrgFile.Picture:
+            case ImageMrgFile.TexSys:
+            case ImageMrgFile.Model:
+            case ImageMrgFile.TexAnm:
+            case ImageMrgFile.TexEff:
+            case ImageMrgFile.TexEtc:
+            case ImageMrgFile.TexEve:
+            case ImageMrgFile.Monster:
+                LoadPicture(bytes, ref metaData);
+                break;
+            case ImageMrgFile.Icon:
+                GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(bytes);
+                PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mrgFile), mrgFile, null);
+        }
+
+
+        if (!saveToPath)
+        {
+            return;
+        }
+        using SKImage image = SKImage.FromBitmap(GameImageManager.CurrentTexture.Bitmap);
+        using SKData skData = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var stream = File.OpenWrite(outputPath);
+        skData.SaveTo(stream);
+
+    }
+
     public static List<SKColor> ExtractPalette()
     {
 
@@ -86,12 +125,18 @@ public static class ImageCreator
             var (r, g, b) = palette[i];
             finalPalette[i] = (uint)(0xFF000000 | ((uint)r << 16) | ((uint)g << 8) | b);
         }
-
+// At the end of BuildPaletteFromBitmap, after building finalPalette:
+        var existingPalette = GameImageManager.CurrentTexture.Palette;
+        for (int i = palette.Count; i < maxColors; i++)
+        {
+            // Keep original entry if quantizer didn't fill this slot
+            if (i < existingPalette.Length)
+                finalPalette[i] = existingPalette[i];
+        }
         GameImageManager.CurrentTexture.Palette = finalPalette;
     }
 
-    private static (byte R, byte G, byte B) FindNearestColor(
-        List<(byte R, byte G, byte B)> palette, byte r, byte g, byte b)
+    static (byte R, byte G, byte B) FindNearestColor(List<(byte R, byte G, byte B)> palette, byte r, byte g, byte b)
     {
         var best = palette[0];
         long bestDist = long.MaxValue;
@@ -130,7 +175,7 @@ public static class ImageCreator
         return (uint)(0xFF000000 | (red << 16) | (green << 8) | blue);
     }
 
-    static (int paletteOffset, int paletteSize) FindPaletteStartAndSize(byte[] data, int totalImageSize)
+    public static (int paletteOffset, int paletteSize) FindPaletteStartAndSize(byte[] data, int totalImageSize)
     {
         var span = data.AsSpan(0, totalImageSize);
         var pattern = endOfSectionSig.AsSpan();
@@ -178,7 +223,7 @@ public static class ImageCreator
         return totalImageSize - startOfImage;
     }
 
-    static uint[] ReadPalette(byte[] data, int paletteOffset, int paletteSize)
+    public static uint[] ReadPalette(byte[] data, int paletteOffset, int paletteSize)
     {
         if (paletteSize == 0x400)
         {
@@ -189,7 +234,8 @@ public static class ImageCreator
                 byte r = (byte)(p & 0xFF);
                 byte g = (byte)((p >> 8) & 0xFF);
                 byte b = (byte)((p >> 16) & 0xFF);
-                palette[i] = (uint)(0xFF000000 | (r << 16) | (uint)(g << 8) | b);
+                byte a = (byte)((p >> 24) & 0xFF);
+                palette[i] = (uint)((a << 24) | (r << 16) | (g << 8) | b);
             }
             return palette;
         }
@@ -228,7 +274,7 @@ public static class ImageCreator
 
         var colours = new uint[partialImageSize];
         for (int i = 0; i < partialImageSize; i++)
-            colours[i] = palette[ConvertPlace(data[sectionOffset + i], paletteSize)];
+            colours[i] = palette[ConvertPlace(data[sectionOffset + i], palette.Length)];
 
         for (int i = 0; i < partialImageSize; i++)
         {
@@ -248,76 +294,6 @@ public static class ImageCreator
         }
     }
 
-    public static void CreateImageFromBytes(byte[] bytes, ImageMrgFile mrgFile, string outputPath, bool saveToPath)
-    {
-        ImageMetaData metaData = new ImageMetaData();
-        switch (mrgFile)
-        {
-
-            case ImageMrgFile.Picture:
-                LoadPicture(bytes, ref metaData);
-                break;
-            case ImageMrgFile.PicMini:
-                LoadPicMini(bytes, ref metaData);
-                break;
-            case ImageMrgFile.TexSys:
-                break;
-            case ImageMrgFile.Model:
-                break;
-            case ImageMrgFile.TexAnm:
-                break;
-            case ImageMrgFile.TexEff:
-                break;
-            case ImageMrgFile.TexEtc:
-                break;
-            case ImageMrgFile.TexEve:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(mrgFile), mrgFile, null);
-        }
-
-
-        if (!saveToPath)
-        {
-            return;
-        }
-        using SKImage image = SKImage.FromBitmap(GameImageManager.CurrentTexture.Bitmap);
-        using SKData skData = image.Encode(SKEncodedImageFormat.Png, 100);
-        using var stream = File.OpenWrite(outputPath);
-        skData.SaveTo(stream);
-
-    }
-
-    static void LoadPicMini(byte[] bytes, ref ImageMetaData metaData)
-    {
-        metaData.TotalImageSize = 0x880;
-        metaData.Width = 40;
-        metaData.Height = 32;
-        metaData.NumberOfSections = 1;
-        metaData.PalleteOffset = 0x120;
-        metaData.StartOfImage = 0x380;
-
-        var (paletteOffset, paletteSize) = FindPaletteStartAndSize(bytes, metaData.TotalImageSize);
-        if (paletteOffset == -1) return;
-        metaData.PalleteOffset = paletteOffset;
-        metaData.PalleteSize = paletteSize;
-        if (!IsValidPalletSize(metaData.PalleteSize))
-        {
-            return;
-        }
-
-        GameImageManager.CurrentTexture.Palette = ReadPalette(bytes, paletteOffset, paletteSize);
-
-        GameImageManager.CurrentTexture.Bitmap?.Dispose();
-        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-        unsafe
-        {
-            uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
-            LoadPicMiniSection(bytes, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
-
-        }
-        GameImageManager.CurrentTexture.MetaData = metaData;
-    }
 
     unsafe static void LoadPicMiniSection(byte[] bytes, uint[] palette, uint* pixels, int startOfImage, int width, int height)
     {
@@ -342,6 +318,7 @@ public static class ImageCreator
         if (paletteOffset == -1) return;
         metaData.PalleteOffset = paletteOffset;
         metaData.PalleteSize = paletteSize;
+
         if (!IsValidPalletSize(metaData.PalleteSize))
         {
             return;
@@ -357,14 +334,51 @@ public static class ImageCreator
 
         GameImageManager.CurrentTexture.Bitmap?.Dispose();
 
-        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
         unsafe
         {
             uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
-            for (int i = 0; i < metaData.NumberOfSections - 1; i++)
+            if (metaData.Width < 128)
             {
-                LoadImgSection(picture, GameImageManager.CurrentTexture.Palette, pixels, i, metaData.StartOfImage, partialImageSize, paletteSize, metaData.Width, metaData.Height);
+                LoadPicMiniSection(picture, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
             }
+            else
+            {
+                for (int i = 0; i < metaData.NumberOfSections - 1; i++)
+                {
+                    LoadImgSection(picture, GameImageManager.CurrentTexture.Palette, pixels, i, metaData.StartOfImage, partialImageSize, paletteSize, metaData.Width, metaData.Height);
+                }
+            }
+        }
+        GameImageManager.CurrentTexture.MetaData = metaData;
+    }
+
+    static void LoadPicMini(byte[] bytes, ref ImageMetaData metaData)
+    {
+        metaData.TotalImageSize = 0x880;
+        metaData.Width = 40;
+        metaData.Height = 32;
+        metaData.NumberOfSections = 1;
+        metaData.PalleteOffset = 0x120;
+        metaData.StartOfImage = 0x380;
+
+        var (paletteOffset, paletteSize) = FindPaletteStartAndSize(bytes, metaData.TotalImageSize);
+        if (paletteOffset == -1) return;
+        metaData.PalleteOffset = paletteOffset;
+        metaData.PalleteSize = paletteSize;
+        if (!IsValidPalletSize(metaData.PalleteSize))
+        {
+            return;
+        }
+
+        GameImageManager.CurrentTexture.Palette = ReadPalette(bytes, paletteOffset, paletteSize);
+
+        GameImageManager.CurrentTexture.Bitmap?.Dispose();
+        GameImageManager.CurrentTexture.Bitmap = new SKBitmap(metaData.Width, metaData.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        unsafe
+        {
+            uint* pixels = (uint*)GameImageManager.CurrentTexture.Bitmap.GetPixels().ToPointer();
+            LoadPicMiniSection(bytes, GameImageManager.CurrentTexture.Palette, pixels, metaData.StartOfImage, metaData.Width, metaData.Height);
 
         }
         GameImageManager.CurrentTexture.MetaData = metaData;
@@ -382,12 +396,12 @@ public static class ImageCreator
             uint* pixels = (uint*)bitmap.GetPixels().ToPointer();
             int count = bitmap.Width * bitmap.Height;
 
-            uint oldBgra = (uint)(0xFF000000 | (oldCol.Blue << 16) | (oldCol.Green << 8) | oldCol.Red);
-            uint newBgra = (uint)(0xFF000000 | (newCol.Blue << 16) | (newCol.Green << 8) | newCol.Red);
+            uint oldBgra = (uint)((oldCol.Alpha << 24) | (oldCol.Blue << 16) | (oldCol.Green << 8) | oldCol.Red);
+            uint newBgra = (uint)((newCol.Alpha << 24) | (newCol.Blue << 16) | (newCol.Green << 8) | newCol.Red);
 
             for (int i = 0; i < count; i++)
             {
-                if ((pixels[i] & 0x00FFFFFF) == (oldBgra & 0x00FFFFFF))
+                if (pixels[i] == oldBgra)
                 {
                     pixels[i] = newBgra;
                 }
@@ -540,6 +554,7 @@ public static class ImageSaver
     {
         return imageFile switch {
             ImageMrgFile.PicMini => SavePicMiniToBytes(originalData, bitmap, pngPath),
+            ImageMrgFile.Icon => PS2Icon.SaveIconToByte(originalData, bitmap),
             _ => SaveStandardImageToBytes(originalData, bitmap, pngPath)
         };
     }
@@ -559,8 +574,7 @@ public static class ImageSaver
         if (paletteSize != 0x200 && paletteSize != 0x400) throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
 
         int startOfImage = paletteOffset + paletteSize + paddingSize;
-        int partialImageSize = GetPartialImageSize(originalData, totalImageSize, startOfImage, paddingSize);
-        uint[] palette = ReadPalette(originalData, paletteOffset, paletteSize);
+        uint[] palette = ImageCreator.ReadPalette(originalData, paletteOffset, paletteSize);
 
         SKBitmap src = LoadSourceBitmap(bitmap, pngPath, imageWidth, imageHeight);
         bool disposeSrc = !ReferenceEquals(src, bitmap);
@@ -571,20 +585,31 @@ public static class ImageSaver
         var colourCache = new Dictionary<uint, int>();
         byte[] output = (byte[])originalData.Clone();
 
-        for (int sec = 0; sec < numberOfSections - 1; sec++)
+        if (imageWidth <= 64)
         {
-            int sectionOffset = startOfImage + (partialImageSize + paddingSize) * sec;
-            var map = BuildSectionMap(sec, partialImageSize, imageWidth, imageHeight);
-
-            for (int i = 0; i < partialImageSize; i++)
+            int pixelCount = imageWidth * imageHeight;
+            for (int i = 0; i < pixelCount; i++)
             {
-                var (px, py) = map[i];
-                if (px == -1) continue;
-                //Not sure if nearest colour is still needed?
-                uint argb = pixels[px + py * imageWidth];
-                int nearestIdx = FindNearestPaletteIndex(argb, palette, colourCache);
-               
-                output[sectionOffset + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+                int nearestIdx = FindNearestPaletteIndex(pixels[i], palette, colourCache);
+                output[startOfImage + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+            }
+        }
+        else
+        {
+            int partialImageSize = GetPartialImageSize(originalData, totalImageSize, startOfImage, paddingSize);
+            for (int sec = 0; sec < numberOfSections - 1; sec++)
+            {
+                int sectionOffset = startOfImage + (partialImageSize + paddingSize) * sec;
+                var map = BuildSectionMap(sec, partialImageSize, imageWidth, imageHeight);
+
+                for (int i = 0; i < partialImageSize; i++)
+                {
+                    var (px, py) = map[i];
+                    if (px == -1) continue;
+                    uint argb = pixels[px + py * imageWidth];
+                    int nearestIdx = FindNearestPaletteIndex(argb, palette, colourCache);
+                    output[sectionOffset + i] = (byte)InverseConvertPlace(nearestIdx, palette.Length);
+                }
             }
         }
 
@@ -599,7 +624,7 @@ public static class ImageSaver
         const int imageWidth = 40;
         const int imageHeight = 32;
 
-        uint[] palette = ReadPalette(originalData, paletteOffset, paletteSize);
+        uint[] palette = ImageCreator.ReadPalette(originalData, paletteOffset, paletteSize);
         SKBitmap src = LoadSourceBitmap(bitmap, pngPath, imageWidth, imageHeight);
         bool disposeSrc = !ReferenceEquals(src, bitmap);
 
@@ -640,7 +665,7 @@ public static class ImageSaver
         {
             throw new InvalidDataException($"Image size {src.Width}x{src.Height} doesn't match target {expectedWidth}x{expectedHeight}.");
         }
-        
+
         return src;
     }
 
@@ -703,37 +728,6 @@ public static class ImageSaver
         return totalImageSize - startOfImage;
     }
 
-    static uint[] ReadPalette(byte[] data, int paletteOffset, int paletteSize)
-    {
-        if (paletteSize == 0x400)
-        {
-            var palette = new uint[256];
-            for (int i = 0; i < 256; i++)
-            {
-                int p = BitConverter.ToInt32(data, paletteOffset + i * 4);
-                byte r = (byte)(p & 0xFF);
-                byte g = (byte)((p >> 8) & 0xFF);
-                byte b = (byte)((p >> 16) & 0xFF);
-                palette[i] = (uint)(0xFF000000 | (r << 16) | (g << 8) | b);
-            }
-            return palette;
-        }
-        else // 0x200, maybe do a switch later
-        {
-            int entryCount = paletteSize / 2;
-            var palette = new uint[entryCount];
-            for (int i = 0; i < entryCount; i++)
-            {
-                ushort p = BitConverter.ToUInt16(data, paletteOffset + i * 2);
-                byte r = (byte)((p & 0x1F) * 255 / 31);
-                byte g = (byte)(((p >> 5) & 0x1F) * 255 / 31);
-                byte b = (byte)(((p >> 10) & 0x1F) * 255 / 31);
-                palette[i] = (uint)(0xFF000000 | (r << 16) | (g << 8) | b);
-            }
-            return palette;
-        }
-    }
-
 
     static int InverseConvertPlace(int targetIndex, int paletteSize)
     {
@@ -752,34 +746,48 @@ public static class ImageSaver
 
     public static byte[] SavePaletteToBytes(byte[] originalData)
     {
+
         const int paddingSize = 0x60;
 
         int totalImageSize = BitConverter.ToInt32(originalData, 0x8);
         var (paletteOffset, paletteSize) = FindPaletteStartAndSize(originalData, totalImageSize, paddingSize);
-        if (paletteOffset == -1) throw new InvalidDataException("Could not locate palette.");
-        if (paletteSize != 0x200 && paletteSize != 0x400) throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
+
+        if (paletteOffset == -1)
+            throw new InvalidDataException("Could not locate palette.");
+
+        if (paletteSize != 0x200 && paletteSize != 0x400)
+            throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
 
         byte[] output = (byte[])originalData.Clone();
         var palette = GameImageManager.CurrentTexture.Palette;
 
         if (paletteSize == 0x400)
         {
+
             for (int i = 0; i < palette.Length; i++)
             {
                 byte r = (byte)(palette[i] >> 16);
                 byte g = (byte)(palette[i] >> 8);
                 byte b = (byte)(palette[i]);
+
+                byte originalAlpha = originalData[paletteOffset + i * 4 + 3];
+
                 int offset = paletteOffset + i * 4;
                 output[offset + 0] = r;
                 output[offset + 1] = g;
                 output[offset + 2] = b;
-                output[offset + 3] = 0xFF;
+                output[offset + 3] = originalAlpha;
             }
         }
-        else // 0x200 Todo switch later
+        else
         {
-            for (int i = 0; i < palette.Length; i++)
+            int entryCount = paletteSize / 2;
+
+            for (int i = 0; i < entryCount; i++)
             {
+                ushort original = BitConverter.ToUInt16(originalData, paletteOffset + i * 2);
+                ushort bit15 = (ushort)(original & 0x8000);
+
                 byte r = (byte)(palette[i] >> 16);
                 byte g = (byte)(palette[i] >> 8);
                 byte b = (byte)(palette[i]);
@@ -788,10 +796,10 @@ public static class ImageSaver
                 byte g5 = (byte)((g * 31 + 127) / 255);
                 byte b5 = (byte)((b * 31 + 127) / 255);
 
-                ushort rgb555 = (ushort)(r5 | (g5 << 5) | (b5 << 10));
-                int offset = paletteOffset + i * 2;
-                output[offset + 0] = (byte)(rgb555 & 0xFF);
-                output[offset + 1] = (byte)(rgb555 >> 8);
+                ushort packed = (ushort)(bit15 | r5 | (g5 << 5) | (b5 << 10));
+
+                output[paletteOffset + i * 2 + 0] = (byte)(packed & 0xFF);
+                output[paletteOffset + i * 2 + 1] = (byte)(packed >> 8);
             }
         }
 

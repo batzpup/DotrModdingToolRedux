@@ -10,8 +10,7 @@ class Program
     static readonly string MainExeFile = IsWindows ? "DotrModdingTool2IMGUI.exe" : "DotrModdingTool2IMGUI";
 
     // Files belonging to the updater itself — never overwrite these while running
-    static readonly string[] filesToNotReplace = new[]
-    {
+    static readonly string[] filesToNotReplace = new[] {
         "Updater.deps.json",
         "Updater.dll",
         IsWindows ? "Updater.exe" : "Updater",
@@ -82,10 +81,10 @@ class Program
     {
         Console.Title = "DotrModdingTool Updater";
 
-        // Use a temp file in the system temp directory instead of assuming a Desktop exists.
-        // Desktop may not exist on headless Linux systems or servers.
         string tempLocation = Path.Combine(Path.GetTempPath(), "DotrUpdaterStarted.txt");
-        using (File.Create(tempLocation)) { }
+        using (File.Create(tempLocation))
+        {
+        }
 
         LogToFile("Start StandAlone updater logs");
         LogToFile("Updater started", tempLocation);
@@ -190,7 +189,15 @@ class Program
                 LogToFile($"Updated: {file} -> {destFile}");
             }
         }
-        
+        //Update runtimes folder for OS specific dependencies, im looking at you SkisSharp and Raylib linux
+        string runtimesSrc = Path.Combine(updaterDir, "runtimes");
+        string runtimesDst = Path.Combine(targetDir, "runtimes");
+        if (Directory.Exists(runtimesSrc))
+        {
+            LogToFile($"Copying runtimes directory: {runtimesSrc} -> {runtimesDst}");
+            CopyDirectory(runtimesSrc, runtimesDst);
+        }
+
         string mainExe = Path.Combine(targetDir, MainExeFile);
         if (!IsWindows && File.Exists(mainExe))
         {
@@ -211,8 +218,7 @@ class Program
 
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
+            Process.Start(new ProcessStartInfo {
                 FileName = mainExe,
                 UseShellExecute = IsWindows // UseShellExecute = false is more reliable on Linux
             });
@@ -226,6 +232,23 @@ class Program
         }
 
         LogToFile("Update complete.");
+    }
+
+    static void CopyDirectory(string sourceDir, string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            string destFile = Path.Combine(targetDir, Path.GetFileName(file));
+            File.Copy(file, destFile, true);
+            LogToFile($"Updated: {file} -> {destFile}");
+        }
+
+        foreach (var dir in Directory.GetDirectories(sourceDir))
+        {
+            CopyDirectory(dir, Path.Combine(targetDir, Path.GetFileName(dir)));
+        }
     }
 
     /// <summary>

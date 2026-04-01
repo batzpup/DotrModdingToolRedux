@@ -155,7 +155,7 @@ public class DeckEditorWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
-                    GlobalImgui.RenderTooltipRankImage(leaderRank);
+                    GlobalImgui.RenderTooltipRankImage(leaderRank,currentDeck.DeckLeader.CardConstant.Index);
                 }
             }
             ImGui.EndCombo();

@@ -50,7 +50,7 @@ class CardEditorWindow : IImGuiWindow
     int[] currentAbilityRankIndex = new int[20];
     MonsterEffects? currentEffects = null;
     string[] effectsTableVerticalHeaders = Enum.GetNames(typeof(MonsterEffects.MonsterEffectType));
-    string[] effectsTableHorizontalHeaders = { "Effect Id", "Effect Target", "Effect Target Type", "Extra Data" };
+    string[] effectsTableHorizontalHeaders = { "Effect Id", "Effect Target", "Effect Target Scope", "Extra Data" };
     int[] currentMonsterEffectDataUpper = new int[5];
     int[] currentMonsterEffectDataLower = new int[5];
     int[] currentMonsterEffectId = new int[5];
@@ -70,6 +70,8 @@ class CardEditorWindow : IImGuiWindow
     bool allowEffectEditing = false;
     bool showEditEffectWarning = true;
 
+    string currentMonsterEffectText = String.Empty;
+    bool showMonsterEditNote = true;
 
     public CardEditorWindow()
     {
@@ -359,9 +361,9 @@ class CardEditorWindow : IImGuiWindow
 
             ImGui.PushItemWidth(100 * imageScale - xTextPadding);
             ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0)); // Transparent button background
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f)); // Slight hover effect
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f)); // Active effect
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0)); 
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f)); 
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f)); 
 
 
 
@@ -792,13 +794,38 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.BeginDisabled();
             }
 
+
+
             if (ImGui.BeginTabItem("Edit Monster Effect Table"))
             {
-                ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
-                ImGui.TextWrapped(
-                    "Note:\nThis changes all monster cards that reference this id, you cannot change an individual monster effect you must change the effect in this table and then change the effect id on the monster to match the effect you want");
-                ImGui.PopStyleColor();
+                if (currentMonsterEffectText == String.Empty)
+                {
+                    foreach (var monster in CardConstant.Monsters)
+                    {
+                        if (monster.EffectId == monsterEffectTableEditorIndex)
+                        {
+                            currentMonsterEffectText = StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + monster.Index];
+                            break;
+                        }
+
+                    }
+                }
+
+
+
+
                 ImGui.Separator();
+
+                ImGui.Checkbox("Show note", ref showMonsterEditNote);
+                
+                if (showMonsterEditNote)
+                {
+
+                    ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
+                    ImGui.TextWrapped(
+                        "Note:\nThis changes all monster cards that reference this id, you cannot change an individual monster effect you must change the effect in this table and then change the effect id on the monster to match the effect you want");
+                    ImGui.PopStyleColor();
+                }
                 ImGui.Text($"Original: ({Effects.MonsterEffectOwners.ElementAt(monsterEffectTableEditorIndex).Value.Current})");
                 ImGui.SetNextItemWidth(200);
 
@@ -812,7 +839,18 @@ class CardEditorWindow : IImGuiWindow
                     {
                         monsterEffectTableEditorIndex = 0;
                     }
+                    foreach (var monster in CardConstant.Monsters)
+                    {
+                        if (monster.EffectId == monsterEffectTableEditorIndex)
+                        {
+                            currentMonsterEffectText = StringEditor.StringTable[StringEditor.CardEffectTextOffsetStart + monster.Index];
+                            break;
+                        }
+
+                    }
                 }
+                ImGui.Text("Current Text:");
+                ImGui.Text(currentMonsterEffectText);
                 for (int monsterEffectIndex = 0; monsterEffectIndex < 5; monsterEffectIndex++)
                 {
                     currentMonsterEffectDataUpper[monsterEffectIndex] = (int)Effects.MonsterEffectsList[monsterEffectTableEditorIndex]
@@ -927,6 +965,8 @@ class CardEditorWindow : IImGuiWindow
                 }
                 ImGui.EndTabItem();
             }
+
+
             if (ImGui.BeginTabItem("Edit Magic Effect Table"))
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);

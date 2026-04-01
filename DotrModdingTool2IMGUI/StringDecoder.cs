@@ -157,78 +157,81 @@ public class StringDecoder
 
     public void Run()
     {
-        var fs = DataAccess.fileStream;
-        using (var reader = new BinaryReader(fs, Encoding.UTF8, true))
+        lock (DataAccess.fileStream)
         {
-            var offsets = ReadOffsetTable(reader);
-            var blob = ReadStringBlob(reader);
-
-            var strings = new List<List<List<int>>>();
-            for (int i = 0; i < 3073; i++)
+            var fs = DataAccess.fileStream;
+            using (var reader = new BinaryReader(fs, Encoding.UTF8, true))
             {
-                strings.Add(ReadString(offsets, blob, i));
-            }
+                var offsets = ReadOffsetTable(reader);
+                var blob = ReadStringBlob(reader);
 
-            var stringCharSets = new List<HashSet<int>>();
-            foreach (var str in strings)
-            {
-                var charSet = new HashSet<int>();
-                foreach (var line in str)
+                var strings = new List<List<List<int>>>();
+                for (int i = 0; i < 3073; i++)
                 {
-                    charSet.UnionWith(line);
+                    strings.Add(ReadString(offsets, blob, i));
                 }
-                stringCharSets.Add(charSet);
-            }
 
-            var chars = new HashSet<int>();
-            foreach (var charSet in stringCharSets)
-            {
-                chars.UnionWith(charSet);
-            }
-
-
-            chars.RemoveWhere(c => knownChars.ContainsKey(c));
-
-            for (int i = 0; i < 3073; i++)
-            {
-                if (new HashSet<int>(stringCharSets[i]).IsSubsetOf(knownChars.Keys)) continue;
-            }
-
-            StringEditor.StringTable = new Dictionary<int, string>();
-            for (int i = 0; i < strings.Count; i++)
-            {
-                var realChars = new List<char>();
-                foreach (var line in strings[i])
+                var stringCharSets = new List<HashSet<int>>();
+                foreach (var str in strings)
                 {
-                    foreach (var charValue in line)
+                    var charSet = new HashSet<int>();
+                    foreach (var line in str)
                     {
-                        if (knownChars.TryGetValue(charValue, out var c))
-                        {
-                            realChars.Add(c);
-                        }
-
-                        else
-                        {
-                            Console.WriteLine($"Unknown char 0x{charValue:X4} at string {i}");
-                            realChars.Add('\uFFFD');
-                        }
-
+                        charSet.UnionWith(line);
                     }
-                    realChars.Add('\n');
+                    stringCharSets.Add(charSet);
                 }
-                //transforms the custom codes to their string representations
-                string tempStr = string.Join("", realChars);
-                tempStr = tempStr.Remove(tempStr.Length - 1)
-                    .Replace(StringEditor.PNamePlaceholder.ToString(), "PNAME_CHAR")
-                    .Replace("\uFFF3", "III");
-                StringEditor.StringTable.Add(i, tempStr);
-            }
-            if (StringEditor.ShouldDumpText)
-            {
-                StringEditor.ExportStringsToJSON("strings.json");
-            }
+
+                var chars = new HashSet<int>();
+                foreach (var charSet in stringCharSets)
+                {
+                    chars.UnionWith(charSet);
+                }
 
 
+                chars.RemoveWhere(c => knownChars.ContainsKey(c));
+
+                for (int i = 0; i < 3073; i++)
+                {
+                    if (new HashSet<int>(stringCharSets[i]).IsSubsetOf(knownChars.Keys)) continue;
+                }
+
+                StringEditor.StringTable = new Dictionary<int, string>();
+                for (int i = 0; i < strings.Count; i++)
+                {
+                    var realChars = new List<char>();
+                    foreach (var line in strings[i])
+                    {
+                        foreach (var charValue in line)
+                        {
+                            if (knownChars.TryGetValue(charValue, out var c))
+                            {
+                                realChars.Add(c);
+                            }
+
+                            else
+                            {
+                                Console.WriteLine($"Unknown char 0x{charValue:X4} at string {i}");
+                                realChars.Add('\uFFFD');
+                            }
+
+                        }
+                        realChars.Add('\n');
+                    }
+                    //transforms the custom codes to their string representations
+                    string tempStr = string.Join("", realChars);
+                    tempStr = tempStr.Remove(tempStr.Length - 1)
+                        .Replace(StringEditor.PNamePlaceholder.ToString(), "PNAME_CHAR")
+                        .Replace("\uFFF3", "III");
+                    StringEditor.StringTable.Add(i, tempStr);
+                }
+                if (StringEditor.ShouldDumpText)
+                {
+                    StringEditor.ExportStringsToJSON("strings.json");
+                }
+
+
+            }
         }
     }
 }
