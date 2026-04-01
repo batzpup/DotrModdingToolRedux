@@ -15,7 +15,10 @@ public static class GameImageManager
     public static byte[][] TexEveBytes = new byte[DataAccess.TexEveCount][];
     public static byte[][] TexSysBytes = new byte[DataAccess.TexSysCount][];
     public static byte[][] MonsterModelBytes = new byte[DataAccess.MonsterModelCount][];
+    public static byte[][] IconImageBytes = new byte[DataAccess.IconImageCount][];
 
+
+    public static HashSet<int> MonsterModelExlusions = new HashSet<int>(); 
     public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
     public static ModdedStringName[] PreloadDefaultImageNameList;
     public static GameTexture CurrentTexture = new();

@@ -342,9 +342,9 @@ class CardEditorWindow : IImGuiWindow
 
             ImGui.PushItemWidth(100 * imageScale - xTextPadding);
             ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0)); // Transparent button background
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f)); // Slight hover effect
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f)); // Active effect
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0)); 
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.2f, 0.2f, 0.5f)); 
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.1f, 0.1f, 0.5f)); 
 
 
 

@@ -40,16 +40,31 @@ public class GlobalImgui
         ImGui.PopStyleColor();
     }
 
-    public static void RenderTooltipRankImage(DeckLeaderRank leaderRank, int xSize = 64, int ySize = 64)
+    public static void RenderTooltipRankImage(DeckLeaderRank leaderRank, int index = -1, int xSize = 64, int ySize = 64)
     {
         if (!UserSettings.ToggleImageTooltips)
             return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
         ImGui.BeginTooltip();
         ImGui.Text("Rank Preview");
-        float tooltipWidth = ImGui.GetWindowSize().X;
-        ImGui.SetCursorPosX((tooltipWidth - xSize) * 0.5f);
+        //ImGui.SetCursorPosX((tooltipWidth - xSize) * 0.5f);
         ImGui.Image(GlobalImages.Instance.LeaderRanks[leaderRank], new Vector2(xSize, ySize));
+      
+        if (index != -1)
+        {
+            foreach (DeckLeaderAbility ability in CardDeckLeaderAbilities.MonsterAbilities[index].Abilities)
+            {
+                if (ability.Name == "???")
+                {
+                    continue;
+                }
+                if (ability.IsEnabled && ability.RankRequired <= (int)leaderRank)
+                {
+                    ImGui.Text(ability.Name);
+                }
+
+            }
+        }
         ImGui.EndTooltip();
         ImGui.PopStyleColor();
     }

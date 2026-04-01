@@ -26,14 +26,21 @@ public class TextureEditorWindow : IImGuiWindow
     int currentTexEffIndex;
     int currentTexEveIndex;
     int currentMonsterTexIndex;
-
-
+    int currentIconIndex = 0;
+    int[] currentMonsterIndexMap = Array.Empty<int>();
     bool cropImageOnLoad;
     string cardSearch = String.Empty;
     ImageMrgFile currentMrgFile = ImageMrgFile.Picture;
 
 
     ModdedStringName[] currentNameList = Array.Empty<ModdedStringName>();
+
+    ModdedStringName[] iconName = new ModdedStringName[] {
+        new ModdedStringName("Icon View", "Icon View"),
+        new ModdedStringName("Icon Copy", "Icon Copy"),
+        new ModdedStringName("Icon Delete", "Icon Delete")
+    };
+
     byte[][] currentImageByteArray = Array.Empty<byte[]>();
 
 
@@ -75,6 +82,7 @@ public class TextureEditorWindow : IImGuiWindow
             case ImageMrgFile.TexEff: return ref currentTexEffIndex;
             case ImageMrgFile.TexEve: return ref currentTexEveIndex;
             case ImageMrgFile.Monster: return ref currentMonsterTexIndex;
+            case ImageMrgFile.Icon: return ref currentIconIndex;
             default: return ref currentPictureIndex;
         }
     }
@@ -131,7 +139,16 @@ public class TextureEditorWindow : IImGuiWindow
                 break;
             case ImageMrgFile.Monster:
                 currentNameList = GetNumberedNames("Monster", DataAccess.MonsterModelCount);
+                currentMonsterIndexMap = Enumerable.Range(0, DataAccess.MonsterModelCount)
+                    .Where(i => !GameImageManager.MonsterModelExlusions.Contains(i))
+                    .ToArray();
+                currentNameList = currentMonsterIndexMap
+                    .Select(i => new ModdedStringName($"Monster {i}", $"Monster {i}"))
+                    .ToArray();
                 currentImageByteArray = GameImageManager.MonsterModelBytes;
+                break;
+            case ImageMrgFile.Icon:
+                currentNameList = iconName;
                 break;
             default:
                 currentNameList = Card.cardNameList;
@@ -181,7 +198,7 @@ public class TextureEditorWindow : IImGuiWindow
         ImGui.SetNextItemWidth(150 * EditorWindow.AspectRatio.X);
         ImGui.SliderFloat("##bs", ref brushSize, 1f, 64f);
 
-        ImGui.Text("Opacity");
+        ImGui.Text("Eraser Opacity");
         ImGui.SetNextItemWidth(150 * EditorWindow.AspectRatio.X);
         ImGui.SliderFloat("##op", ref opacity, 0f, 1f);
 
@@ -241,11 +258,17 @@ public class TextureEditorWindow : IImGuiWindow
         if (ImGui.Button("Save Pic Buffer"))
         {
             if (paintCanvas == null || picMiniCropMode && picMiniFullCanvas == null)
-            {
                 return;
+
+            if (currentMrgFile == ImageMrgFile.Icon)
+            {
+                GameImageManager.IconImageBytes[currentIndex] = ImageSaver.SaveImageToBytes(GameImageManager.IconImageBytes[currentIconIndex], currentMrgFile, paintCanvas.Bitmap);
             }
-            currentImageByteArray[currentIndex] = ImageSaver.SavePaletteToBytes(currentImageByteArray[currentIndex]);
-            currentImageByteArray[currentIndex] = ImageSaver.SaveImageToBytes(currentImageByteArray[currentIndex], currentMrgFile, paintCanvas.Bitmap);
+            else
+            {
+                currentImageByteArray[currentIndex] = ImageSaver.SavePaletteToBytes(currentImageByteArray[currentIndex]);
+                currentImageByteArray[currentIndex] = ImageSaver.SaveImageToBytes(currentImageByteArray[currentIndex], currentMrgFile, paintCanvas.Bitmap);
+            }
         }
 
         if (ImGui.RadioButton("Crop Loaded Image", cropImageOnLoad))
@@ -265,6 +288,10 @@ public class TextureEditorWindow : IImGuiWindow
         if (ImGui.Button("Export"))
         {
             paintCanvas?.SaveAs();
+        }
+        if (ImGui.Button("Export All loaded images"))
+        {
+            _ = paintCanvas?.SaveAll();
         }
 
 
@@ -373,13 +400,10 @@ public class TextureEditorWindow : IImGuiWindow
             foreach (ImageMrgFile val in Enum.GetValues<ImageMrgFile>())
             {
                 if (val == ImageMrgFile.PicPack)
-                {
                     continue;
-                }
+
                 if (!DataAccess.Instance.AllImagesLoaded && AllImagesLoadedOnly.Contains(val))
-                {
                     continue;
-                }
 
                 bool selected = val == currentMrgFile;
                 if (ImGui.Selectable(val.ToString(), selected))
@@ -390,7 +414,18 @@ public class TextureEditorWindow : IImGuiWindow
                     cardSearch = "";
                     RefreshCurrentSource();
                     currentIndex = ref GetCurrentIndex();
-                    ImageCreator.CreateImageFromBytes(currentImageByteArray[currentIndex], currentMrgFile, "", false);
+
+                    if (val == ImageMrgFile.Icon)
+                    {
+                        GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(
+                            GameImageManager.IconImageBytes[PS2Icon.CurrentTextureIndex]);
+                        PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
+                    }
+                    else
+                    {
+                        ImageCreator.CreateImageFromBytes(currentImageByteArray[currentIndex], currentMrgFile, "", false);
+                    }
+
                     paintCanvas.LoadBitmap(GameImageManager.CurrentTexture.Bitmap);
                     paintCanvas.ClearStack();
                     palette = ImageCreator.ExtractPalette();
@@ -400,7 +435,10 @@ public class TextureEditorWindow : IImGuiWindow
         }
 
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.BeginCombo("##CardId", currentNameList[currentIndex].Current))
+        string comboLabel = currentMrgFile == ImageMrgFile.Monster
+            ? currentNameList[Array.IndexOf(currentMonsterIndexMap, currentIndex)].Current
+            : currentNameList[currentIndex].Current;
+        if (ImGui.BeginCombo("##CardId", comboLabel))
         {
             ImGui.SetNextItemWidth(-1);
             if (ImGui.IsWindowAppearing()) ImGui.SetKeyboardFocusHere();
@@ -410,10 +448,29 @@ public class TextureEditorWindow : IImGuiWindow
             }
             ImGui.Separator();
 
-            var filteredList = currentNameList
-                .Select((name, i) => (name.Current, i))
-                .Where(x => x.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            (string Current, int OriginalIndex)[] filteredList;
+
+            if (currentMrgFile == ImageMrgFile.Icon)
+            {
+                filteredList = currentNameList
+                    .Select((name, i) => (name.Current, OriginalIndex: i))
+                    .ToArray();
+            }
+            else if (currentMrgFile == ImageMrgFile.Monster)
+            {
+                filteredList = currentNameList
+                    .Select((name, i) => (name.Current, OriginalIndex: currentMonsterIndexMap[i]))
+                    .Where(x => x.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+            }
+            else
+            {
+                filteredList = currentNameList
+                    .Select((name, i) => (name.Current, OriginalIndex: i))
+                    .Where(x => x.Current.Contains(cardSearch, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+            }
+
 
             foreach (var (name, originalIndex) in filteredList)
             {
@@ -424,7 +481,19 @@ public class TextureEditorWindow : IImGuiWindow
                     cardSearch = "";
                     currentIndex = originalIndex;
                     picMiniCropMode = false;
-                    ImageCreator.CreateImageFromBytes(currentImageByteArray[currentIndex], currentMrgFile, "", false);
+
+                    if (currentMrgFile == ImageMrgFile.Icon)
+                    {
+                        PS2Icon.CurrentTextureIndex = originalIndex;
+                        GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(
+                            GameImageManager.IconImageBytes[PS2Icon.CurrentTextureIndex]);
+                        PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
+                    }
+                    else
+                    {
+                        ImageCreator.CreateImageFromBytes(currentImageByteArray[currentIndex], currentMrgFile, "", false);
+                    }
+
                     paintCanvas.LoadBitmap(GameImageManager.CurrentTexture.Bitmap);
                     paintCanvas.ClearStack();
                     palette = ImageCreator.ExtractPalette();
@@ -663,7 +732,18 @@ public class TextureEditorWindow : IImGuiWindow
     {
         RefreshCurrentSource();
         ref int index = ref GetCurrentIndex();
-        ImageCreator.CreateImageFromBytes(currentImageByteArray[index], currentMrgFile, "", false);
+
+        if (currentMrgFile == ImageMrgFile.Icon)
+        {
+            GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(
+                GameImageManager.IconImageBytes[PS2Icon.CurrentTextureIndex]);
+            PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
+        }
+        else
+        {
+            ImageCreator.CreateImageFromBytes(currentImageByteArray[index], currentMrgFile, "", false);
+        }
+
         paintCanvas = new PaintCanvas(GameImageManager.CurrentTexture.Bitmap);
         palette = ImageCreator.ExtractPalette();
     }

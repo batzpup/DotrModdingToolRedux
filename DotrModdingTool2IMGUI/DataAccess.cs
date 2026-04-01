@@ -103,6 +103,11 @@ public class DataAccess
     public const int MonsterModelSize = 0x2AB00000;
     public const int MonsterModelCount = 5961;
 
+    public const int IconImageSize = 0x8000;
+    public const int IconImageOffset = 0x3BE800;
+    public const int IconImageCount = 3;
+
+
     public const IntPtr picPackArtsSLUSArray = 0x2CE9FC - IsoSlusRamOffset;
 
 
@@ -783,6 +788,14 @@ public class DataAccess
                 GameImageManager.PicMiniBytes[i] = picture;
             }
 
+            for (int i = 0; i < IconImageCount; i++)
+            {
+                GameImageManager.IconImageBytes[i] = new byte[IconImageSize];
+                fileStream.Seek(IconImageOffset + PS2Icon.TextureOffsets[i], SeekOrigin.Begin);
+                fileStream.ReadExactly(GameImageManager.IconImageBytes[i], 0, IconImageSize);
+            }
+
+
             ImageCreator.CreateImageFromBytes(GameImageManager.PictureBytes[0], ImageMrgFile.Picture, Path.Combine(Directory.GetCurrentDirectory(), ""), false);
 
 
@@ -801,6 +814,15 @@ public class DataAccess
             LoadGenericTextureData(TexEffSize, TexEffOffset, TexEffCount, GameImageManager.TexEffBytes);
             LoadGenericTextureData(TexEveSize, TexEveOffset, TexEveCount, GameImageManager.TexEveBytes);
             LoadGenericTextureData(MonsterModelSize, MonsterModelOffset, MonsterModelCount, GameImageManager.MonsterModelBytes);
+            GameImageManager.MonsterModelExlusions.Clear();
+            for (int i = 0; i < GameImageManager.MonsterModelBytes.Length; i++)
+            {
+                var bytes = GameImageManager.MonsterModelBytes[i];
+                int totalImageSize = BitConverter.ToInt32(bytes, 0x8);
+                var (_, paletteSize) = ImageCreator.FindPaletteStartAndSize(bytes, totalImageSize);
+                if (paletteSize == 0x20)
+                    GameImageManager.MonsterModelExlusions.Add(i);
+            }
         });
         AllImagesLoaded = true;
     }
@@ -809,8 +831,6 @@ public class DataAccess
     {
         lock (FileStreamLock)
         {
-
-
             byte[] fileData = new byte[size];
             fileStream.Seek(offset, SeekOrigin.Begin);
             fileStream.ReadExactly(fileData, 0, size);
@@ -910,12 +930,21 @@ public class DataAccess
 
                 }
             }
-
+            lock (FileStreamLock)
+            {
+                for (int i = 0; i < IconImageCount; i++)
+                {
+                    fileStream.Seek(IconImageOffset + PS2Icon.TextureOffsets[i], SeekOrigin.Begin);
+                    fileStream.Write(GameImageManager.IconImageBytes[i], 0, IconImageSize);
+                    fileStream.Flush();
+                }
+            }
             if (AllImagesLoaded)
             {
                 EditorWindow.Disabled = true;
                 await Task.Run(() =>
                 {
+
                     SaveGenericTextureData(TexAnmSize, TexAnmOffset, TexAnmCount, GameImageManager.TexAnmBytes);
                     SaveGenericTextureData(NonMonsterModelTexturesSize, NonMonsterModelTextureOffset, NonMonsterModelTextureCount, GameImageManager.ModelTextureBytes);
                     SaveGenericTextureData(TexEtcSize, TexEtcOffset, TexEtcCount, GameImageManager.TexEtcBytes);

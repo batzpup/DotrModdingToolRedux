@@ -28,6 +28,10 @@ public static class ImageCreator
             case ImageMrgFile.Monster:
                 LoadPicture(bytes, ref metaData);
                 break;
+            case ImageMrgFile.Icon:
+                GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(bytes);
+                PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(mrgFile), mrgFile, null);
         }
@@ -132,8 +136,7 @@ public static class ImageCreator
         GameImageManager.CurrentTexture.Palette = finalPalette;
     }
 
-    static (byte R, byte G, byte B) FindNearestColor(
-        List<(byte R, byte G, byte B)> palette, byte r, byte g, byte b)
+    static (byte R, byte G, byte B) FindNearestColor(List<(byte R, byte G, byte B)> palette, byte r, byte g, byte b)
     {
         var best = palette[0];
         long bestDist = long.MaxValue;
@@ -172,7 +175,7 @@ public static class ImageCreator
         return (uint)(0xFF000000 | (red << 16) | (green << 8) | blue);
     }
 
-    static (int paletteOffset, int paletteSize) FindPaletteStartAndSize(byte[] data, int totalImageSize)
+    public static (int paletteOffset, int paletteSize) FindPaletteStartAndSize(byte[] data, int totalImageSize)
     {
         var span = data.AsSpan(0, totalImageSize);
         var pattern = endOfSectionSig.AsSpan();
@@ -315,6 +318,7 @@ public static class ImageCreator
         if (paletteOffset == -1) return;
         metaData.PalleteOffset = paletteOffset;
         metaData.PalleteSize = paletteSize;
+
         if (!IsValidPalletSize(metaData.PalleteSize))
         {
             return;
@@ -324,7 +328,7 @@ public static class ImageCreator
 
         int partialImageSize = GetPartialImageSize(picture, metaData.TotalImageSize, metaData.StartOfImage);
         GameImageManager.CurrentTexture.Palette = ReadPalette(picture, paletteOffset, paletteSize);
-        
+
         //Todo Check if this is still necessary
         if (metaData.NumberOfSections > 100) metaData.NumberOfSections = 100;
 
@@ -397,7 +401,7 @@ public static class ImageCreator
 
             for (int i = 0; i < count; i++)
             {
-                if (pixels[i] == oldBgra) 
+                if (pixels[i] == oldBgra)
                 {
                     pixels[i] = newBgra;
                 }
@@ -550,6 +554,7 @@ public static class ImageSaver
     {
         return imageFile switch {
             ImageMrgFile.PicMini => SavePicMiniToBytes(originalData, bitmap, pngPath),
+            ImageMrgFile.Icon => PS2Icon.SaveIconToByte(originalData, bitmap),
             _ => SaveStandardImageToBytes(originalData, bitmap, pngPath)
         };
     }
@@ -741,26 +746,32 @@ public static class ImageSaver
 
     public static byte[] SavePaletteToBytes(byte[] originalData)
     {
+
         const int paddingSize = 0x60;
 
         int totalImageSize = BitConverter.ToInt32(originalData, 0x8);
         var (paletteOffset, paletteSize) = FindPaletteStartAndSize(originalData, totalImageSize, paddingSize);
-        if (paletteOffset == -1) throw new InvalidDataException("Could not locate palette.");
-        if (paletteSize != 0x200 && paletteSize != 0x400) throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
 
+        if (paletteOffset == -1)
+            throw new InvalidDataException("Could not locate palette.");
+
+        if (paletteSize != 0x200 && paletteSize != 0x400)
+            throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
 
         byte[] output = (byte[])originalData.Clone();
         var palette = GameImageManager.CurrentTexture.Palette;
 
-        //shouldnt this be based of bit depth and what not 
         if (paletteSize == 0x400)
         {
+
             for (int i = 0; i < palette.Length; i++)
             {
                 byte r = (byte)(palette[i] >> 16);
                 byte g = (byte)(palette[i] >> 8);
                 byte b = (byte)(palette[i]);
+
                 byte originalAlpha = originalData[paletteOffset + i * 4 + 3];
+
                 int offset = paletteOffset + i * 4;
                 output[offset + 0] = r;
                 output[offset + 1] = g;
@@ -768,12 +779,12 @@ public static class ImageSaver
                 output[offset + 3] = originalAlpha;
             }
         }
-        else // 0x200
+        else
         {
             int entryCount = paletteSize / 2;
+
             for (int i = 0; i < entryCount; i++)
             {
-
                 ushort original = BitConverter.ToUInt16(originalData, paletteOffset + i * 2);
                 ushort bit15 = (ushort)(original & 0x8000);
 
@@ -785,9 +796,10 @@ public static class ImageSaver
                 byte g5 = (byte)((g * 31 + 127) / 255);
                 byte b5 = (byte)((b * 31 + 127) / 255);
 
-                ushort rgb555 = (ushort)(bit15 | r5 | (g5 << 5) | (b5 << 10));
-                output[paletteOffset + i * 2 + 0] = (byte)(rgb555 & 0xFF);
-                output[paletteOffset + i * 2 + 1] = (byte)(rgb555 >> 8);
+                ushort packed = (ushort)(bit15 | r5 | (g5 << 5) | (b5 << 10));
+
+                output[paletteOffset + i * 2 + 0] = (byte)(packed & 0xFF);
+                output[paletteOffset + i * 2 + 1] = (byte)(packed >> 8);
             }
         }
 
