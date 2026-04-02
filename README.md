@@ -63,9 +63,6 @@ Great for learning how to play a deck or for theorycrafting custom decks
 
 
 
-
-
-![image]
 ## License
 This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/master/LICENSE)
 
