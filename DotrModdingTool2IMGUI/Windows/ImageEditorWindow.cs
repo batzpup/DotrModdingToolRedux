@@ -16,16 +16,17 @@ class ImageEditorWindow : IImGuiWindow
         }
         if (ImGui.BeginTabBar("ImageEditorTabBar"))
         {
-            if (ImGui.BeginTabItem("Preloaded Image Editor"))
-            {
-                preloadImageEditorWindow.Render();
-                ImGui.EndTabItem();
-            }
             if (ImGui.BeginTabItem("Image Texture Editor"))
             {
                 textureEditorWindow.Render();
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Preloaded Image Editor"))
+            {
+                preloadImageEditorWindow.Render();
+                ImGui.EndTabItem();
+            }
+
 
             ImGui.EndTabBar();
         }
@@ -33,7 +34,7 @@ class ImageEditorWindow : IImGuiWindow
 
 
     }
-    
+
     public void Free()
     {
 

@@ -73,7 +73,7 @@ public class NameCalculatorWindow : IImGuiWindow
     {
         if (!DataAccess.Instance.IsIsoLoaded)
         {
-            ImGui.Text("Please load iso file");
+            ImGui.Text("Please load ISO file");
             return;
         }
         ImGui.Text("Name");

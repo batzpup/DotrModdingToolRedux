@@ -143,7 +143,7 @@ public class EditorWindow
             }
             catch (Exception)
             {
-                
+
             }
             finally
             {
@@ -747,27 +747,27 @@ public class EditorWindow
         {
             SaveChanges(false);
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.S | ImGuiKey.LeftAlt, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.S | ImGuiKey.ModAlt, ImGuiInputFlags.RouteGlobal))
         {
             SaveChanges(true);
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.O, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.O, ImGuiInputFlags.RouteGlobal))
         {
             OpenIso();
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.T, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.T, ImGuiInputFlags.RouteGlobal))
         {
             UserSettings.ToggleImageTooltips = !UserSettings.ToggleImageTooltips;
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.P, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.P, ImGuiInputFlags.RouteGlobal))
         {
             UserSettings.performanceMode = !UserSettings.performanceMode;
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.D, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.D, ImGuiInputFlags.RouteGlobal))
         {
             UserSettings.UseDefaultNames = !UserSettings.UseDefaultNames;
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.U, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.U, ImGuiInputFlags.RouteGlobal))
         {
             Task.Run(async () =>
             {
@@ -777,7 +777,7 @@ public class EditorWindow
 
             });
         }
-        if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.C, ImGuiInputFlags.RouteGlobal))
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.C, ImGuiInputFlags.RouteGlobal))
         {
             isCreditsOpen = true;
         }

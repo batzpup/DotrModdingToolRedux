@@ -14,7 +14,7 @@ public static class Updater
 {
     static readonly string repoOwner = "batzpup";
     static readonly string repoName = "DotrModdingToolRedux";
-    public static readonly string currentVersion = "v1.2.9-beta";
+    public static readonly string currentVersion = "v1.3.0-beta";
 
     // Platform-aware executable names
     static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -222,7 +222,6 @@ public static class Updater
     {
         try
         {
-            // .NET 7+ approach — no external process needed
 #if NET7_0_OR_GREATER
             var mode = File.GetUnixFileMode(filePath);
             mode |= UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;

@@ -58,7 +58,7 @@ public class MapEditorWindow : IImGuiWindow
     {
         if (!DataAccess.Instance.IsIsoLoaded)
         {
-            ImGui.Text($" Please load an iso to see treasures");
+            ImGui.Text($" Please load an ISO to see treasures");
             return;
         }
 
