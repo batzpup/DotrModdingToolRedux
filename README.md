@@ -27,6 +27,8 @@ Wouldnt be possible without:
 3. If it doesnt open, go to the runtimes folder, copy and paste the folder matching your operation system into main DotrModdingToolRedux directory (next to DotrModdingTool2IMGUI.exe)
 
 ## New Features
+These are just whats been added, includes all previous capabilities of the old tool!
+
 ### In built map and hidden card editor
 Can save maps to local file to use throughout different mods  
 Right click on the map to move the hidden card!
@@ -35,12 +37,32 @@ Right click on the map to move the hidden card!
 Edit all the card data in one spot now including effects  
 you can even see the cards text in the tool!
 ![image](https://github.com/user-attachments/assets/11e94345-4aa5-4a45-a95f-3056887793c7)
+
+### Edit Text
+Change card names, Effect description create new dialogue. 
+![image](https://github.com/user-attachments/assets/c3ab7d5b-c447-431c-a0c8-3bf5d1bcd6f6)
+
+
+### Edit Images
+Has in built pixel editing tools and can import and export png jpg and webp file.
+<img width="2560" height="1330" alt="image" src="https://github.com/user-attachments/assets/1088b008-890b-4fd4-a35e-ec47e7c66c71" />
+
+### Randomiser
+Extensive randomiser with too many options so you can perfectly craft your own randomiser experience
+<img width="2526" height="1292" alt="image" src="https://github.com/user-attachments/assets/fa7e94a4-b4c1-47fd-997c-44dae75b112c" />
+
+
 ### Customise battle music
 ![image](https://github.com/user-attachments/assets/48535751-de6a-46b9-a359-25dc172f6c56)
 ### Custom mods and AI bug fixes
 ![image](https://github.com/user-attachments/assets/76f3c0da-62b0-496e-80ee-26cc1575471d)
 
+### View all possible fusions from a deck
+Great for learning how to play a deck or for theorycrafting custom decks
+<img width="2336" height="1342" alt="image" src="https://github.com/user-attachments/assets/ad5c804b-f336-466d-9e7b-08e8758a6bb3" />
 
+
+![image]
 ## License
 This project is licensed under [GNU General Public License v3.0](https://github.com/batzpup/DotrModdingToolRedux/blob/master/LICENSE)
 
