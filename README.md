@@ -44,22 +44,25 @@ Change card names, Effect description create new dialogue.
 
 
 ### Edit Images
-Has in built pixel editing tools and can import and export png jpg and webp file.
+Has in built pixel editing tools and can import and export png jpg and webp files
 <img width="2560" height="1330" alt="image" src="https://github.com/user-attachments/assets/1088b008-890b-4fd4-a35e-ec47e7c66c71" />
 
 ### Randomiser
 Extensive randomiser with too many options so you can perfectly craft your own randomiser experience
 <img width="2526" height="1292" alt="image" src="https://github.com/user-attachments/assets/fa7e94a4-b4c1-47fd-997c-44dae75b112c" />
 
-
-### Customise battle music
-![image](https://github.com/user-attachments/assets/48535751-de6a-46b9-a359-25dc172f6c56)
 ### Custom mods and AI bug fixes
 ![image](https://github.com/user-attachments/assets/76f3c0da-62b0-496e-80ee-26cc1575471d)
 
 ### View all possible fusions from a deck
 Great for learning how to play a deck or for theorycrafting custom decks
 <img width="2336" height="1342" alt="image" src="https://github.com/user-attachments/assets/ad5c804b-f336-466d-9e7b-08e8758a6bb3" />
+
+### Customise battle music
+![image](https://github.com/user-attachments/assets/48535751-de6a-46b9-a359-25dc172f6c56)
+
+
+
 
 
 ![image]
