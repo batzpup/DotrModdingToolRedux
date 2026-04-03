@@ -596,7 +596,12 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         ImGui.Checkbox("Graveyard buff by type", ref bGraveyardBuffByType);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Allow card types to be passed in to the graveyard buff function in addition to only \"monster\" and \"card matches extra data\" targets");
+        {
+            ImGui.BeginTooltip();
+            ImGui.SetTooltip("Allow card types (0-19) to be passed in to the graveyard buff function.\nAlso patch the specific card search to take a single Card ID (+62) instead of specifically searching for Dark Magician/Dark Magician Girl.");
+            ImGui.TextColored(new GuiColour(Color.AliceBlue).value, "For example, to search for Dark Magicians in the graveyard, enter 62+60 = 122");
+
+        }
 
         ImGui.Checkbox("Toon leaders land change to toon", ref bToonLeaderLandChange);
         if (ImGui.IsItemHovered())
