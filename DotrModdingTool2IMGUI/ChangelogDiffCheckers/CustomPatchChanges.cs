@@ -12,6 +12,7 @@ public class CustomPatchSnapshot
     public bool bRemoveSlotRng;
     public bool bAllCustomDuels;
     public bool bKeepReincarnatedCard;
+    public bool bGraveyardBuffByType;
     public bool bMaxCardLimitInDeck;
     public bool bToonLeaderLandChange;
     public bool bAllKindsExtraSlots;
@@ -78,7 +79,8 @@ public class CustomPatchSnapshot
         bRemoveSlotRng = patches.bRemoveSlotRng;
         bAllCustomDuels = patches.bAllCustomDuels;
         bKeepReincarnatedCard = patches.bKeepReincarnatedCard;
-        
+        bGraveyardBuffByType = patches.bGraveyardBuffByType;
+
         bToonLeaderLandChange = patches.bToonLeaderLandChange;
         bAllKindsExtraSlots = patches.bAllKindsExtraSlots;
         bSaveMusic = patches.bSaveMusic;
@@ -115,7 +117,7 @@ public class CustomPatchSnapshot
         bStartingSpRed = patches.bStartingSpRed;
 
         bMaxCardLimitInDeck = patches.bMaxCardLimitInDeck;
-        
+
         startingSpRed = patches.startingSpRed;
         startingLpRed = patches.startingLpRed;
         spRecoveryRed = patches.spRecoveryRed;
@@ -159,6 +161,7 @@ public class CustomPatchDiff : IDiffChecker<CustomPatchSnapshot>
         ChangelogManager.Check("  Remove Slot RNG", oldSnapshot.bRemoveSlotRng, currentSnapshot.bRemoveSlotRng, normalDiffs);
         ChangelogManager.Check("  All Custom Duels", oldSnapshot.bAllCustomDuels, currentSnapshot.bAllCustomDuels, normalDiffs);
         ChangelogManager.Check("  Keep Reincarnated Card", oldSnapshot.bKeepReincarnatedCard, currentSnapshot.bKeepReincarnatedCard, normalDiffs);
+        ChangelogManager.Check("  Graveyard Buff By Type", oldSnapshot.bGraveyardBuffByType, currentSnapshot.bGraveyardBuffByType, normalDiffs);
         ChangelogManager.Check("  Nine Card Limit", oldSnapshot.bMaxCardLimitInDeck, currentSnapshot.bMaxCardLimitInDeck, normalDiffs);
         ChangelogManager.Check("  Toon Leader Land Change", oldSnapshot.bToonLeaderLandChange, currentSnapshot.bToonLeaderLandChange, normalDiffs);
         ChangelogManager.Check("  All Kinds Extra Slots", oldSnapshot.bAllKindsExtraSlots, currentSnapshot.bAllKindsExtraSlots, normalDiffs);
@@ -198,9 +201,9 @@ public class CustomPatchDiff : IDiffChecker<CustomPatchSnapshot>
 
         ChangelogManager.Check("  Change white recovery SP", oldSnapshot.bSpRecoveryWhite, currentSnapshot.bSpRecoveryWhite, normalDiffs);
         ChangelogManager.Check("  White starting SP", oldSnapshot.spRecoveryWhite, currentSnapshot.spRecoveryWhite, normalDiffs);
-        
+
         ChangelogManager.Check("  Max card limit per deck", oldSnapshot.maxCardInDeck, currentSnapshot.maxCardInDeck, normalDiffs);
-        
+
         if (normalDiffs.Count > 0)
         {
             diffs.Add("Basic patches");
