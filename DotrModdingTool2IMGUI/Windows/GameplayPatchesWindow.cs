@@ -68,7 +68,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     // hippo patches
     // Graveyard buff by type
     static int GraveyardBuffByTypePtr = 0x26488C - DataAccess.IsoSlusRamOffset;
-    static int TaTuto_DrawFinger = 0x27F630 - DataAccess.IsoSlusRamOffset;
+    static int TaTuto_OpenTutoMsg = 0x27FC20 - DataAccess.IsoSlusRamOffset;
 
     #region Toggle only
 
