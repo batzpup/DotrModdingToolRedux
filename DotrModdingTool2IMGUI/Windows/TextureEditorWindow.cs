@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
+using Raylib_cs;
 using SkiaSharp;
 namespace DotrModdingTool2IMGUI;
 
@@ -47,6 +48,27 @@ public class TextureEditorWindow : IImGuiWindow
     bool picMiniCropMode = false;
     SKPointI picMiniCropOrigin = new(0, 0);
     PaintCanvas? picMiniFullCanvas = null;
+    float picMiniZoom = 1f;
+    int picMiniSrcW = 40;
+    int picMiniSrcH = 32;
+    PicMiniZoomFilter picMiniZoomFilter = PicMiniZoomFilter.Nearest;
+
+    enum PicMiniZoomFilter
+    {
+        Nearest,
+        Bilinear,
+        Trilinear,
+        Aniso4x
+    }
+
+    static TextureFilter ToTextureFilter(PicMiniZoomFilter mode) => mode switch
+    {
+        PicMiniZoomFilter.Nearest => TextureFilter.Point,
+        PicMiniZoomFilter.Bilinear => TextureFilter.Bilinear,
+        PicMiniZoomFilter.Trilinear => TextureFilter.Trilinear,
+        PicMiniZoomFilter.Aniso4x => TextureFilter.Anisotropic4X,
+        _ => TextureFilter.Point
+    };
 
     static readonly HashSet<ImageMrgFile> AllImagesLoadedOnly = new() {
         ImageMrgFile.Model,
@@ -378,6 +400,7 @@ public class TextureEditorWindow : IImGuiWindow
         {
             if (ImGui.RadioButton("Edit PicMini", !picMiniCropMode))
             {
+                if (picMiniCropMode) ApplyCurrentCrop();
                 picMiniCropMode = false;
             }
 
@@ -392,6 +415,20 @@ public class TextureEditorWindow : IImGuiWindow
                 }
 
                 LoadPicMiniFullSizeBackground(pictureIndex, currentIndex);
+            }
+
+            if (picMiniCropMode)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button("Reset Zoom")) picMiniZoom = 1f;
+                ImGui.SameLine();
+                ImGui.Text($"Zoom: {picMiniZoom:0.00}x");
+
+                int filterIndex = (int)picMiniZoomFilter;
+                if (ImGui.Combo("Sampling", ref filterIndex, "Nearest\0Bilinear\0Trilinear\0Aniso4x\0"))
+                {
+                    picMiniZoomFilter = (PicMiniZoomFilter)filterIndex;
+                }
             }
         }
         ImGui.SetNextItemWidth(-1);
@@ -664,54 +701,75 @@ public class TextureEditorWindow : IImGuiWindow
         var dl = ImGui.GetWindowDrawList();
         int fullW = picMiniFullCanvas!.Width;
         int fullH = picMiniFullCanvas!.Height;
+        picMiniFullCanvas.SetTextureFilter(ToTextureFilter(picMiniZoomFilter));
+
+        picMiniSrcW = Math.Clamp((int)MathF.Round(40f / picMiniZoom), 1, fullW);
+        picMiniSrcH = Math.Clamp((int)MathF.Round(32f / picMiniZoom), 1, fullH);
+        picMiniCropOrigin.X = Math.Clamp(picMiniCropOrigin.X, 0, fullW - picMiniSrcW);
+        picMiniCropOrigin.Y = Math.Clamp(picMiniCropOrigin.Y, 0, fullH - picMiniSrcH);
 
         float aspect = (float)fullW / fullH;
-        Vector2 displaySize = availableSize.X / aspect <= availableSize.Y
+        Vector2 fitSize = availableSize.X / aspect <= availableSize.Y
             ? new Vector2(availableSize.X, availableSize.X / aspect)
             : new Vector2(availableSize.Y * aspect, availableSize.Y);
 
+        Vector2 displaySize = fitSize * picMiniZoom;
+        Vector2 imagePos = canvasPos + (availableSize - displaySize) / 2f;
+        Vector2 viewMin = canvasPos;
+        Vector2 viewMax = canvasPos + availableSize;
+
+        ImGui.PushClipRect(viewMin, viewMax, true);
+        ImGui.SetCursorScreenPos(imagePos);
         ImGui.Image(picMiniFullCanvas.GetTexturePtr(), displaySize);
 
         float scaleX = displaySize.X / fullW;
         float scaleY = displaySize.Y / fullH;
 
-        if (ImGui.IsItemHovered() && ImGui.IsMouseDown(ImGuiMouseButton.Left))
+        Vector2 mouse = ImGui.GetMousePos();
+        bool mouseInViewport =
+            mouse.X >= viewMin.X && mouse.X <= viewMax.X &&
+            mouse.Y >= viewMin.Y && mouse.Y <= viewMax.Y;
+
+        if (mouseInViewport)
         {
-            Vector2 mouse = ImGui.GetMousePos();
-            int imgX = (int)((mouse.X - canvasPos.X) / scaleX);
-            int imgY = (int)((mouse.Y - canvasPos.Y) / scaleY);
-
-            int newX = Math.Clamp(imgX - 20, 0, fullW - 40);
-            int newY = Math.Clamp(imgY - 16, 0, fullH - 32);
-
-            if (newX != picMiniCropOrigin.X || newY != picMiniCropOrigin.Y)
+            float wheel = ImGui.GetIO().MouseWheel;
+            if (wheel != 0f)
             {
-                picMiniCropOrigin.X = newX;
-                picMiniCropOrigin.Y = newY;
+                picMiniZoom = Math.Clamp(picMiniZoom * MathF.Pow(1.1f, wheel), 0.2f, 16f);
 
-                using var cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul);
-                using var cropCanvas = new SKCanvas(cropped);
-                var srcRect = new SKRectI(picMiniCropOrigin.X, picMiniCropOrigin.Y,
-                    picMiniCropOrigin.X + 40, picMiniCropOrigin.Y + 32);
-                cropCanvas.DrawBitmap(picMiniFullCanvas.Bitmap, srcRect, new SKRect(0, 0, 40, 32));
+                ApplyCurrentCrop();
+            }
 
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            {
+                int imgX = (int)((mouse.X - imagePos.X) / scaleX);
+                int imgY = (int)((mouse.Y - imagePos.Y) / scaleY);
 
-                cropCanvas.Flush();
-                paintCanvas.LoadBitmap(cropped);
-                ImageCreator.BuildPaletteFromBitmap(picMiniFullCanvas.Bitmap, currentImageByteArray[GetCurrentIndex()]);
-                palette = ImageCreator.ExtractPalette();
+                int newX = Math.Clamp(imgX - picMiniSrcW / 2, 0, fullW - picMiniSrcW);
+                int newY = Math.Clamp(imgY - picMiniSrcH / 2, 0, fullH - picMiniSrcH);
 
+                if (newX != picMiniCropOrigin.X || newY != picMiniCropOrigin.Y)
+                {
+                    picMiniCropOrigin.X = newX;
+                    picMiniCropOrigin.Y = newY;
+                    ApplyCurrentCrop();
+                }
             }
         }
 
 
-        Vector2 cropMin = canvasPos + new Vector2(picMiniCropOrigin.X * scaleX, picMiniCropOrigin.Y * scaleY);
-        Vector2 cropMax = cropMin + new Vector2(40 * scaleX, 32 * scaleY);
+        Vector2 cropMin = imagePos + new Vector2(picMiniCropOrigin.X * scaleX, picMiniCropOrigin.Y * scaleY);
+        Vector2 cropMax = cropMin + new Vector2(picMiniSrcW * scaleX, picMiniSrcH * scaleY);
         dl.AddRectFilled(cropMin, cropMax, 0x33FFFFFF);
         dl.AddRect(cropMin, cropMax, 0xFFFFFFFF, 0, ImDrawFlags.None, 2f);
         dl.AddRect(cropMin - new Vector2(1, 1), cropMax + new Vector2(1, 1), 0xFF000000, 0, ImDrawFlags.None, 1f);
-        ImGui.SetTooltip($"Crop origin: ({picMiniCropOrigin.X}, {picMiniCropOrigin.Y})");
 
+        ImGui.PopClipRect();
+
+        if (mouseInViewport)
+        {
+            ImGui.SetTooltip($"Crop origin: ({picMiniCropOrigin.X}, {picMiniCropOrigin.Y}) | Zoom: {picMiniZoom:0.00}x");
+        }
     }
 
     void LoadPicMiniFullSizeBackground(int pictureIndex, int byteArrayIndex)
@@ -745,6 +803,30 @@ public class TextureEditorWindow : IImGuiWindow
         }
 
         paintCanvas = new PaintCanvas(GameImageManager.CurrentTexture.Bitmap);
+        palette = ImageCreator.ExtractPalette();
+    }
+
+    void ApplyCurrentCrop()
+    {
+        if (picMiniFullCanvas == null) return;
+        int fullW = picMiniFullCanvas.Width;
+        int fullH = picMiniFullCanvas.Height;
+
+        picMiniSrcW = Math.Clamp((int)MathF.Round(40f / picMiniZoom), 1, fullW);
+        picMiniSrcH = Math.Clamp((int)MathF.Round(32f / picMiniZoom), 1, fullH);
+        picMiniCropOrigin.X = Math.Clamp(picMiniCropOrigin.X, 0, fullW - picMiniSrcW);
+        picMiniCropOrigin.Y = Math.Clamp(picMiniCropOrigin.Y, 0, fullH - picMiniSrcH);
+
+        using var cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        using var cropCanvas = new SKCanvas(cropped);
+        var srcRect = new SKRectI(
+            picMiniCropOrigin.X, picMiniCropOrigin.Y,
+            picMiniCropOrigin.X + picMiniSrcW, picMiniCropOrigin.Y + picMiniSrcH
+        );
+        cropCanvas.DrawBitmap(picMiniFullCanvas.Bitmap, srcRect, new SKRect(0, 0, 40, 32));
+        cropCanvas.Flush();
+        paintCanvas.LoadBitmap(cropped);
+        ImageCreator.BuildPaletteFromBitmap(picMiniFullCanvas.Bitmap, currentImageByteArray[GetCurrentIndex()]);
         palette = ImageCreator.ExtractPalette();
     }
 
