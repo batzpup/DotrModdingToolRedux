@@ -65,6 +65,11 @@ public class GameplayPatchesWindow : IImGuiWindow
     static int TaTuto_DrawTrapArea = 0x27F700 - DataAccess.IsoSlusRamOffset;
     static int AI_Tut_05 = 0x17AA70 - DataAccess.IsoSlusRamOffset;
 
+    // hippo patches
+    // Graveyard buff by type
+    static int GraveyardBuffByTypePtr = 0x26488C - DataAccess.IsoSlusRamOffset;
+    static int TaTuto_DrawFinger = 0x27F630 - DataAccess.IsoSlusRamOffset;
+
     #region Toggle only
 
     [JsonInclude] public bool bAiDoubleTap;
@@ -77,6 +82,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bRemoveSlotRng;
     [JsonInclude] public bool bAllCustomDuels;
     [JsonInclude] public bool bKeepReincarnatedCard;
+    [JsonInclude] public bool bGraveyardBuffByType;
 
 
     [JsonInclude] public bool bToonLeaderLandChange;
@@ -588,6 +594,10 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.Checkbox("Keep reincarnated cards", ref bKeepReincarnatedCard);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Dont lose the card you reincarnate");
 
+        ImGui.Checkbox("Graveyard buff by type", ref bGraveyardBuffByType);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Allow card types to be passed in to the graveyard buff function in addition to only \"monster\" and \"card matches extra data\" targets");
+
         ImGui.Checkbox("Toon leaders land change to toon", ref bToonLeaderLandChange);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(
@@ -662,6 +672,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bRemoveExpLoss = new NoNegativeXP().IsApplied();
         CurrentRule = (int)new DcRuleChanges().GetRule();
         bKeepReincarnatedCard = new KeepReincarnatedCard().IsApplied();
+        bGraveyardBuffByType = new GraveyardBuffByType().IsApplied();
         bUnlockFusions = dataAccess.CheckIfPatchApplied(Patcher.AllowAllHandFusions.Offset, Patcher.AllowAllHandFusions.Patch) ||
                          dataAccess.CheckIfPatchApplied(Patcher.AllowAllFieldFusions.Offset, Patcher.AllowAllFieldFusions.Patch);
 
@@ -869,6 +880,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         new ToonLeadersMovePatch().ApplyOrRemove(bToonLeaderLandChange);
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
+        new GraveyardBuffByType().ApplyOrRemove(bGraveyardBuffByType);
 
 
 
@@ -1486,7 +1498,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     public bool IsUsingFastIntroMods()
     {
         return bSaveCustomSlotRewards || bAiDoubleTap || bAllCustomDuels ||
-               CurrentRule == 1 || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
+             CurrentRule == 1 || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic || bGraveyardBuffByType ||
                bUserToggledFastIntro;
     }
 
@@ -1508,6 +1520,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (root.TryGetProperty("bRemoveSlotRng", out e)) bRemoveSlotRng = e.GetBoolean();
         if (root.TryGetProperty("bAllCustomDuels", out e)) bAllCustomDuels = e.GetBoolean();
         if (root.TryGetProperty("bKeepReincarnatedCard", out e)) bKeepReincarnatedCard = e.GetBoolean();
+        if (root.TryGetProperty("bGraveyardBuffByType", out e)) bGraveyardBuffByType = e.GetBoolean();
         if (root.TryGetProperty("bToonLeaderLandChange", out e)) bToonLeaderLandChange = e.GetBoolean();
         if (root.TryGetProperty("bAllKindsExtraSlots", out e)) bAllKindsExtraSlots = e.GetBoolean();
         if (root.TryGetProperty("bSaveMusic", out e)) bSaveMusic = e.GetBoolean();
@@ -1574,7 +1587,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             SpecialSlotRewards = ReadIntArray(e, SpecialSlotRewards?.Length ?? 30);
         }
-        
+
         if (root.TryGetProperty("rankExp", out e) && e.ValueKind == JsonValueKind.Array)
         {
             int desiredLen = (rankExp != null && rankExp.Length > 0) ? rankExp.Length : 12;
@@ -1585,7 +1598,8 @@ public class GameplayPatchesWindow : IImGuiWindow
     //AI generated
     public void ExportToJson(string path)
     {
-        JsonSerializerOptions options = new JsonSerializerOptions {
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
             WriteIndented = true,
         };
 
