@@ -61,13 +61,18 @@ public class TextureEditorWindow : IImGuiWindow
         Aniso4x
     }
 
-    static TextureFilter ToTextureFilter(PicMiniZoomFilter mode) => mode switch
-    {
+    static TextureFilter ToTextureFilter(PicMiniZoomFilter mode) => mode switch {
         PicMiniZoomFilter.Nearest => TextureFilter.Point,
         PicMiniZoomFilter.Bilinear => TextureFilter.Bilinear,
         PicMiniZoomFilter.Trilinear => TextureFilter.Trilinear,
-        PicMiniZoomFilter.Aniso4x => TextureFilter.Anisotropic4X,
         _ => TextureFilter.Point
+    };
+
+    static SKSamplingOptions ToSKSamplingOptions(PicMiniZoomFilter mode) => mode switch {
+        PicMiniZoomFilter.Nearest => new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None),
+        PicMiniZoomFilter.Bilinear => new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None),
+        PicMiniZoomFilter.Trilinear => new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear),
+        _ => new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None)
     };
 
     static readonly HashSet<ImageMrgFile> AllImagesLoadedOnly = new() {
@@ -83,7 +88,6 @@ public class TextureEditorWindow : IImGuiWindow
     public TextureEditorWindow()
     {
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
-
     }
 
     ref int GetCurrentIndex()
@@ -271,11 +275,8 @@ public class TextureEditorWindow : IImGuiWindow
                 await DataAccess.Instance.LoadAllImages();
                 EditorWindow._modalPopup.Show($"Images Loaded",
                     "Loader", null, ImGuiModalPopup.ShowType.OneButton);
-
             });
-
         }
-
 
         if (ImGui.Button("Save Pic Buffer"))
         {
@@ -298,14 +299,11 @@ public class TextureEditorWindow : IImGuiWindow
             cropImageOnLoad = !cropImageOnLoad;
         }
 
-
         if (ImGui.Button("Load"))
         {
-
             paintCanvas?.loadImage(currentImageByteArray, currentIndex, cropImageOnLoad);
             palette = ImageCreator.ExtractPalette();
         }
-
 
         if (ImGui.Button("Export"))
         {
@@ -315,7 +313,6 @@ public class TextureEditorWindow : IImGuiWindow
         {
             _ = paintCanvas?.SaveAll();
         }
-
 
         ImGui.EndGroup();
         ImGui.SameLine();
@@ -394,13 +391,16 @@ public class TextureEditorWindow : IImGuiWindow
         ImGui.EndChild();
         ImGui.SameLine();
 
-        ImGui.BeginChild("Canvas", ImGui.GetContentRegionAvail());
+        ImGui.BeginChild("Canvas", ImGui.GetContentRegionAvail(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
 
         if (isPicMini)
         {
             if (ImGui.RadioButton("Edit PicMini", !picMiniCropMode))
             {
-                if (picMiniCropMode) ApplyCurrentCrop();
+                if (picMiniCropMode)
+                {
+                    ApplyCurrentCrop();
+                }
                 picMiniCropMode = false;
             }
 
@@ -413,7 +413,6 @@ public class TextureEditorWindow : IImGuiWindow
                 {
                     pictureIndex += 171;
                 }
-
                 LoadPicMiniFullSizeBackground(pictureIndex, currentIndex);
             }
 
@@ -423,14 +422,10 @@ public class TextureEditorWindow : IImGuiWindow
                 if (ImGui.Button("Reset Zoom")) picMiniZoom = 1f;
                 ImGui.SameLine();
                 ImGui.Text($"Zoom: {picMiniZoom:0.00}x");
-
-                int filterIndex = (int)picMiniZoomFilter;
-                if (ImGui.Combo("Sampling", ref filterIndex, "Nearest\0Bilinear\0Trilinear\0Aniso4x\0"))
-                {
-                    picMiniZoomFilter = (PicMiniZoomFilter)filterIndex;
-                }
             }
+
         }
+
         ImGui.SetNextItemWidth(-1);
         if (ImGui.BeginCombo("##MrgFile", currentMrgFile.ToString()))
         {
@@ -508,7 +503,6 @@ public class TextureEditorWindow : IImGuiWindow
                     .ToArray();
             }
 
-
             foreach (var (name, originalIndex) in filteredList)
             {
                 bool selected = originalIndex == currentIndex;
@@ -532,14 +526,28 @@ public class TextureEditorWindow : IImGuiWindow
                     }
 
                     paintCanvas.LoadBitmap(GameImageManager.CurrentTexture.Bitmap);
+                    if (isPicMini && !picMiniCropMode)
+                    {
+                        paintCanvas.SetTextureFilter(ToTextureFilter(picMiniZoomFilter));
+                    }
+
                     paintCanvas.ClearStack();
                     palette = ImageCreator.ExtractPalette();
                 }
             }
             ImGui.EndCombo();
         }
-
-
+        if ( currentMrgFile == ImageMrgFile.PicMini && !picMiniCropMode )
+        {
+            int filterIndex = (int)picMiniZoomFilter;
+            ImGui.SetNextItemWidth(-1);
+            if (ImGui.Combo("##Sampling", ref filterIndex, "Nearest\0Bilinear\0Trilinear\0"))
+            {
+                picMiniZoomFilter = (PicMiniZoomFilter)filterIndex;
+                paintCanvas.SetTextureFilter(ToTextureFilter(picMiniZoomFilter));
+                ApplyCurrentCrop();
+            }
+        }
         Vector2 canvasPos = ImGui.GetCursorScreenPos();
         Vector2 availableSize = ImGui.GetContentRegionAvail();
 
@@ -701,62 +709,62 @@ public class TextureEditorWindow : IImGuiWindow
         var dl = ImGui.GetWindowDrawList();
         int fullW = picMiniFullCanvas!.Width;
         int fullH = picMiniFullCanvas!.Height;
-        picMiniFullCanvas.SetTextureFilter(ToTextureFilter(picMiniZoomFilter));
 
         picMiniSrcW = Math.Clamp((int)MathF.Round(40f / picMiniZoom), 1, fullW);
         picMiniSrcH = Math.Clamp((int)MathF.Round(32f / picMiniZoom), 1, fullH);
         picMiniCropOrigin.X = Math.Clamp(picMiniCropOrigin.X, 0, fullW - picMiniSrcW);
         picMiniCropOrigin.Y = Math.Clamp(picMiniCropOrigin.Y, 0, fullH - picMiniSrcH);
 
-        float aspect = (float)fullW / fullH;
-        Vector2 fitSize = availableSize.X / aspect <= availableSize.Y
-            ? new Vector2(availableSize.X, availableSize.X / aspect)
-            : new Vector2(availableSize.Y * aspect, availableSize.Y);
+        Vector2 imageSize, imagePos;
 
-        Vector2 displaySize = fitSize * picMiniZoom;
-        Vector2 imagePos = canvasPos + (availableSize - displaySize) / 2f;
+        float imgAspect = (float)fullW / fullH;
+        float canvasAspect = availableSize.X / availableSize.Y;
+
+        if (imgAspect > canvasAspect)
+        {
+            imageSize = new Vector2(availableSize.X, availableSize.X / imgAspect);
+        }
+        else
+        {
+            imageSize = new Vector2(availableSize.Y * imgAspect, availableSize.Y);
+        }
+        imagePos = new Vector2(canvasPos.X + (availableSize.X - imageSize.X) / 2f, canvasPos.Y);
+
+        float scaleX = imageSize.X / fullW;
+        float scaleY = imageSize.Y / fullH;
+
         Vector2 viewMin = canvasPos;
         Vector2 viewMax = canvasPos + availableSize;
 
         ImGui.PushClipRect(viewMin, viewMax, true);
-        ImGui.SetCursorScreenPos(imagePos);
-        ImGui.Image(picMiniFullCanvas.GetTexturePtr(), displaySize);
-
-        float scaleX = displaySize.X / fullW;
-        float scaleY = displaySize.Y / fullH;
+        dl.AddImage(picMiniFullCanvas.GetTexturePtr(), imagePos, imagePos + imageSize);
+        ImGui.SetCursorScreenPos(canvasPos);
 
         Vector2 mouse = ImGui.GetMousePos();
         bool mouseInViewport =
             mouse.X >= viewMin.X && mouse.X <= viewMax.X &&
             mouse.Y >= viewMin.Y && mouse.Y <= viewMax.Y;
 
-        if (mouseInViewport)
+        if (mouseInViewport && (!ImGui.IsAnyItemActive() || ImGui.IsMouseDragging(ImGuiMouseButton.Left)))
         {
             float wheel = ImGui.GetIO().MouseWheel;
             if (wheel != 0f)
             {
                 picMiniZoom = Math.Clamp(picMiniZoom * MathF.Pow(1.1f, wheel), 0.2f, 16f);
-
+                CenterCropOnMouse(mouse, imagePos, scaleX, scaleY, fullW, fullH);
                 ApplyCurrentCrop();
             }
 
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
             {
-                int imgX = (int)((mouse.X - imagePos.X) / scaleX);
-                int imgY = (int)((mouse.Y - imagePos.Y) / scaleY);
+                CenterCropOnMouse(mouse, imagePos, scaleX, scaleY, fullW, fullH);
+            }
 
-                int newX = Math.Clamp(imgX - picMiniSrcW / 2, 0, fullW - picMiniSrcW);
-                int newY = Math.Clamp(imgY - picMiniSrcH / 2, 0, fullH - picMiniSrcH);
-
-                if (newX != picMiniCropOrigin.X || newY != picMiniCropOrigin.Y)
-                {
-                    picMiniCropOrigin.X = newX;
-                    picMiniCropOrigin.Y = newY;
-                    ApplyCurrentCrop();
-                }
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                ApplyCurrentCrop();
             }
         }
-
 
         Vector2 cropMin = imagePos + new Vector2(picMiniCropOrigin.X * scaleX, picMiniCropOrigin.Y * scaleY);
         Vector2 cropMax = cropMin + new Vector2(picMiniSrcW * scaleX, picMiniSrcH * scaleY);
@@ -772,6 +780,15 @@ public class TextureEditorWindow : IImGuiWindow
         }
     }
 
+    void CenterCropOnMouse(Vector2 mouse, Vector2 imagePos, float scaleX, float scaleY, int fullW, int fullH)
+    {
+        int imgX = (int)((mouse.X - imagePos.X) / scaleX);
+        int imgY = (int)((mouse.Y - imagePos.Y) / scaleY);
+
+        picMiniCropOrigin.X = Math.Clamp(imgX - picMiniSrcW / 2, 0, fullW - picMiniSrcW);
+        picMiniCropOrigin.Y = Math.Clamp(imgY - picMiniSrcH / 2, 0, fullH - picMiniSrcH);
+    }
+
     void LoadPicMiniFullSizeBackground(int pictureIndex, int byteArrayIndex)
     {
         var pictureBytes = GameImageManager.PictureBytes[pictureIndex];
@@ -779,7 +796,6 @@ public class TextureEditorWindow : IImGuiWindow
 
         picMiniFullCanvas?.Free();
         picMiniFullCanvas = new PaintCanvas(GameImageManager.CurrentTexture.Bitmap);
-
 
         ImageCreator.CreateImageFromBytes(currentImageByteArray[byteArrayIndex], currentMrgFile, "", false);
         picMiniCropOrigin.X = Math.Clamp(picMiniCropOrigin.X, 0, picMiniFullCanvas.Width - 40);
@@ -793,8 +809,7 @@ public class TextureEditorWindow : IImGuiWindow
 
         if (currentMrgFile == ImageMrgFile.Icon)
         {
-            GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(
-                GameImageManager.IconImageBytes[PS2Icon.CurrentTextureIndex]);
+            GameImageManager.CurrentTexture.Bitmap = PS2Icon.ExtractIconTexture(GameImageManager.IconImageBytes[PS2Icon.CurrentTextureIndex]);
             PS2Icon.BuildPaletteFromBitmap(GameImageManager.CurrentTexture.Bitmap);
         }
         else
@@ -817,16 +832,23 @@ public class TextureEditorWindow : IImGuiWindow
         picMiniCropOrigin.X = Math.Clamp(picMiniCropOrigin.X, 0, fullW - picMiniSrcW);
         picMiniCropOrigin.Y = Math.Clamp(picMiniCropOrigin.Y, 0, fullH - picMiniSrcH);
 
-        using var cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul);
-        using var cropCanvas = new SKCanvas(cropped);
+        using SKBitmap cropped = new SKBitmap(40, 32, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        using SKCanvas cropCanvas = new SKCanvas(cropped);
         var srcRect = new SKRectI(
             picMiniCropOrigin.X, picMiniCropOrigin.Y,
             picMiniCropOrigin.X + picMiniSrcW, picMiniCropOrigin.Y + picMiniSrcH
         );
-        cropCanvas.DrawBitmap(picMiniFullCanvas.Bitmap, srcRect, new SKRect(0, 0, 40, 32));
+
+        using SKImage image = SKImage.FromBitmap(picMiniFullCanvas.Bitmap);
+        SKSamplingOptions sampling = ToSKSamplingOptions(picMiniZoomFilter);
+        cropCanvas.DrawImage(image, srcRect, new SKRect(0, 0, 40, 32), sampling);
         cropCanvas.Flush();
-        paintCanvas.LoadBitmap(cropped);
-        ImageCreator.BuildPaletteFromBitmap(picMiniFullCanvas.Bitmap, currentImageByteArray[GetCurrentIndex()]);
+
+
+        using SKBitmap converted = cropped.Copy(SKColorType.Rgba8888);
+        ImageCreator.BuildPaletteFromBitmap(converted, currentImageByteArray[GetCurrentIndex()]);
+
+        paintCanvas.LoadBitmap(converted);
         palette = ImageCreator.ExtractPalette();
     }
 
