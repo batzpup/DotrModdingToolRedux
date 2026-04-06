@@ -51,6 +51,7 @@ public class TextureEditorWindow : IImGuiWindow
     float picMiniZoom = 1f;
     int picMiniSrcW = 40;
     int picMiniSrcH = 32;
+    bool centerMouseOnZoom = false;
     PicMiniZoomFilter picMiniZoomFilter = PicMiniZoomFilter.Nearest;
 
     enum PicMiniZoomFilter
@@ -422,6 +423,8 @@ public class TextureEditorWindow : IImGuiWindow
                 if (ImGui.Button("Reset Zoom")) picMiniZoom = 1f;
                 ImGui.SameLine();
                 ImGui.Text($"Zoom: {picMiniZoom:0.00}x");
+                ImGui.SameLine();
+                ImGui.Checkbox("Center on zoom", ref centerMouseOnZoom);
             }
 
         }
@@ -537,7 +540,7 @@ public class TextureEditorWindow : IImGuiWindow
             }
             ImGui.EndCombo();
         }
-        if ( currentMrgFile == ImageMrgFile.PicMini && !picMiniCropMode )
+        if (currentMrgFile == ImageMrgFile.PicMini && !picMiniCropMode)
         {
             int filterIndex = (int)picMiniZoomFilter;
             ImGui.SetNextItemWidth(-1);
@@ -751,7 +754,12 @@ public class TextureEditorWindow : IImGuiWindow
             if (wheel != 0f)
             {
                 picMiniZoom = Math.Clamp(picMiniZoom * MathF.Pow(1.1f, wheel), 0.2f, 16f);
-                CenterCropOnMouse(mouse, imagePos, scaleX, scaleY, fullW, fullH);
+                
+                if (centerMouseOnZoom)
+                {
+                    CenterCropOnMouse(mouse, imagePos, scaleX, scaleY, fullW, fullH);
+                }
+
                 ApplyCurrentCrop();
             }
 
