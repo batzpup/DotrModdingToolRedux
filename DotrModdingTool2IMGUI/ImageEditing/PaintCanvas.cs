@@ -23,6 +23,7 @@ public class PaintCanvas
     Texture2D texture;
     bool isDirty;
     bool textureCreated;
+    TextureFilter textureFilter = TextureFilter.Point;
 
 
     SKPoint? lastPaintPos;
@@ -98,8 +99,17 @@ public class PaintCanvas
         var img = Raylib.GenImageColor(Bitmap.Width, Bitmap.Height, Color.White);
         texture = Raylib.LoadTextureFromImage(img);
         Raylib.UnloadImage(img);
-        Raylib.SetTextureFilter(texture, TextureFilter.Point);
+        Raylib.SetTextureFilter(texture, textureFilter);
         textureCreated = true;
+    }
+
+    public void SetTextureFilter(TextureFilter filter)
+    {
+        textureFilter = filter;
+        if (textureCreated)
+        {
+            Raylib.SetTextureFilter(texture, textureFilter);
+        }
     }
 
 
@@ -200,7 +210,8 @@ public class PaintCanvas
 
     SKPaint MakePaint()
     {
-        var paint = new SKPaint {
+        var paint = new SKPaint
+        {
             IsAntialias = false,
             StrokeWidth = BrushSize,
             StrokeCap = SKStrokeCap.Round,

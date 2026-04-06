@@ -624,7 +624,8 @@ public static class ImageSaver
         const int imageWidth = 40;
         const int imageHeight = 32;
 
-        uint[] palette = ImageCreator.ReadPalette(originalData, paletteOffset, paletteSize);
+        uint[] palette = GameImageManager.CurrentTexture.Palette;
+
         SKBitmap src = LoadSourceBitmap(bitmap, pngPath, imageWidth, imageHeight);
         bool disposeSrc = !ReferenceEquals(src, bitmap);
 
