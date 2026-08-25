@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -49,11 +48,15 @@ public class RandomiserWindow : IImGuiWindow
     [JsonInclude] bool randomiseMusic = false;
     [JsonInclude] bool SpBasedOnPower;
     [JsonInclude] bool bRecommendedExp;
+    [JsonInclude] bool bRandomiseTerrainStatValues;
+    [JsonInclude] bool bRoundValuesTo50 = true;
+
     [JsonInclude] bool bRandomiseStartingSp;
     [JsonInclude] bool bRandomiseSpRecovery;
     [JsonInclude] bool bRandomiseHealth;
-    [JsonInclude] bool bRandomiseTerrainStatValues;
-    [JsonInclude] bool bRoundValuesTo50 = true;
+    [JsonInclude] bool bSameResourceValues = false;
+    [JsonInclude] bool bDuelResources;
+    [JsonInclude] bool bSameValuesPerSide;
 
     [JsonInclude] int strongOnToonChance = 20;
     [JsonInclude] int maxCrushTiles = 16;
@@ -122,7 +125,7 @@ public class RandomiserWindow : IImGuiWindow
     string SearchSortField = "ID";
     bool SearchAscending = true;
     EnemyEditorWindow _enemyEditorWindow;
-    
+
     Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
     bool ignoreConfirmation;
@@ -167,7 +170,7 @@ public class RandomiserWindow : IImGuiWindow
         EditorWindow.OnIsoLoaded += FilterAndSort;
         EditorWindow.OnIsoLoaded += LoadLeaderRanks;
         _enemyEditorWindow = enemyEditorWindow;
-        
+
         CreateLeaderAbilityTooltips();
 
     }
@@ -255,7 +258,7 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             ChangeAllAi();
             RandomiseMusic();
             _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
-            ChangeStartingDuelStats();
+            ChangeDuelResources();
             SetRecommendedExpValues();
             RandomiseTerrainStatValues();
             foreach (var card in bannedCards)
@@ -412,9 +415,85 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether the card will appear as a reincarnation reward");
             ImGui.Unindent();
         }
-        //Add boss random good cards only
+
 
         ImGui.Checkbox("Randomise AI", ref randomiseAI);
+
+
+        ImGui.Checkbox("Randomise Duel Resources", ref bDuelResources);
+        if (bDuelResources)
+        {
+            ImGui.Indent();
+            ImGui.Checkbox("Same random value for all duels", ref bSameResourceValues);
+            ImGui.Checkbox("Same random value for each side", ref bSameValuesPerSide);
+
+            //-----
+            ImGui.Checkbox("Randomise starting summoning power", ref bRandomiseStartingSp);
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip(@"Changes how much SP at the start of a duel");
+            }
+
+            if (bRandomiseStartingSp)
+            {
+                ImGui.Indent();
+                ImGui.SliderInt("min starting sp", ref minStartingSp, 0, 12);
+                ImGui.SliderInt("max starting sp", ref maxStartingSp, 0, 12);
+                ImGui.Unindent();
+            }
+
+            //-----
+            ImGui.Checkbox("Randomise summoning power recovery", ref bRandomiseSpRecovery);
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip(@"Changes how much SP regained every turn");
+            }
+            if (bRandomiseSpRecovery)
+            {
+                ImGui.Indent();
+                ImGui.SliderInt("min sp recovery", ref minSpRecovery, 1, 12);
+                ImGui.SliderInt("max sp recovery", ref maxSpRecovery, 1, 12);
+                ImGui.Unindent();
+            }
+
+            //-----
+            ImGui.Checkbox("Randomise starting health", ref bRandomiseHealth);
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip(@"Change starting health (Rounded to nearest 100 always)");
+            }
+
+            if (bRandomiseHealth)
+            {
+                ImGui.Indent();
+                if (ImGui.Checkbox("Break 9999 cap", ref bBreakDefaultLpCap))
+                {
+                    if (!bBreakDefaultLpCap && maxStartingLP > 9999)
+                    {
+                        maxStartingLP = 9999;
+                    }
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(@"increases the potential cap to 32k");
+                if (ImGui.InputInt("max starting lp", ref maxStartingLP, 100, 500, ImGuiInputTextFlags.CharsDecimal))
+                {
+                    if (bBreakDefaultLpCap)
+                    {
+                        maxStartingLP = Math.Clamp(maxStartingLP, 1000, 32000);
+                    }
+                    else
+                    {
+                        maxStartingLP = Math.Clamp(maxStartingLP, 1000, 9999);
+                    }
+                }
+                ImGui.Unindent();
+            }
+
+
+            ImGui.Unindent();
+
+        }
         ImGui.Checkbox("Randomise maps", ref randomiseMaps);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises which map is assigned to which duelist");
         if (randomiseMaps)
@@ -662,54 +741,6 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
         }
 
 
-
-        ImGui.Checkbox("Randomise starting summoning power", ref bRandomiseStartingSp);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(@"Changes how much SP at the start of a duel");
-        if (bRandomiseStartingSp)
-        {
-            ImGui.SliderInt("min starting sp", ref minStartingSp, 0, 12);
-            ImGui.SliderInt("max starting sp", ref maxStartingSp, 0, 12);
-        }
-        ImGui.Checkbox("Randomise summoning power recovery", ref bRandomiseSpRecovery);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(@"Changes how much SP regained every turn");
-        if (bRandomiseSpRecovery)
-        {
-            ImGui.SliderInt("min sp recovery", ref minSpRecovery, 1, 12);
-            ImGui.SliderInt("max sp recovery", ref maxSpRecovery, 1, 12);
-
-        }
-
-        ImGui.Checkbox("Randomise starting health", ref bRandomiseHealth);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(@"Change starting health (Rounded to nearest 100 always)");
-        if (bRandomiseHealth)
-        {
-            ImGui.Indent();
-            if (ImGui.Checkbox("Break 9999 cap", ref bBreakDefaultLpCap))
-            {
-                if (!bBreakDefaultLpCap && maxStartingLP > 9999)
-                {
-                    maxStartingLP = 9999;
-                }
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(@"increases the potential cap to 32k");
-            if (ImGui.InputInt("max starting lp", ref maxStartingLP, 100, 500, ImGuiInputTextFlags.CharsDecimal))
-            {
-                if (bBreakDefaultLpCap)
-                {
-                    maxStartingLP = Math.Clamp(maxStartingLP, 1000, 32000);
-                }
-                else
-                {
-                    maxStartingLP = Math.Clamp(maxStartingLP, 1000, 9999);
-                }
-            }
-            ImGui.Unindent();
-        }
-        ImGui.Checkbox("Randomise terrain stat values", ref bRandomiseTerrainStatValues);
         if (bRandomiseTerrainStatValues)
         {
             ImGui.Indent();
@@ -797,46 +828,81 @@ SD:   5000");
         }
     }
 
-    void ChangeStartingDuelStats()
+    void ChangeDuelResources()
     {
         if (!bRandomiseStartingSp && !bRandomiseSpRecovery && !bRandomiseHealth)
             return;
-        if (bRandomiseStartingSp)
-        {
-            int value = GetRandomValue(minStartingSp, maxStartingSp + 1);
-            GameplayPatchesWindow.Instance.startingSpRed = value;
-            GameplayPatchesWindow.Instance.startingSpWhite = value;
-            GameplayPatchesWindow.Instance.bStartingSpRed = true;
-            GameplayPatchesWindow.Instance.bStartingSpWhite = true;
-            changeLog.DuelChanges.StartingSp = value;
 
-        }
-        if (bRandomiseSpRecovery)
+
+        int sp = GetRandomValue(minStartingSp, maxStartingSp + 1);
+        int SpRecovery = GetRandomValue(minSpRecovery, maxSpRecovery + 1);
+        int LP = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
+
+        for (int i = 0; i < 21; i++)
         {
-            int value = GetRandomValue(minSpRecovery, maxSpRecovery + 1);
-            GameplayPatchesWindow.Instance.spRecoveryRed = value;
-            GameplayPatchesWindow.Instance.spRecoveryWhite = value;
-            GameplayPatchesWindow.Instance.bSpRecoveryRed = true;
-            GameplayPatchesWindow.Instance.bSpRecoveryWhite = true;
-            changeLog.DuelChanges.SpRecovery = value;
-        }
-        if (bRandomiseHealth)
-        {
-            int value = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
-            if (value > 9999)
+
+            if (!bSameResourceValues)
+            {
+                sp = GetRandomValue(minStartingSp, maxStartingSp + 1);
+                SpRecovery = GetRandomValue(minSpRecovery, maxSpRecovery + 1);
+                LP = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
+            }
+            if (bRandomiseStartingSp)
             {
 
-                GameplayPatchesWindow.Instance.bChangeLpCap = true;
-                GameplayPatchesWindow.Instance.lpCap = 32000;
+
+                GameplayPatchesWindow.Instance.whiteDuelResource[i].SummonPower = (byte)sp;
+                if (!bSameValuesPerSide)
+                {
+                    sp = GetRandomValue(minStartingSp, maxStartingSp + 1);
+                }
+                GameplayPatchesWindow.Instance.redDuelResource[i].SummonPower = (byte)sp;
+                GameplayPatchesWindow.Instance.bCustomResources = true;
+
+                changeLog.DuelChanges.StartingSp = sp;
+
             }
+            if (bRandomiseSpRecovery)
+            {
 
-            GameplayPatchesWindow.Instance.bStartingLpRed = true;
-            GameplayPatchesWindow.Instance.bStartingLpWhite = true;
-            GameplayPatchesWindow.Instance.startingLpRed = value;
-            GameplayPatchesWindow.Instance.startingLpWhite = value;
-            changeLog.DuelChanges.StartingLp = value;
+                GameplayPatchesWindow.Instance.whiteDuelResource[i].SummonRecharge = (byte)SpRecovery;
+                if (!bSameValuesPerSide)
+                {
+                    SpRecovery = GetRandomValue(minSpRecovery, maxSpRecovery + 1);
+                }
+                GameplayPatchesWindow.Instance.redDuelResource[i].SummonRecharge = (byte)SpRecovery;
+                GameplayPatchesWindow.Instance.bCustomResources = true;
+                changeLog.DuelChanges.SpRecovery = SpRecovery;
+            }
+            if (bRandomiseHealth)
+            {
+
+                if (LP > 9999)
+                {
+
+                    GameplayPatchesWindow.Instance.bChangeLpCap = true;
+                    GameplayPatchesWindow.Instance.lpCap = 32000;
+                }
+
+                GameplayPatchesWindow.Instance.whiteDuelResource[i].LP = (ushort)LP;
+                if (!bSameValuesPerSide)
+                {
+                    LP = (int)Math.Round(GetRandomValue(1000, maxStartingLP + 1) / 100f) * 100;
+                }
+
+                if (LP > 9999)
+                {
+
+                    GameplayPatchesWindow.Instance.bChangeLpCap = true;
+                    GameplayPatchesWindow.Instance.lpCap = 32000;
+                }
+
+                GameplayPatchesWindow.Instance.redDuelResource[i].LP = (ushort)LP;
+                GameplayPatchesWindow.Instance.bCustomResources = true;
+
+                changeLog.DuelChanges.StartingLp = LP;
+            }
         }
-
     }
 
     void RandomiseMusic()

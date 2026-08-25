@@ -89,6 +89,7 @@ public class EditorWindow
         _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+        _fusionEditorWindow.Init(_enemyEditorWindow.DeckEditorWindow.ViewCardInEditor);
         _imageEditorWindow = new ImageEditorWindow();
 
         Updater.NeedsUpdate += HandleNeedsUpdate;
@@ -584,6 +585,11 @@ public class EditorWindow
 
             }
             ImGui.Spacing();
+            if (ImGui.MenuItem("Use original Images", null, ref UserSettings.UseOriginalImages))
+            {
+
+            }
+            ImGui.Spacing();
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
@@ -650,7 +656,12 @@ public class EditorWindow
                 }
 
                 ImGui.TextColored(new GuiColour(Color.Cyan).value, "Code Contributors:");
+                if (ImGui.Selectable("hippochan", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://github.com/rjoken");
+                }
                 ImGui.Text("MonoCh");
+
 
                 ImGui.Spacing();
                 if (ImGui.Button("Close"))

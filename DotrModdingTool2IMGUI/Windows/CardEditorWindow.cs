@@ -73,6 +73,8 @@ class CardEditorWindow : IImGuiWindow
     string currentMonsterEffectText = String.Empty;
     bool showMonsterEditNote = true;
 
+    private int? scrollToIndex;
+
     public CardEditorWindow()
     {
         starImagePtr = ImageHelper.LoadImageImgui($"Images.cardExtras.star.png");
@@ -96,16 +98,18 @@ class CardEditorWindow : IImGuiWindow
     public void SetCurrentCard(ModdedStringName name)
     {
         selectedCards.Clear();
-        currentCardIndex = currentCardIndex = Array.IndexOf(Card.cardNameList, name);
+        currentCardIndex = Array.IndexOf(Card.cardNameList, name);
         updateCardChanges();
         FilterAndSort();
         selectedCards.Add(name);
+        scrollToIndex = currentCardIndex;
     }
 
     void updateCardChanges()
     {
+
         currentCardConst = CardConstant.List[currentCardIndex];
-        cardImage = GlobalImages.Instance.Cards[Card.cardNameList[currentCardIndex].Default];
+        cardImage = GlobalImages.Instance.OriginalCards[Card.cardNameList[currentCardIndex].Default];
         cardFrame = GlobalImages.Instance.CardFrames[currentCardConst.CardColor];
         cardName = StringEditor.StringTable[currentCardIndex + StringEditor.CardNamesOffsetStart];
         currentMonsterAttack = currentCardConst.Attack;
@@ -221,9 +225,7 @@ class CardEditorWindow : IImGuiWindow
 
         ImGui.PopFont();
 
-        float availableHeight = windowBottom - ImGui.GetCursorPosY();
         ImGui.PushItemWidth(windowSize.X / 3f);
-
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
 
 
@@ -243,7 +245,7 @@ class CardEditorWindow : IImGuiWindow
             ImGui.TableSetupColumn("##ID", ImGuiTableColumnFlags.WidthFixed, 45);
             ImGui.TableSetupColumn("##Name", ImGuiTableColumnFlags.WidthStretch);
 
-
+            int count = 0;
             foreach (ModdedStringName filteredName in filteredList)
             {
                 bool isSelected = selectedCards.Contains(filteredName);
@@ -253,6 +255,11 @@ class CardEditorWindow : IImGuiWindow
                 ImGui.TableSetColumnIndex(0);
 
                 ImGui.PushFont(FontManager.GetBestFitFont(filteredName.Current, availArea.X, availArea.Y, FontManager.FontFamily.NotoSansJP));
+                if (scrollToIndex.HasValue && scrollToIndex.Value == count)
+                {
+                    ImGui.SetScrollHereY(0.5f);
+                    scrollToIndex = null;
+                }
                 if (ImGui.Selectable($"##{filteredName}", isSelected, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick))
                 {
 
@@ -312,6 +319,7 @@ class CardEditorWindow : IImGuiWindow
                 {
                     GlobalImgui.RenderTooltipCardImage(filteredName.Default);
                 }
+                count++;
             }
             ImGui.EndTable();
 
@@ -1110,7 +1118,7 @@ class CardEditorWindow : IImGuiWindow
     {
         Dictionary<string, string> SectionTextMaxWidth = new Dictionary<string, string>() {
             { "Attribute", "Attribute" },
-            { "Kind", "Winged-beast   " },
+            { "Kind", "Winged-beast         " },
             { "Level", "12" },
             { "DC", "99 " },
         };

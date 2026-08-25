@@ -34,7 +34,7 @@ public class DeckEditorWindow : IImGuiWindow
     Vector4 highlightColour = new GuiColour(8, 153, 154, 155).value;
     int currentFontIndex = 0;
     string[] fontSizes = new string[] { "10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30", "32" };
-    public Action<ModdedStringName> ViewCardInEditor;
+    public  Action<ModdedStringName> ViewCardInEditor;
 
     public DeckEditorWindow()
     {
@@ -186,7 +186,7 @@ public class DeckEditorWindow : IImGuiWindow
             }
 
         }
-        ImGui.Image(GlobalImages.Instance.Cards[currentDeck.DeckLeader.Name.Default], new Vector2(128, 128));
+        ImGui.Image(GlobalImages.Instance.OriginalCards[currentDeck.DeckLeader.Name.Default], new Vector2(128, 128));
         ImGui.SameLine();
         if (ImGui.Button("Print Decks to File"))
         {

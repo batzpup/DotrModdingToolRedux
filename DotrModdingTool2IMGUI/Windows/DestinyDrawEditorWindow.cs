@@ -130,7 +130,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                             {
                                 ImGui.BeginTooltip();
                                 ImGui.Text("Card Preview");
-                                ImGui.Image(GlobalImages.Instance.Cards[cardName.Default], new Vector2(128, 128));
+                                ImGui.Image(GlobalImages.Instance.OriginalCards[cardName.Default], new Vector2(128, 128));
                                 ImGui.EndTooltip();
                             }
                         }
@@ -144,9 +144,10 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                 }
                 if (ImGui.IsItemHovered())
                 {
+                    
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[0]].Default);
                 }
-                ImGui.Image(GlobalImages.Instance.Cards[Card.cardNameList[pool[0]].Default], ImageHelper.DefaultImageSize);
+                ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[0]].Default], ImageHelper.DefaultImageSize * 0.85f);
                 ImGui.TableSetColumnIndex(2);
 
 
@@ -185,7 +186,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                             {
                                 ImGui.BeginTooltip();
                                 ImGui.Text("Card Preview");
-                                ImGui.Image(GlobalImages.Instance.Cards[cardName.Default], new Vector2(128, 128));
+                                ImGui.Image(GlobalImages.Instance.OriginalCards[cardName.Default], new Vector2(128, 128));
                                 ImGui.EndTooltip();
                             }
                         }
@@ -202,7 +203,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                 {
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[1]].Default);
                 }
-                ImGui.Image(GlobalImages.Instance.Cards[Card.cardNameList[pool[1]].Default], ImageHelper.DefaultImageSize);
+                ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[1]].Default], ImageHelper.DefaultImageSize* 0.85f);
                 ImGui.TableSetColumnIndex(3);
 
 
@@ -241,7 +242,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                             {
                                 ImGui.BeginTooltip();
                                 ImGui.Text("Card Preview");
-                                ImGui.Image(GlobalImages.Instance.Cards[cardName.Default], new Vector2(128, 128));
+                                ImGui.Image(GlobalImages.Instance.OriginalCards[cardName.Default], new Vector2(128, 128));
                                 ImGui.EndTooltip();
                             }
                         }
@@ -257,7 +258,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                 {
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[2]].Default);
                 }
-                ImGui.Image(GlobalImages.Instance.Cards[Card.cardNameList[pool[2]].Default], ImageHelper.DefaultImageSize);
+                ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[2]].Default], ImageHelper.DefaultImageSize* 0.85f);
             }
 
             ImGui.EndTable();

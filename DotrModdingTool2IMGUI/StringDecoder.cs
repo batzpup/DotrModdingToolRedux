@@ -136,7 +136,7 @@ public class StringDecoder
                 }
                 blobIndex += 2;
             }
-
+    
             else if ((blob[blobIndex] & 0x1FFF) != 0)
             {
                 lines[lines.Count - 1].Add(blob[blobIndex] & 0x1FFF);

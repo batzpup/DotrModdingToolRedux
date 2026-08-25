@@ -4,7 +4,6 @@ namespace DotrModdingTool2IMGUI;
 
 public static class GameImageManager
 {
-    
     public static byte[][] PictureBytes = new byte[871][];
     public static byte[][] PicPackBytes = new byte[223][];
     public static byte[][] PicMiniBytes = new byte[699][];
@@ -18,11 +17,10 @@ public static class GameImageManager
     public static byte[][] IconImageBytes = new byte[DataAccess.IconImageCount][];
 
 
-    public static HashSet<int> MonsterModelExlusions = new HashSet<int>(); 
+    public static HashSet<int> MonsterModelExlusions = new HashSet<int>();
     public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
     public static ModdedStringName[] PreloadDefaultImageNameList;
     public static GameTexture CurrentTexture = new();
-    
 
 
     static GameImageManager()
@@ -56,17 +54,27 @@ public static class GameImageManager
     }
 
 
+    
+
     public static int GetPicNumber(ReadOnlySpan<byte> PicPackBytes)
     {
+        // Known exception: PicPack index 75 ("Performance of Sword") doesnt exact-matches Picture[195] 
         for (int i = 0; i < 871; i++)
         {
+
             byte[] bytes = ConvertPictureToPicPack(PictureBytes[i]);
             if (ByteArraysEqual(PicPackBytes, bytes))
             {
                 return i;
             }
         }
-        return 195;
+
+        if (PicPackBytes.SequenceEqual(ImageHelper.PerformanceOfSwordSignature))
+        {
+            return 195;
+        }
+
+        return -1;
     }
 
 
@@ -106,5 +114,4 @@ public struct ImageMetaData
     //Derived
     public int StartOfImage;
     public int PalleteOffset;
-    
 }

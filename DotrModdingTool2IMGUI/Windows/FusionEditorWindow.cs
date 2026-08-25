@@ -24,6 +24,7 @@ class FusionEditorWindow : IImGuiWindow
     Deck currentDeck;
     int currentDeckListIndex = 0;
 
+    Action<ModdedStringName> viewCardInEditor;
 
     public FusionEditorWindow()
     {
@@ -38,35 +39,72 @@ class FusionEditorWindow : IImGuiWindow
         DeckFusionData = GetFusionsFromDeck();
     }
 
+    Dictionary<ushort, List<FusionData>> fusionLookup = new();
+
+    void BuildIndex(IEnumerable<FusionData> fusionTable)
+    {
+        fusionLookup.Clear();
+
+        foreach (var f in fusionTable)
+        {
+            if (!fusionLookup.TryGetValue(f.lowerCardId, out var list))
+            {
+                list = new List<FusionData>();
+                fusionLookup[f.lowerCardId] = list;
+            }
+            list.Add(f);
+
+            if (!fusionLookup.TryGetValue(f.higherCardId, out list))
+            {
+                list = new List<FusionData>();
+                fusionLookup[f.higherCardId] = list;
+            }
+            list.Add(f);
+        }
+    }
+
     List<FusionData> GetFusionsFromDeck()
     {
-        List<FusionData> fusions = new List<FusionData>();
-        List<FusionData> fusionTable = FusionData.FusionTableData.Values.ToList();
+        var fusionTable = FusionData.FusionTableData.Values;
 
-        for (int i = 0; i < currentDeck.CardList.Count; i++)
+        BuildIndex(fusionTable);
+
+        HashSet<ushort> available = currentDeck.CardList
+            .Select(c => (ushort)c.CardConstant.Index)
+            .ToHashSet();
+
+        Queue<ushort> queue = new(available);
+        HashSet<uint> usedFusions = new();
+        List<FusionData> result = new();
+
+        while (queue.Count > 0)
         {
-            for (int j = i + 1; j < currentDeck.CardList.Count - 1; j++)
-            {
-                int lowCardId = currentDeck.CardList[i].CardConstant.Index;
-                int highCardId = currentDeck.CardList[j].CardConstant.Index;
-                if (lowCardId > highCardId)
-                {
-                    lowCardId ^= highCardId;
-                    highCardId ^= lowCardId;
-                    lowCardId ^= highCardId;
-                }
-                foreach (var fusionData in fusionTable)
-                {
-                    if (fusionData.lowerCardId != lowCardId)
-                        continue;
-                    if (fusionData.higherCardId != highCardId)
-                        continue;
-                    fusions.Add(fusionData);
+            ushort card = queue.Dequeue();
 
+            if (!fusionLookup.TryGetValue(card, out var candidates))
+                continue;
+
+            foreach (var f in candidates)
+            {
+                ushort a = f.lowerCardId;
+                ushort b = f.higherCardId;
+
+                if (!available.Contains(a) || !available.Contains(b))
+                    continue;
+
+                if (!usedFusions.Add(f.fusionData))
+                    continue;
+
+                result.Add(f);
+
+                if (available.Add(f.resultId))
+                {
+                    queue.Enqueue(f.resultId);
                 }
             }
         }
-        return fusions;
+
+        return result;
     }
 
 
@@ -115,7 +153,7 @@ class FusionEditorWindow : IImGuiWindow
 
 
         ImGui.Text("Deck");
-        ImGui.Image(GlobalImages.Instance.Cards[Deck.DeckList[currentDeckListIndex].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
+        ImGui.Image(GlobalImages.Instance.OriginalCards[Deck.DeckList[currentDeckListIndex].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X / 2f);
         if (ImGui.BeginCombo("##Decks", $"{Deck.NamePrefix(currentDeckListIndex)} - {currentDeck.DeckLeader.Name.Current}", ImGuiComboFlags.HeightLarge))
@@ -149,7 +187,11 @@ class FusionEditorWindow : IImGuiWindow
 
 
         ImGui.Text("Search Bar");
+
+
         ImGui.InputText("##SearchBar", ref searchText, 32);
+        ImGui.SameLine();
+        ImGui.TextColored(new GuiColour(Color.SkyBlue).value, "Shift + Right click to view monster in editor");
         //ImGui.SameLine();
         //if (ImGui.Button("Import from CSV"))
         //{
@@ -265,10 +307,14 @@ class FusionEditorWindow : IImGuiWindow
                     ImGui.TableSetColumnIndex(1);
                     ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selected1 = fusion.lowerCardId;
-                    ImGui.Text(Card.cardNameList[selected1].Current);
+                    ImGui.Selectable(Card.cardNameList[selected1].Current, false, ImGuiSelectableFlags.None);
 
                     if (ImGui.IsItemHovered())
                     {
+                        if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
+                        {
+                            viewCardInEditor?.Invoke(Card.cardNameList[selected1]);
+                        }
                         GlobalImgui.RenderTooltipCardImage(fusion.lowerCardName.Default);
                     }
 
@@ -276,20 +322,28 @@ class FusionEditorWindow : IImGuiWindow
                     ImGui.TableSetColumnIndex(2);
                     ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selected2 = fusion.higherCardId;
-                    ImGui.Text(Card.cardNameList[selected2].Current);
+                    ImGui.Selectable(Card.cardNameList[selected2].Current, false, ImGuiSelectableFlags.None);
 
                     if (ImGui.IsItemHovered())
                     {
+                        if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
+                        {
+                            viewCardInEditor?.Invoke(Card.cardNameList[selected2]);
+                        }
                         GlobalImgui.RenderTooltipCardImage(fusion.higherCardName.Default);
                     }
 
                     ImGui.TableSetColumnIndex(3);
                     ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                     int selectedResult = fusion.resultId;
-                    ImGui.Text(Card.cardNameList[selectedResult].Current);
+                    ImGui.Selectable(Card.cardNameList[selectedResult].Current, false, ImGuiSelectableFlags.None);
 
                     if (ImGui.IsItemHovered())
                     {
+                        if (ImGui.GetIO().KeyShift && ImGui.GetIO().MouseClicked[1])
+                        {
+                            viewCardInEditor?.Invoke(Card.cardNameList[selectedResult]);
+                        }
                         GlobalImgui.RenderTooltipCardImage(fusion.cardResultName.Default);
                     }
                 }
@@ -483,7 +537,7 @@ class FusionEditorWindow : IImGuiWindow
                                 {
                                     ImGui.BeginTooltip();
                                     ImGui.Text("Card Preview");
-                                    ImGui.Image(GlobalImages.Instance.Cards[cardName.Default], new Vector2(128, 128));
+                                    ImGui.Image(GlobalImages.Instance.OriginalCards[cardName.Default], new Vector2(128, 128));
                                     ImGui.EndTooltip();
                                 }
 
@@ -611,5 +665,10 @@ class FusionEditorWindow : IImGuiWindow
     public void Free()
     {
 
+    }
+
+    public void Init(Action<ModdedStringName> viewCardInEditor)
+    {
+        this.viewCardInEditor = viewCardInEditor;
     }
 }

@@ -764,12 +764,18 @@ public class DataAccess
     {
         lock (FileStreamLock)
         {
+            GlobalImages.Instance.ModifiedCards.Clear();
             fileStream.Seek(PictureIsoOffset, SeekOrigin.Begin);
             for (int i = 0; i < PictureCount; i++)
             {
                 byte[] picture = new byte[PictureSize];
                 fileStream.ReadExactly(picture, 0, PictureSize);
                 GameImageManager.PictureBytes[i] = picture;
+                if (i < 854)
+                {
+                    GlobalImages.Instance.ModifiedCards.Add(Card.cardNameList[i].Default, ImageCreator.LoadBytesToRaylibImage(picture));
+                }
+
             }
 
             fileStream.Seek(PicPackIsoOffset, SeekOrigin.Begin);
@@ -797,6 +803,8 @@ public class DataAccess
 
 
             ImageCreator.CreateImageFromBytes(GameImageManager.PictureBytes[0], ImageMrgFile.Picture, Path.Combine(Directory.GetCurrentDirectory(), ""), false);
+
+
 
 
         }

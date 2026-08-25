@@ -4,6 +4,7 @@ namespace DotrModdingTool2IMGUI;
 
 public class RandomiserChangeLog
 {
+   
     [JsonPropertyName("seed")] public int Seed { get; set; }
     [JsonPropertyName("duel_changes")] public DuelChanges DuelChanges { get; set; } = new();
     [JsonPropertyName("banned_cards")] public List<string> BannedCards { get; set; } = new();
@@ -329,6 +330,8 @@ public class DuelChanges
     [JsonPropertyName("starting_sp")] public int? StartingSp { get; set; }
     [JsonPropertyName("sp_recovery")] public int? SpRecovery { get; set; }
     [JsonPropertyName("starting_lp")] public int? StartingLp { get; set; }
+    
+    
     [JsonPropertyName("terrain_buff")] public int? TerrainBuff { get; set; }
     [JsonPropertyName("exp_changes")] public List<int> ExpChanges { get; set; }
 }

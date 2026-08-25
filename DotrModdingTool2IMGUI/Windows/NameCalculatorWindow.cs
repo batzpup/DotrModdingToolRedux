@@ -101,7 +101,7 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.Text(Deck.DeckList[resultDeckIndices[0]].ToString());
            
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
-            ImGui.Image(GlobalImages.Instance.Cards[Deck.DeckList[resultDeckIndices[0]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
+            ImGui.Image(GlobalImages.Instance.OriginalCards[Deck.DeckList[resultDeckIndices[0]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
            
             RenderDeckTable(0);
             ImGui.EndChild();
@@ -114,7 +114,7 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.Text(Deck.DeckList[resultDeckIndices[1]].ToString());
           
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
-            ImGui.Image(GlobalImages.Instance.Cards[Deck.DeckList[resultDeckIndices[1]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
+            ImGui.Image(GlobalImages.Instance.OriginalCards[Deck.DeckList[resultDeckIndices[1]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
 
 
             RenderDeckTable(1);
@@ -127,7 +127,7 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.Text(Deck.DeckList[resultDeckIndices[2]].ToString());
             
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
-            ImGui.Image(GlobalImages.Instance.Cards[Deck.DeckList[resultDeckIndices[2]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
+            ImGui.Image(GlobalImages.Instance.OriginalCards[Deck.DeckList[resultDeckIndices[2]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
             
             RenderDeckTable(2);
             ImGui.EndChild();

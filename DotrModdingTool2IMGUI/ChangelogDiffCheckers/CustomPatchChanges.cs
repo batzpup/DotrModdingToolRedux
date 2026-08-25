@@ -43,20 +43,6 @@ public class CustomPatchSnapshot
     public bool bTerrainBuff;
     public bool bDeckLeaderRecovery;
 
-    public bool bStartingLpRed;
-    public bool bSpRecoveryRed;
-    public bool bStartingSpRed;
-
-    public int startingSpRed;
-    public int startingLpRed;
-    public int spRecoveryRed;
-
-    public bool bStartingLpWhite;
-    public bool bSpRecoveryWhite;
-    public bool bStartingSpWhite;
-    public int startingSpWhite;
-    public int startingLpWhite;
-    public int spRecoveryWhite;
 
     public int forceSideIndex;
     public int lpCap;
@@ -64,6 +50,9 @@ public class CustomPatchSnapshot
     public int terrainBuffAmount;
     public int leaderRecovery;
     public int maxCardInDeck;
+
+    public CustomDuelResource[] whiteDuelResource ;
+    public CustomDuelResource[] redDuelResource ;
 
     public CustomPatchSnapshot(GameplayPatchesWindow patches)
     {
@@ -78,16 +67,16 @@ public class CustomPatchSnapshot
         bRemoveSlotRng = patches.bRemoveSlotRng;
         bAllCustomDuels = patches.bAllCustomDuels;
         bKeepReincarnatedCard = patches.bKeepReincarnatedCard;
-        
+
         bToonLeaderLandChange = patches.bToonLeaderLandChange;
         bAllKindsExtraSlots = patches.bAllKindsExtraSlots;
         bSaveMusic = patches.bSaveMusic;
         CurrentRule = patches.CurrentRule;
 
         // Arrays
-        rankExp = CloneIntArray(GameplayPatchesWindow.rankExp);
-        SpecialThreeInARows = CloneIntArray(patches.SpecialThreeInARows);
-        SpecialSlotRewards = CloneIntArray(patches.SpecialSlotRewards);
+        rankExp = CloneValueTypeArray(GameplayPatchesWindow.rankExp);
+        SpecialThreeInARows = CloneValueTypeArray(patches.SpecialThreeInARows);
+        SpecialSlotRewards = CloneValueTypeArray(patches.SpecialSlotRewards);
 
         // AI patches
         bFixDarkHole = patches.bFixDarkHole;
@@ -110,23 +99,7 @@ public class CustomPatchSnapshot
         bTerrainBuff = patches.bTerrainBuff;
         bDeckLeaderRecovery = patches.bDeckLeaderRecovery;
 
-        bStartingLpRed = patches.bStartingLpRed;
-        bSpRecoveryRed = patches.bSpRecoveryRed;
-        bStartingSpRed = patches.bStartingSpRed;
-
         bMaxCardLimitInDeck = patches.bMaxCardLimitInDeck;
-        
-        startingSpRed = patches.startingSpRed;
-        startingLpRed = patches.startingLpRed;
-        spRecoveryRed = patches.spRecoveryRed;
-
-        bStartingLpWhite = patches.bStartingLpWhite;
-        bSpRecoveryWhite = patches.bSpRecoveryWhite;
-        bStartingSpWhite = patches.bStartingSpWhite;
-
-        startingSpWhite = patches.startingSpWhite;
-        startingLpWhite = patches.startingLpWhite;
-        spRecoveryWhite = patches.spRecoveryWhite;
 
         forceSideIndex = patches.forceSideIndex;
         lpCap = patches.lpCap;
@@ -134,11 +107,14 @@ public class CustomPatchSnapshot
         terrainBuffAmount = patches.terrainBuffAmount;
         leaderRecovery = patches.leaderRecovery;
         maxCardInDeck = patches.maxCardLimitInDeck;
+
+        whiteDuelResource = CloneValueTypeArray(patches.whiteDuelResource);
+        redDuelResource = CloneValueTypeArray(patches.redDuelResource);
     }
 
-    int[] CloneIntArray(int[] source)
+    T[] CloneValueTypeArray<T>(T[] source)
     {
-        return (int[])source.Clone();
+        return (T[])source.Clone();
     }
 }
 
@@ -181,26 +157,24 @@ public class CustomPatchDiff : IDiffChecker<CustomPatchSnapshot>
         ChangelogManager.Check("  Change DL Recovery", oldSnapshot.bDeckLeaderRecovery, currentSnapshot.bDeckLeaderRecovery, normalDiffs);
         ChangelogManager.Check("  DL recovery amount", oldSnapshot.leaderRecovery, currentSnapshot.leaderRecovery, normalDiffs);
 
-        ChangelogManager.Check("  Change red starting Lp ", oldSnapshot.bStartingLpRed, currentSnapshot.bStartingLpRed, normalDiffs);
-        ChangelogManager.Check("  Red starting lp", oldSnapshot.startingLpRed, currentSnapshot.startingLpRed, normalDiffs);
 
-        ChangelogManager.Check("  Change white starting Lp ", oldSnapshot.bStartingLpWhite, currentSnapshot.bStartingLpWhite, normalDiffs);
-        ChangelogManager.Check("  White starting lp", oldSnapshot.startingLpWhite, currentSnapshot.startingLpWhite, normalDiffs);
+        //Reflection bullshit, coz im lazy, maybe change later for each field
+        for (int i = 0; i < 21; i++)
+        {
+            foreach (var fieldInfo in typeof(CustomDuelResource).GetFields())
+            {
+                var oldRedValue = fieldInfo.GetValue(oldSnapshot.redDuelResource[i]);
+                var newRedValue = fieldInfo.GetValue(currentSnapshot.redDuelResource[i]);
+                ChangelogManager.Check($"  Change red {fieldInfo.Name} ", oldRedValue, newRedValue, normalDiffs);
 
-        ChangelogManager.Check("  Change red starting SP", oldSnapshot.bStartingSpRed, currentSnapshot.bStartingSpRed, normalDiffs);
-        ChangelogManager.Check("  Red starting SP", oldSnapshot.startingSpRed, currentSnapshot.startingSpRed, normalDiffs);
+                var oldWhiteValue = fieldInfo.GetValue(oldSnapshot.whiteDuelResource[i]);
+                var newWhiteValue = fieldInfo.GetValue(currentSnapshot.whiteDuelResource[i]);
+                ChangelogManager.Check($"  Change white {fieldInfo.Name} ", oldWhiteValue, newWhiteValue, normalDiffs);
+            }
+        }
 
-        ChangelogManager.Check("  Change white starting SP", oldSnapshot.bStartingSpWhite, currentSnapshot.bStartingSpWhite, normalDiffs);
-        ChangelogManager.Check("  White starting SP", oldSnapshot.startingSpWhite, currentSnapshot.startingSpWhite, normalDiffs);
-
-        ChangelogManager.Check("  Change red recovery SP", oldSnapshot.bSpRecoveryRed, currentSnapshot.bSpRecoveryRed, normalDiffs);
-        ChangelogManager.Check("  Red recovery SP", oldSnapshot.spRecoveryRed, currentSnapshot.spRecoveryRed, normalDiffs);
-
-        ChangelogManager.Check("  Change white recovery SP", oldSnapshot.bSpRecoveryWhite, currentSnapshot.bSpRecoveryWhite, normalDiffs);
-        ChangelogManager.Check("  White starting SP", oldSnapshot.spRecoveryWhite, currentSnapshot.spRecoveryWhite, normalDiffs);
-        
         ChangelogManager.Check("  Max card limit per deck", oldSnapshot.maxCardInDeck, currentSnapshot.maxCardInDeck, normalDiffs);
-        
+
         if (normalDiffs.Count > 0)
         {
             diffs.Add("Basic patches");

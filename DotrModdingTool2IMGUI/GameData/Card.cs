@@ -66,9 +66,9 @@ public class Card
 
     public static void ReloadStrings()
     {
-        for (int i = 0; i < Card.cardNameList.Length; i++)
+        for (int i = 0; i < cardNameList.Length; i++)
         {
-            Card.cardNameList[i].Edited = StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart];
+            cardNameList[i].Edited = StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart];
         }
         RebuildStringCache();
 

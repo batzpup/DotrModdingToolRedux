@@ -4,6 +4,8 @@ namespace DotrModdingTool2IMGUI.ChangelogDiffCheckers;
 
 public static class ChangelogManager
 {
+   
+    
     public static ModSnapshot OldSnapshot;
     public static ModSnapshot NewSnapshot;
 

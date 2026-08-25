@@ -11,7 +11,7 @@ public class GlobalImgui
     {
         if (!UserSettings.ToggleImageTooltips)
             return;
-        if (!GlobalImages.Instance.Cards.TryGetValue(cardName, out var texture))
+        if (!GlobalImages.Instance.OriginalCards.TryGetValue(cardName, out var texture))
             return;
         ImGui.PushStyleColor(ImGuiCol.PopupBg, defaultColor);
 

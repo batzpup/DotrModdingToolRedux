@@ -2,8 +2,8 @@
 
 public class DeckCard
 {
-    private CardConstant cardConstant;
-    private DeckLeaderRank rank;
+    CardConstant cardConstant;
+    DeckLeaderRank rank;
     public byte[] Bytes;
 
     public DeckCard(byte[] cardBytes)

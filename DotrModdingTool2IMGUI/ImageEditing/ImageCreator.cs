@@ -476,13 +476,119 @@ public static class ImageCreator
 
         return bitmap;
     }
+
+    public static DecodedImage DecodePictureFromBytes(byte[] picture)
+    {
+        var metaData = new ImageMetaData {
+            TotalImageSize = BitConverter.ToInt32(picture, 0x8),
+            Width = BitConverter.ToUInt16(picture, 0x54),
+            Height = BitConverter.ToUInt16(picture, 0x56),
+            NumberOfSections = BitConverter.ToUInt16(picture, 0x58)
+        };
+
+        var (paletteOffset, paletteSize) = FindPaletteStartAndSize(picture, metaData.TotalImageSize);
+        if (paletteOffset == -1)
+            throw new InvalidDataException("Could not locate palette.");
+
+        if (!IsValidPalletSize(paletteSize))
+            throw new InvalidDataException($"Unsupported palette size 0x{paletteSize:X}.");
+
+        metaData.PalleteOffset = paletteOffset;
+        metaData.PalleteSize = paletteSize;
+        metaData.StartOfImage = paletteOffset + paletteSize + paddingSize;
+
+        int partialImageSize = GetPartialImageSize(picture, metaData.TotalImageSize, metaData.StartOfImage);
+        uint[] palette = ReadPalette(picture, paletteOffset, paletteSize);
+
+        if (metaData.NumberOfSections > 100)
+            metaData.NumberOfSections = 100;
+
+        var pixels = new uint[metaData.Width * metaData.Height];
+
+        unsafe
+        {
+            fixed (uint* pixelsPtr = pixels)
+            {
+                if (metaData.Width < 128)
+                {
+                    LoadPicMiniSection(picture, palette, pixelsPtr, metaData.StartOfImage, metaData.Width, metaData.Height);
+                }
+                else
+                {
+                    for (int i = 0; i < metaData.NumberOfSections - 1; i++)
+                    {
+                        LoadImgSection(picture, palette, pixelsPtr, i, metaData.StartOfImage, partialImageSize, paletteSize, metaData.Width, metaData.Height);
+                    }
+                }
+            }
+        }
+
+        return new DecodedImage {
+            Width = metaData.Width,
+            Height = metaData.Height,
+            Pixels = pixels,
+            Palette = palette,
+            MetaData = metaData
+        };
+    }
+
+
+    public static unsafe Image ToRaylibImage(DecodedImage decoded)
+    {
+        int pixelCount = decoded.Width * decoded.Height;
+        int byteSize = pixelCount * 4;
+
+        byte* buffer = (byte*)Raylib.MemAlloc((uint)byteSize);
+
+        for (int i = 0; i < pixelCount; i++)
+        {
+            uint p = decoded.Pixels[i];
+            byte a = (byte)(p >> 24);
+            byte r = (byte)(p >> 16);
+            byte g = (byte)(p >> 8);
+            byte b = (byte)(p);
+
+            int o = i * 4;
+            buffer[o + 0] = r;
+            buffer[o + 1] = g;
+            buffer[o + 2] = b;
+            buffer[o + 3] = a;
+        }
+
+        return new Image {
+            Data = buffer,
+            Width = decoded.Width,
+            Height = decoded.Height,
+            Mipmaps = 1,
+            Format = PixelFormat.UncompressedR8G8B8A8
+        };
+    }
+
+
+    public static Texture2D ToRaylibTexture(DecodedImage decoded)
+    {
+        Image img = ToRaylibImage(decoded);
+        Texture2D tex = Raylib.LoadTextureFromImage(img);
+        Raylib.UnloadImage(img);
+        return tex;
+    }
+
+
+
+    public static IntPtr LoadBytesToRaylibImage(byte[] bytes)
+    {
+        DecodedImage decoded = DecodePictureFromBytes(bytes);
+        Image image = ToRaylibImage(decoded);
+        Texture2D texture = Raylib.LoadTextureFromImage(image);
+        Raylib.UnloadImage(image);
+        IntPtr textureId = (IntPtr)texture.Id;
+        return textureId;
+    }
 }
 
 public static class ImageSaver
 {
-    static (int x, int y)[] BuildSectionMap(
-        int sectionNumber, int partialImageSize,
-        int imageWidth, int imageHeight)
+    static (int x, int y)[] BuildSectionMap(int sectionNumber, int partialImageSize, int imageWidth, int imageHeight)
     {
         int blockWidth = Math.Min(imageWidth, 128);
         int blockHeight = Math.Min(imageHeight, 64);
@@ -806,4 +912,16 @@ public static class ImageSaver
 
         return output;
     }
+}
+
+public struct DecodedImage
+{
+    public int Width;
+    public int Height;
+
+    /// Packed BGRA pixels, one uint per pixel, matching SKColorType.Bgra8888 byte layout (in-memory bytes are [B, G, R, A], which reads as 0xAARRGGBB in a little-endian uint).
+    public uint[] Pixels;
+
+    public uint[] Palette;
+    public ImageMetaData MetaData;
 }

@@ -64,6 +64,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     static int AddCustomMusicPtr = 0x1AAB58 - DataAccess.IsoSlusRamOffset;
     static int TaTuto_DrawTrapArea = 0x27F700 - DataAccess.IsoSlusRamOffset;
     static int AI_Tut_05 = 0x17AA70 - DataAccess.IsoSlusRamOffset;
+    static int TaTuto_GetCardNameMsgID = 0x0027fda0 - DataAccess.IsoSlusRamOffset;
 
     #region Toggle only
 
@@ -83,6 +84,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bAllKindsExtraSlots;
     [JsonInclude] public bool bSaveMusic;
     [JsonInclude] public bool bSandBoxMode;
+    [JsonInclude] public bool bExodiaFromHand;
 
     [JsonInclude] public int CurrentRule;
     public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
@@ -106,17 +108,9 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bSpRecoveryRed;
     [JsonInclude] public bool bStartingSpRed;
     [JsonInclude] public bool bMaxCardLimitInDeck;
+    [JsonInclude] public bool bChangeDefaultZoom;
 
-    [JsonInclude] public int startingSpRed = 4;
-    [JsonInclude] public int startingLpRed = 4000;
-    [JsonInclude] public int spRecoveryRed = 3;
 
-    [JsonInclude] public bool bStartingLpWhite;
-    [JsonInclude] public bool bSpRecoveryWhite;
-    [JsonInclude] public bool bStartingSpWhite;
-    [JsonInclude] public int startingSpWhite = 4;
-    [JsonInclude] public int startingLpWhite = 4000;
-    [JsonInclude] public int spRecoveryWhite = 3;
 
     [JsonInclude] public int forceSideIndex;
     [JsonInclude] public int lpCap;
@@ -125,6 +119,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public int leaderRecovery;
 
     [JsonInclude] public int maxCardLimitInDeck;
+    [JsonInclude] public int defaultZoom = 200;
 
     #endregion
 
@@ -181,6 +176,13 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     #endregion
 
+    //Custom duel resource listbox
+    int currentDuelIndex = 0;
+    string[] CrEnemyNameArray;
+    [JsonInclude] public bool bCustomResources;
+    [JsonInclude] public CustomDuelResource[] whiteDuelResource = new CustomDuelResource[21];
+    [JsonInclude] public CustomDuelResource[] redDuelResource = new CustomDuelResource[21];
+
 
     public static GameplayPatchesWindow Instance { get; private set; }
 
@@ -206,7 +208,15 @@ public class GameplayPatchesWindow : IImGuiWindow
     {
         SpecialThreeInARows = Enumerable.Repeat(671, 30).ToArray();
         SpecialSlotRewards = Enumerable.Repeat(0, 30).ToArray();
+        CrEnemyNameArray = Enemies.GetEnemyNameArray()
+            .Skip(1)
+            .Take(21)
+            .ToArray();
+
+        CrEnemyNameArray[19] += " White Rose";
+        CrEnemyNameArray[20] += " Red Rose";
         ReadGameplayPatchesFromIso();
+
 
     }
 
@@ -231,6 +241,11 @@ public class GameplayPatchesWindow : IImGuiWindow
                 DrawValuePatches(windowSize);
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Starting Resources"))
+            {
+                RenderCustomResources();
+                ImGui.EndTabItem();
+            }
             if (ImGui.BeginTabItem("Custom Slot Rares"))
             {
                 DrawCustomSlotRewards();
@@ -243,6 +258,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 RenderExpEditor();
                 ImGui.EndTabItem();
             }
+
             ImGui.EndTabBar();
         }
         ImGui.PopStyleColor(2);
@@ -251,6 +267,87 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         ImGui.PopFont();
 
+    }
+
+
+    void DrawDuelResourceEditor(string label, ref CustomDuelResource resource)
+    {
+        ImGui.Text(label);
+
+        if (bChangeLpCap)
+        {
+            ImGuiExt.InputUShort("LP", ref resource.LP, 0, lpCap);
+        }
+        else
+        {
+            ImGuiExt.InputUShort("LP", ref resource.LP, 0, 9999);
+        }
+
+        ImGuiExt.InputByte("Summon Power", ref resource.SummonPower, 0, 12);
+        ImGuiExt.InputByte("Summon Recharge", ref resource.SummonRecharge, 0, 12);
+        ImGuiExt.InputByte("Starting Col", ref resource.StartingCol, 0, 6);
+        ImGuiExt.InputByte("Starting Row", ref resource.StartingRow, 0, 6);
+        if (bExpandedZoom)
+        {
+            ImGuiExt.InputUShort("Starting Zoom", ref resource.Zoom, 100, 625);
+        }
+        else
+        {
+            ImGuiExt.InputUShort("Starting Zoom", ref resource.Zoom, 100, 500);
+        }
+
+
+
+
+    }
+
+    void RenderCustomResources()
+    {
+        Vector2 avail = ImGui.GetContentRegionAvail();
+
+        float duelListWidth = avail.X * 0.25f;
+        float resourcePanelWidth = avail.X - duelListWidth - ImGui.GetStyle().ItemSpacing.X;
+        float height = avail.Y;
+
+        if (currentDuelIndex < 0)
+        {
+            currentDuelIndex = 0;
+        }
+
+        if (currentDuelIndex >= CrEnemyNameArray.Length)
+        {
+            currentDuelIndex = CrEnemyNameArray.Length - 1;
+        }
+
+        ImGui.BeginChild("Duel Selection", new Vector2(duelListWidth, height));
+        ImGui.Checkbox("Use Custom Resources", ref bCustomResources);
+        ImGui.ListBox("##Duels", ref currentDuelIndex, CrEnemyNameArray, CrEnemyNameArray.Length, CrEnemyNameArray.Length);
+
+        ImGui.EndChild();
+
+        ImGui.SameLine();
+
+        ImGui.BeginChild("Resource Panel", new Vector2(resourcePanelWidth, height));
+
+        string redName = "Player";
+        string whiteName = "Player";
+        if (currentDuelIndex < 10 || currentDuelIndex == 19)
+        {
+            whiteName = CrEnemyNameArray[currentDuelIndex];
+        }
+        else
+        {
+            redName = CrEnemyNameArray[currentDuelIndex];
+        }
+
+        ImGui.PushID($"red Resource {currentDuelIndex}");
+        DrawDuelResourceEditor($"Resources for {redName}", ref redDuelResource[currentDuelIndex]);
+        ImGui.Dummy(new Vector2(0, height / 16));
+        ImGui.PopID();
+        ImGui.PushID($"White Resource {currentDuelIndex}");
+        DrawDuelResourceEditor($"Resources for {whiteName}", ref whiteDuelResource[currentDuelIndex]);
+        ImGui.PopID();
+        ImGui.EndChild();
     }
 
     void RenderExpEditor()
@@ -477,64 +574,33 @@ public class GameplayPatchesWindow : IImGuiWindow
             leaderRecovery = Math.Clamp(leaderRecovery, 50, 9999);
             ImGui.InputInt("##leaderRecovery", ref leaderRecovery, 50);
         }
-
-        ImGui.Checkbox("Change red starting lp", ref bStartingLpRed);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial LP for Red/Lancasters");
-        if (bStartingLpRed)
-        {
-            startingLpRed = Math.Clamp(startingLpRed, 1, lpCap);
-            ImGui.InputInt("##startingLpRed", ref startingLpRed, 50);
-        }
-
-        ImGui.Checkbox("Change white starting lp", ref bStartingLpWhite);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial LP for White/Yorkists");
-        if (bStartingLpWhite)
-        {
-            startingLpWhite = Math.Clamp(startingLpWhite, 1, lpCap);
-            ImGui.InputInt("##startingLpWhite", ref startingLpWhite, 50);
-        }
-
-        ImGui.Checkbox("Change red starting SP", ref bStartingSpRed);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial SP for Red/Lancasters");
-        if (bStartingSpRed)
-        {
-            startingSpRed = Math.Clamp(startingSpRed, 0, 12);
-            ImGui.SliderInt("##startingSpRed", ref startingSpRed, 0, 12);
-        }
-
-        ImGui.Checkbox("Change white starting SP", ref bStartingSpWhite);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes initial SP for White/Yorkists");
-        if (bStartingSpWhite)
-        {
-            startingSpWhite = Math.Clamp(startingSpWhite, 0, 12);
-            ImGui.SliderInt("##startingSpWhite", ref startingSpWhite, 0, 12);
-        }
-
-        ImGui.Checkbox("Change red SP recovery", ref bSpRecoveryRed);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes SP per turn for Red/Lancasters");
-        if (bSpRecoveryRed)
-        {
-            spRecoveryRed = Math.Clamp(spRecoveryRed, 0, 12);
-            ImGui.SliderInt("##SpRecoveryRed", ref spRecoveryRed, 0, 12);
-        }
-
-        ImGui.Checkbox("Change white SP recovery", ref bSpRecoveryWhite);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes SP per turn for White/Yorkists");
-        if (bSpRecoveryWhite)
-        {
-            spRecoveryWhite = Math.Clamp(spRecoveryWhite, 0, 12);
-            ImGui.SliderInt("##SpRecoveryWhite", ref spRecoveryWhite, 0, 12);
-        }
+        
 
         ImGui.Checkbox("Remove card limit in deck ", ref bMaxCardLimitInDeck);
         if (ImGui.IsItemHovered())
+        {
             ImGui.SetTooltip("Changes the max limit of cards in the deck");
+        }
+
 
         if (bMaxCardLimitInDeck)
         {
             maxCardLimitInDeck = Math.Clamp(maxCardLimitInDeck, 1, 9);
             ImGui.SliderInt("##MaxCardLimit", ref maxCardLimitInDeck, 1, 9);
         }
+
+        //ImGui.Checkbox("Change Default Zoom", ref bChangeDefaultZoom);
+        //if (ImGui.IsItemHovered())
+        //{
+        //    ImGui.SetTooltip("Changes default zoom level of the camera");
+        //}
+        //if (bChangeDefaultZoom)
+        //{
+        //    if (ImGui.SliderInt("##DefaultZoomLevel", ref defaultZoom, 200, 500))
+        //    {
+        //        defaultZoom = Math.Clamp(defaultZoom, 200, 500);
+        //    }
+        //}
         ImGui.EndChild();
     }
 
@@ -612,6 +678,11 @@ public class GameplayPatchesWindow : IImGuiWindow
             ImGui.TextColored(new GuiColour(Color.Orange).value, "NOTE: This only works when pressing continue.\nTo work with a new game:\nCreate a new game save and then press continue from the menu screen.");
             ImGui.EndTooltip();
         }
+        //ImGui.Checkbox("Exodia From Hand", ref bExodiaFromHand);
+        //if (ImGui.IsItemHovered())
+        //{
+        //    ImGui.SetTooltip("Exodia's win condition works from hand not on field");
+        //}
 
 
         ImGui.Separator();
@@ -669,6 +740,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
 
         bSandBoxMode = new SandboxModePatch().IsApplied();
+        //bExodiaFromHand = new ExodiaFromHand().IsApplied();
         ReadValuesFromIso();
         ReadAiPatches();
     }
@@ -766,38 +838,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             terrainBuffAmount = 500;
         }
-
-        bStartingLpRed = new ChangeStartingLpRed().IsApplied();
-        if (bStartingLpRed)
-        {
-            startingLpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLpRed.patchLocationRed, 2), 0);
-        }
-        bStartingSpRed = new ChangeStartingSpRed().IsApplied();
-        if (bStartingSpRed)
-        {
-            startingSpRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSpRed.patchLocationRed, 2), 0);
-        }
-        bSpRecoveryRed = new ChangeSpRecoveryRed().IsApplied();
-        if (bSpRecoveryRed)
-        {
-            spRecoveryRed = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecoveryRed.patchLocationRed, 2), 0);
-        }
-        bSpRecoveryWhite = new ChangeSpRecoveryWhite().IsApplied();
-        if (bSpRecoveryWhite)
-        {
-            spRecoveryWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeSpRecoveryWhite.patchLocationWhite, 2), 0);
-        }
-
-        bStartingLpWhite = new ChangeStartingLpWhite().IsApplied();
-        if (bStartingLpWhite)
-        {
-            startingLpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingLpWhite.patchLocationWhite, 2), 0);
-        }
-        bStartingSpWhite = new ChangeStartingSpWhite().IsApplied();
-        if (bStartingSpWhite)
-        {
-            startingSpWhite = BitConverter.ToInt16(dataAccess.ReadBytes(ChangeStartingSpWhite.patchLocationWhite, 2), 0);
-        }
+        
         bMaxCardLimitInDeck = new CardDeckLimitPatch().IsApplied();
         if (bMaxCardLimitInDeck)
         {
@@ -824,6 +865,26 @@ public class GameplayPatchesWindow : IImGuiWindow
                 j++;
             }
         }
+        bCustomResources = new CustomDuelResources().IsApplied();
+        if (bCustomResources)
+        {
+            byte[] redResourceBytes = dataAccess.ReadBytes(CustomDuelResources.redResourceTable, 8 * 21);
+            byte[] WhiteResourceBytes = dataAccess.ReadBytes(CustomDuelResources.whiteResourceTable, 8 * 21);
+            redDuelResource = CustomDuelResource.CreateResourcesFromBytes(redResourceBytes);
+            whiteDuelResource = CustomDuelResource.CreateResourcesFromBytes(WhiteResourceBytes);
+
+        }
+        else
+        {
+            for (int i = 0; i < 21; i++)
+            {
+                CustomDuelResource.SetDefaultCustomResource(ref redDuelResource[i], 0);
+                CustomDuelResource.SetDefaultCustomResource(ref whiteDuelResource[i], 1);
+            }
+        }
+        //bChangeDefaultZoom = new DefaultZoomPatch().IsApplied();
+        //defaultZoom = BitConverter.ToInt16(dataAccess.ReadBytes(DefaultZoomPatch.Zoom0Location, 2), 0);
+
 
     }
 
@@ -870,10 +931,10 @@ public class GameplayPatchesWindow : IImGuiWindow
         new AllowAllCustomDuels().ApplyOrRemove(bAllCustomDuels);
         new KeepReincarnatedCard().ApplyOrRemove(bKeepReincarnatedCard);
 
-
-
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
         new DcRuleChanges().Apply((DcRules)CurrentRule);
+        //new ExodiaFromHand().ApplyOrRemove(bExodiaFromHand);
+
         ApplyValuePatches();
 
         new AiFixDarkhole().ApplyOrRemove(bFixDarkHole);
@@ -886,6 +947,22 @@ public class GameplayPatchesWindow : IImGuiWindow
         new AiGiveJoeyReviveMission().ApplyOrRemove(bGiveJoeyReviveMission);
         new AiFixYugiRaigeki().ApplyOrRemove(bYugiRaigeki);
         new AiFixTeaInsectImitation().ApplyOrRemove(bTeaInsectImitation);
+        if (bCustomResources)
+        {
+            for (int i = 0; i < 21; i++)
+            {
+                if (redDuelResource[i].LP == 0)
+                {
+                    CustomDuelResource.SetDefaultCustomResource(ref redDuelResource[i], 0);
+                }
+                if (whiteDuelResource[i].LP == 0)
+                {
+                    CustomDuelResource.SetDefaultCustomResource(ref whiteDuelResource[i], 1);
+                }
+            }
+            new CustomDuelResources().Apply(redDuelResource, whiteDuelResource);
+        }
+
         SaveCustomSlots();
 
         new SandboxModePatch().ApplyOrRemove(bSandBoxMode);
@@ -1064,17 +1141,11 @@ public class GameplayPatchesWindow : IImGuiWindow
         }
         new ChangeLpRecovery().ApplyOrRemove(bDeckLeaderRecovery, leaderRecovery);
 
-        new ChangeStartingLpRed().ApplyOrRemove(bStartingLpRed, (uint)startingLpRed);
-        new ChangeStartingLpWhite().ApplyOrRemove(bStartingLpWhite, (uint)startingLpWhite);
-
-        new ChangeSpRecoveryRed().ApplyOrRemove(bSpRecoveryRed, (uint)spRecoveryRed);
-        new ChangeSpRecoveryWhite().ApplyOrRemove(bSpRecoveryWhite, (uint)spRecoveryWhite);
-
-        new ChangeStartingSpRed().ApplyOrRemove(bStartingSpRed, (uint)startingSpRed);
-        new ChangeStartingSpWhite().ApplyOrRemove(bStartingSpWhite, (uint)startingSpWhite);
         new CardDeckLimitPatch().ApplyOrRemove(bMaxCardLimitInDeck, maxCardLimitInDeck);
+        //new DefaultZoomPatch().ApplyOrRemove(bChangeDefaultZoom, defaultZoom);
     }
 
+    //Remember its instructions 1 instructions if 4 bytes.
     void NopTutorialsForOtherMods()
     {
         //For slots
@@ -1093,12 +1164,14 @@ public class GameplayPatchesWindow : IImGuiWindow
         //Joey
         dataAccess.NopInstructions(TaTuto_Init036, 116);
         //No Revive equip AI
-        dataAccess.NopInstructions(TaTuto_ControlFade, 416);
+        dataAccess.NopInstructions(TaTuto_ControlFade, 104);
 
         //For Music
         dataAccess.NopInstructions(TaTuto_DrawTrapArea, 76);
         dataAccess.NopInstructions(AI_Tut_05, 564);
 
+        //For custom resources
+        dataAccess.NopInstructions(TaTuto_GetCardNameMsgID, 136);
     }
 
     void RestoreNoppedTutorials()
@@ -1415,6 +1488,9 @@ public class GameplayPatchesWindow : IImGuiWindow
                 0x03, 0x32, 0x04, 0x00, 0x62, 0x14, 0x28, 0x16, 0x00, 0x70, 0x02, 0x00, 0x00, 0x10, 0x01, 0x00, 0x02, 0x24, 0x28, 0x16, 0x00, 0x70,
                 0x20, 0x00, 0xBF, 0x7B, 0x10, 0x00, 0xB1, 0x7B, 0x00, 0x00, 0xB0, 0x7B, 0x08, 0x00, 0xE0, 0x03, 0x30, 0x00, 0xBD, 0x27
             });
+
+
+        dataAccess.ApplyPatch(TaTuto_GetCardNameMsgID, new byte[544] { 0xE0, 0xFF, 0xBD, 0x27, 0x10, 0x00, 0xBF, 0x7F, 0x00, 0x00, 0xB0, 0x7F, 0x50, 0x79, 0x07, 0x0C, 0x28, 0x86, 0x80, 0x70, 0x28, 0x26, 0x40, 0x70, 0x40, 0x53, 0x08, 0x0C, 0x28, 0x2E, 0x00, 0x70, 0x04, 0x00, 0x40, 0x14, 0x24, 0xF6, 0x03, 0x26, 0x77, 0x00, 0x00, 0x10, 0x28, 0x16, 0x00, 0x72, 0x24, 0xF6, 0x03, 0x26, 0xAE, 0x01, 0x02, 0x24, 0x70, 0x00, 0x62, 0x10, 0x00, 0x0C, 0x02, 0x24, 0xAB, 0x01, 0x02, 0x24, 0x6A, 0x00, 0x62, 0x10, 0xFF, 0x0B, 0x02, 0x24, 0x84, 0x01, 0x02, 0x24, 0x64, 0x00, 0x62, 0x10, 0xFE, 0x0B, 0x02, 0x24, 0x82, 0x01, 0x02, 0x24, 0x5E, 0x00, 0x62, 0x10, 0xFD, 0x0B, 0x02, 0x24, 0x7D, 0x01, 0x02, 0x24, 0x58, 0x00, 0x62, 0x10, 0xFC, 0x0B, 0x02, 0x24, 0x68, 0x01, 0x02, 0x24, 0x52, 0x00, 0x62, 0x10, 0xFB, 0x0B, 0x02, 0x24, 0x66, 0x01, 0x02, 0x24, 0x4C, 0x00, 0x62, 0x10, 0xFA, 0x0B, 0x02, 0x24, 0x61, 0x01, 0x02, 0x24, 0x46, 0x00, 0x62, 0x10, 0xF9, 0x0B, 0x02, 0x24, 0x55, 0x01, 0x02, 0x24, 0x40, 0x00, 0x62, 0x10, 0xF8, 0x0B, 0x02, 0x24, 0x53, 0x01, 0x02, 0x24, 0x3A, 0x00, 0x62, 0x10, 0xF7, 0x0B, 0x02, 0x24, 0x52, 0x01, 0x02, 0x24, 0x34, 0x00, 0x62, 0x10, 0xF6, 0x0B, 0x02, 0x24, 0x48, 0x01, 0x02, 0x24, 0x2E, 0x00, 0x62, 0x10, 0xF5, 0x0B, 0x02, 0x24, 0x45, 0x01, 0x02, 0x24, 0x28, 0x00, 0x62, 0x10, 0xF4, 0x0B, 0x02, 0x24, 0x3F, 0x01, 0x02, 0x24, 0x22, 0x00, 0x62, 0x10, 0xF3, 0x0B, 0x02, 0x24, 0x37, 0x01, 0x02, 0x24, 0x1C, 0x00, 0x62, 0x10, 0xF2, 0x0B, 0x02, 0x24, 0xE1, 0x01, 0x02, 0x24, 0x16, 0x00, 0x62, 0x10, 0xF1, 0x0B, 0x02, 0x24, 0xE0, 0x01, 0x02, 0x24, 0x10, 0x00, 0x62, 0x10, 0xF0, 0x0B, 0x02, 0x24, 0xDF, 0x01, 0x02, 0x24, 0x0A, 0x00, 0x62, 0x10, 0xEF, 0x0B, 0x02, 0x24, 0x1B, 0x00, 0x02, 0x24, 0x04, 0x00, 0x62, 0x10, 0xEE, 0x0B, 0x02, 0x24, 0x3B, 0x00, 0x00, 0x10, 0x28, 0x16, 0x00, 0x72, 0xEE, 0x0B, 0x02, 0x24, 0x39, 0x00, 0x00, 0x10, 0x10, 0x00, 0xBF, 0x7B, 0xEF, 0x0B, 0x02, 0x24, 0x35, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x0B, 0x02, 0x24, 0x32, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF1, 0x0B, 0x02, 0x24, 0x2F, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF2, 0x0B, 0x02, 0x24, 0x2C, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF3, 0x0B, 0x02, 0x24, 0x29, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF4, 0x0B, 0x02, 0x24, 0x26, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF5, 0x0B, 0x02, 0x24, 0x23, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF6, 0x0B, 0x02, 0x24, 0x20, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF7, 0x0B, 0x02, 0x24, 0x1D, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x0B, 0x02, 0x24, 0x1A, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xF9, 0x0B, 0x02, 0x24, 0x17, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFA, 0x0B, 0x02, 0x24, 0x14, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFB, 0x0B, 0x02, 0x24, 0x11, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFC, 0x0B, 0x02, 0x24, 0x0E, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0B, 0x02, 0x24, 0x0B, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFE, 0x0B, 0x02, 0x24, 0x08, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x0B, 0x02, 0x24, 0x05, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x02, 0x24, 0x02, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x28, 0x16, 0x00, 0x72, 0x10, 0x00, 0xBF, 0x7B, 0x00, 0x00, 0xB0, 0x7B, 0x08, 0x00, 0xE0, 0x03, 0x20, 0x00, 0xBD, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
     }
 
     void SaveCustomSlots()
@@ -1487,7 +1563,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     {
         return bSaveCustomSlotRewards || bAiDoubleTap || bAllCustomDuels ||
                CurrentRule == 1 || bForceNewStartSide || bGiveJoeyReviveMission || bToonLeaderLandChange || bDontReviveEquips || bSaveMusic ||
-               bUserToggledFastIntro;
+               bUserToggledFastIntro || bCustomResources;
     }
 
     //AI generated
@@ -1529,18 +1605,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (root.TryGetProperty("bSpRecoveryRed", out e)) bSpRecoveryRed = e.GetBoolean();
         if (root.TryGetProperty("bStartingSpRed", out e)) bStartingSpRed = e.GetBoolean();
         if (root.TryGetProperty("bMaxCardLimitInDeck", out e)) bMaxCardLimitInDeck = e.GetBoolean();
-
-        if (root.TryGetProperty("startingSpRed", out e)) startingSpRed = e.GetInt32();
-        if (root.TryGetProperty("startingLpRed", out e)) startingLpRed = e.GetInt32();
-        if (root.TryGetProperty("spRecoveryRed", out e)) spRecoveryRed = e.GetInt32();
-
-        if (root.TryGetProperty("bStartingLpWhite", out e)) bStartingLpWhite = e.GetBoolean();
-        if (root.TryGetProperty("bSpRecoveryWhite", out e)) bSpRecoveryWhite = e.GetBoolean();
-        if (root.TryGetProperty("bStartingSpWhite", out e)) bStartingSpWhite = e.GetBoolean();
-
-        if (root.TryGetProperty("startingSpWhite", out e)) startingSpWhite = e.GetInt32();
-        if (root.TryGetProperty("startingLpWhite", out e)) startingLpWhite = e.GetInt32();
-        if (root.TryGetProperty("spRecoveryWhite", out e)) spRecoveryWhite = e.GetInt32();
+        
 
         if (root.TryGetProperty("forceSideIndex", out e)) forceSideIndex = e.GetInt32();
         if (root.TryGetProperty("lpCap", out e)) lpCap = e.GetInt32();
@@ -1574,7 +1639,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             SpecialSlotRewards = ReadIntArray(e, SpecialSlotRewards?.Length ?? 30);
         }
-        
+
         if (root.TryGetProperty("rankExp", out e) && e.ValueKind == JsonValueKind.Array)
         {
             int desiredLen = (rankExp != null && rankExp.Length > 0) ? rankExp.Length : 12;

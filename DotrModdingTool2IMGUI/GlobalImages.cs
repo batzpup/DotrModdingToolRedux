@@ -6,7 +6,8 @@ public class GlobalImages
     static GlobalImages instance;
     public Dictionary<ETerrainImages, IntPtr> Terrain = new Dictionary<ETerrainImages, IntPtr>();
     public Dictionary<EEnemyImages, IntPtr> Enemies = new Dictionary<EEnemyImages, IntPtr>();
-    public Dictionary<string, IntPtr> Cards = new Dictionary<string, IntPtr>();
+    public Dictionary<string, IntPtr> _originalCards = new Dictionary<string, IntPtr>();
+    public Dictionary<string, IntPtr> ModifiedCards = new Dictionary<string, IntPtr>();
     public Dictionary<CardColourType, IntPtr> CardFrames = new Dictionary<CardColourType, IntPtr>();
     public Dictionary<AttributeVisual, IntPtr> CardElements = new Dictionary<AttributeVisual, IntPtr>();
     public Dictionary<DeckLeaderRank,IntPtr> LeaderRanks = new Dictionary<DeckLeaderRank,IntPtr>();
@@ -21,6 +22,22 @@ public class GlobalImages
             }
             return instance;
         }
+    }
+
+    public Dictionary<string, IntPtr> OriginalCards
+    {
+        get
+        {
+            if(UserSettings.UseOriginalImages)
+            {
+                return _originalCards;
+            }
+            else
+            {
+                return ModifiedCards;
+            }
+        }
+        set => _originalCards = value;
     }
 
     public void LoadAllImages()
@@ -69,8 +86,7 @@ public class GlobalImages
         foreach (var name in Card.cardNameList)
         {
             //Always use default names for images
-            //Console.WriteLine($"CurrentCardName: {name}" );
-            Cards.Add(name.Default, ImageHelper.LoadImageImgui($"Images.MonsterImages.{name.Default}.png"));
+            _originalCards.Add(name.Default, ImageHelper.LoadImageImgui($"Images.MonsterImages.{name.Default}.png"));
         }
     }
 

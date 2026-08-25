@@ -8,7 +8,7 @@ namespace DotrModdingTool2IMGUI;
 public class MapEditorWindow : IImGuiWindow
 {
     DataAccess dataAccess;
-    ImFontPtr largerFont;
+
 
 
     //Maps data
@@ -26,7 +26,6 @@ public class MapEditorWindow : IImGuiWindow
     public MapEditorWindow(ImFontPtr fontPtr)
     {
         dataAccess = DataAccess.Instance;
-        largerFont = fontPtr;
         LoadDefaultMapsAll();
         currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Normal];
         EditorWindow.OnIsoLoaded += onIsoLoaded;
@@ -82,7 +81,7 @@ public class MapEditorWindow : IImGuiWindow
                 ImGui.Dummy(new Vector2(availableWidth / 32, 0));
                 ImGui.SameLine();
 
-                ImGui.Image(GlobalImages.Instance.Cards[currentTreasureCard.CardName.Default], ImageHelper.DefaultImageSize);
+                ImGui.Image(GlobalImages.Instance.OriginalCards[currentTreasureCard.CardName.Default], ImageHelper.DefaultImageSize);
             }
             ImGui.Text($"{currentTreasureCard.EnemyName}'s Treasure:");
             ImGui.SetNextItemWidth(availableWidth);
@@ -315,91 +314,103 @@ public class MapEditorWindow : IImGuiWindow
 
         ImGui.PopFont();
     }
+    
 
+  
     void DrawMap()
     {
         currentMap = dataAccess.maps[currentMapIndex];
 
         ImGui.BeginChild("MapDisplay");
+
         ImGui.Text("Left click and/or drag to paint with the current tile.");
         ImGui.Text("Right click to move the hidden card.");
+
         Vector2 availableSpace = ImGui.GetContentRegionAvail();
         Vector2 spacing = ImGui.GetStyle().ItemSpacing;
 
-
         float leftIndent = availableSpace.X / 8f;
 
+        float totalHorizontalSpacing =
+            (spacing.X * 6) +
+            (ImGui.GetStyle().FramePadding.X * 2 * 7) +
+            leftIndent;
 
-        float totalHorizontalSpacing = (spacing.X * 6) + (ImGui.GetStyle().FramePadding.X * 2 * 7) + leftIndent;
+        float maxCellWidth = (availableSpace.X - totalHorizontalSpacing) / 7f;
 
-        float maxCellWidth = (availableSpace.X - totalHorizontalSpacing) / 7;
+        float totalVerticalSpacing =
+            (spacing.Y * 8) +
+            (ImGui.GetStyle().FramePadding.Y * 2 * 9);
 
-        float totalVerticalSpacing = (spacing.Y * 8) + (ImGui.GetStyle().FramePadding.Y * 2 * 9);
-        float maxCellHeight = (availableSpace.Y - totalVerticalSpacing - availableSpace.Y / 32) / 9;
+        float maxCellHeight =
+            (availableSpace.Y - totalVerticalSpacing - availableSpace.Y / 32f) / 9f;
+
         float imageSize = MathF.Max(1, MathF.Min(maxCellWidth, maxCellHeight));
 
         Vector2 tileSize = new Vector2(imageSize, imageSize);
+
         Vector2 mousePos = ImGui.GetMousePos();
 
-        ImGui.Dummy(new Vector2(0, availableSpace.Y / 32));
+        ImGui.Dummy(new Vector2(0, availableSpace.Y / 16f));
         ImGui.Indent(leftIndent);
 
-        Vector2 currentPos = ImGui.GetCursorScreenPos();
-        ImGui.SetCursorScreenPos(currentPos + spacing * 5 + new Vector2((tileSize.X + spacing.X / 2f) * 3, -tileSize.Y / 2f));
-        ImGui.Image(GlobalImages.Instance.Terrain[ETerrainImages.WhiteRose], tileSize);
+            
+        Vector2 gridOrigin = ImGui.GetCursorScreenPos();
+
+        Vector2 step = tileSize + spacing;
 
         bool isMouseDragging = ImGui.IsMouseDown(0);
+        var drawList = ImGui.GetForegroundDrawList();
 
-        int x;
-        int y;
         for (int i = 0; i < 49; i++)
         {
-            x = i % 7;
-            y = i / 7;
-            Vector2 tilePos = ImGui.GetCursorScreenPos();
-            if (ImGui.ImageButton($"Map{x},{y}", GlobalImages.Instance.Terrain[Enum.Parse<ETerrainImages>(currentMap.tiles[x, y].ToString())],
-                    tileSize))
+            int x = i % 7;
+            int y = i / 7;
+
+            Vector2 tilePos = new Vector2(
+                gridOrigin.X + x * step.X,
+                gridOrigin.Y + y * step.Y
+            );
+
+            var tex = GlobalImages.Instance.Terrain[
+                Enum.Parse<ETerrainImages>(currentMap.tiles[x, y].ToString())
+            ];
+
+            ImGui.SetCursorScreenPos(tilePos);
+
+            if (ImGui.ImageButton($"Map{x},{y}", tex, tileSize))
             {
                 currentMap.tiles[x, y] = currentPaletteTerrain;
             }
+
+
             if (DataAccess.Instance.IsIsoLoaded && currentMapIndex < 22)
             {
-                var drawList = ImGui.GetForegroundDrawList();
+
                 if (currentTreasureCard.Column == x && currentTreasureCard.Row == y)
                 {
-
-                    drawList.AddRectFilled(tilePos + spacing / 2f, new Vector2(tilePos.X + tileSize.X + spacing.X / 2f, tilePos.Y + tileSize.Y + spacing.Y / 2f + 1), treasureHighlightColour);
-                }
-                if (x == 0)
-                {
-                    
-                    Vector2 textPos = new Vector2(
-                        tilePos.X - ImGui.CalcTextSize($"{y}").X - spacing.X * 0.5f,
-                        tilePos.Y + tileSize.Y / 2f - ImGui.GetFontSize() / 2f
+                    drawList.AddRectFilled(
+                        tilePos + spacing * 0.5f,
+                        tilePos + tileSize + spacing * 0.5f,
+                        treasureHighlightColour
                     );
-                    drawList.AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text), $"{y}");
-                }
-                if (y == 0)
-                {
-                    if (x != 3)
-                    {
-                        Vector2 textPosTop = new Vector2(
-                            tilePos.X + tileSize.X / 2f - ImGui.CalcTextSize($"{x}").X / 2f,
-                            tilePos.Y - ImGui.GetFontSize() - spacing.Y * 0.5f
-                        );
-                        drawList.AddText(textPosTop, ImGui.GetColorU32(ImGuiCol.Text), $"{x}");
-                    }
-
                 }
             }
-            bool isInSquare = mousePos.X >= tilePos.X && mousePos.X < tilePos.X + tileSize.X &&
-                              mousePos.Y >= tilePos.Y && mousePos.Y < tilePos.Y + tileSize.Y;
+
+
+            bool isInSquare =
+                mousePos.X >= tilePos.X &&
+                mousePos.X < tilePos.X + tileSize.X &&
+                mousePos.Y >= tilePos.Y &&
+                mousePos.Y < tilePos.Y + tileSize.Y;
+
             if (isInSquare)
             {
                 if (isMouseDragging)
                 {
                     currentMap.tiles[x, y] = currentPaletteTerrain;
                 }
+
                 if (DataAccess.Instance.IsIsoLoaded && currentMapIndex < 22)
                 {
                     if (ImGui.GetIO().MouseClicked[1])
@@ -409,12 +420,65 @@ public class MapEditorWindow : IImGuiWindow
                     }
                 }
             }
-            if (x < 6) ImGui.SameLine();
+        }
+
+
+
+        for (int i = 0; i < 7; i++)
+        {
+
+            string label = i.ToString();
+            Vector2 textSize = ImGui.CalcTextSize(label);
+
+            Vector2 topPos = new Vector2(
+                gridOrigin.X + i * step.X + tileSize.X * 0.5f - textSize.X * 0.5f,
+                gridOrigin.Y - ImGui.GetFontSize() - spacing.Y * 0.5f
+            );
+
+
+            Vector2 bottomPos = new Vector2(
+                gridOrigin.X - spacing.X * 2,
+                gridOrigin.Y + i * step.Y + tileSize.Y * 0.5f - textSize.Y * 0.5f
+            );
+
+            drawList.AddText(bottomPos, ImGui.GetColorU32(ImGuiCol.Text), label);
+            if (i != 3)
+            {
+                drawList.AddText(topPos, ImGui.GetColorU32(ImGuiCol.Text), label);
+            }
 
         }
-        Vector2 currentPos2 = ImGui.GetCursorScreenPos();
-        ImGui.SetCursorScreenPos(currentPos2 + spacing * 5 + new Vector2((tileSize.X + spacing.X / 2f) * 3, -spacing.Y * 5f));
-        ImGui.Image(GlobalImages.Instance.Terrain[ETerrainImages.RedRose], tileSize);
+
+
+        float gridWidth = 7 * step.X - spacing.X;
+        float gridHeight = 7 * step.Y - spacing.Y;
+
+        Vector2 gridCenter = new Vector2(
+            gridOrigin.X + gridWidth * 0.5f,
+            gridOrigin.Y + gridHeight * 0.5f
+        );
+
+
+        Vector2 bottomImagePos = new Vector2(
+            gridCenter.X - tileSize.X * 0.5f,
+            gridCenter.Y + (gridWidth / 7) * 4 - tileSize.Y * 0.5f - spacing.X
+        );
+        Vector2 topImagePos = new Vector2(
+            gridCenter.X - tileSize.X * 0.5f,
+            gridCenter.Y - (gridWidth / 7) * 4 - tileSize.Y * 0.5f + spacing.X
+        );
+
+        drawList.AddImage(
+            GlobalImages.Instance.Terrain[ETerrainImages.WhiteRose],
+            topImagePos + spacing * 0.5f,
+            topImagePos + tileSize + spacing * 0.5f
+        );
+
+        drawList.AddImage(
+            GlobalImages.Instance.Terrain[ETerrainImages.RedRose],
+            bottomImagePos + spacing * 0.5f,
+            bottomImagePos + tileSize + spacing * 0.5f
+        );
 
         ImGui.EndChild();
     }

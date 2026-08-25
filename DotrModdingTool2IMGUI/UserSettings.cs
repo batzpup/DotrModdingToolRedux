@@ -6,6 +6,7 @@ namespace DotrModdingTool2IMGUI;
 public static class UserSettings
 {
     public static bool UseDefaultNames = false;
+    public static bool UseOriginalImages = false;
     public static bool deckEditorUseColours { get; set; } = false;
     public static bool performanceMode = false;
     public static bool ToggleImageTooltips = true;
@@ -32,6 +33,7 @@ public static class UserSettings
         sb.AppendLine($"performanceMode={performanceMode}");
         sb.AppendLine($"ToggleImageTooltips={ToggleImageTooltips}");
         sb.AppendLine($"UseDefaultNames={UseDefaultNames}");
+        sb.AppendLine($"UseOriginalImages={UseOriginalImages}");
         sb.AppendLine($"LastIsoPath={LastIsoPath}");
         sb.AppendLine($"AutoChangelog={AutoChangelog}");
 
@@ -77,7 +79,7 @@ public static class UserSettings
 
         if (config.TryGetValue("AutoChangelog", out var autoChangelog))
             AutoChangelog = bool.Parse(autoChangelog);
-        
+
         if (config.TryGetValue("deckEditorUseColours", out var useColors))
             deckEditorUseColours = bool.Parse(useColors);
 
@@ -87,8 +89,11 @@ public static class UserSettings
         if (config.TryGetValue("ToggleImageTooltips", out var toolTipImages))
             ToggleImageTooltips = bool.Parse(toolTipImages);
 
-        if (config.TryGetValue("UseDefaultNames", out var UseDefaultNames))
-            ToggleImageTooltips = bool.Parse(UseDefaultNames);
+        if (config.TryGetValue("UseDefaultNames", out var useDefaultNames))
+            UseDefaultNames = bool.Parse(useDefaultNames);
+
+        if (config.TryGetValue("UseOriginalImages", out var useOriginalImages))
+            UseOriginalImages = bool.Parse(useOriginalImages);
 
         if (config.TryGetValue("DeckEditorHighlightcolour", out var deckHighlight))
             DeckEditorHighlightcolour = ParseColor(deckHighlight);
@@ -106,7 +111,7 @@ public static class UserSettings
             CustomSlotDropdownColour = ParseColor(customeSlotDropdown);
         if (config.TryGetValue("CardEditorDifferenceHighlightColour", out var cardEditorDifColour))
             CardEditorDifferenceHighlightColour = ParseColor(cardEditorDifColour);
-   
+
 
     }
 
