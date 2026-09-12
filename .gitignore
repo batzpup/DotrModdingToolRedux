@@ -1,7 +1,10 @@
 # User-specific files
-.idea/               # Rider project files
-.vs/                 # Visual Studio user-specific files
-.vscode/             # VSCode specific settings
+# Rider project files
+.idea/
+# Visual Studio user-specific files
+.vs/
+# VSCode specific settings
+.vscode/
 
 # Build results
 [Dd]ebug/
@@ -12,8 +15,10 @@
 [Dd]ebugPublic*\
 [Dd]ist*\
 [Dd]eploy*\
-obj/                 # Object files
-bin/                 # Output files
+# Object files
+obj/
+# Output files
+bin/
 DotrModdingTool2IMGUI/obj/
 DotrModdingTool2IMGUI/bin/
 Updater/obj
