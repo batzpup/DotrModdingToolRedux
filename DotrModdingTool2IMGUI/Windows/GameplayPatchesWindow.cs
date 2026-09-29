@@ -85,6 +85,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bSaveMusic;
     [JsonInclude] public bool bSandBoxMode;
     [JsonInclude] public bool bExodiaFromHand;
+    [JsonInclude] public bool bInvertMonsterBattleWithButtonPress;
 
     [JsonInclude] public int CurrentRule;
     public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
@@ -684,6 +685,20 @@ public class GameplayPatchesWindow : IImGuiWindow
         //    ImGui.SetTooltip("Exodia's win condition works from hand not on field");
         //}
 
+        ImGui.Checkbox("Hold Cross(X) to invert \"Monster Battle\" setting during battle", ref bInvertMonsterBattleWithButtonPress);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text(
+                "Holding the Cross(X) button during a monster's attack will invert the " + 
+                "\"Monster Battle\" setting (Display vs Abbreviate) for that battle only."
+            );
+            ImGui.TextColored(new GuiColour(Color.Orange).value,
+                "NOTE: This makes it easy to skip or show the battle animation on the fly, during either player's turn.\n" +
+                "Checks both controllers, so either local player can trigger it during multiplayer.");
+            ImGui.EndTooltip();
+        }
+
 
         ImGui.Separator();
         ImGui.Text("AI Patches");
@@ -741,6 +756,7 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         bSandBoxMode = new SandboxModePatch().IsApplied();
         //bExodiaFromHand = new ExodiaFromHand().IsApplied();
+        bInvertMonsterBattleWithButtonPress = new InvertMonsterBattleWithButtonPress().IsApplied();
         ReadValuesFromIso();
         ReadAiPatches();
     }
@@ -966,6 +982,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         SaveCustomSlots();
 
         new SandboxModePatch().ApplyOrRemove(bSandBoxMode);
+        new InvertMonsterBattleWithButtonPress().ApplyOrRemove(bInvertMonsterBattleWithButtonPress);
     }
 
     void ApplyValuePatches()
@@ -1588,6 +1605,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (root.TryGetProperty("bAllKindsExtraSlots", out e)) bAllKindsExtraSlots = e.GetBoolean();
         if (root.TryGetProperty("bSaveMusic", out e)) bSaveMusic = e.GetBoolean();
         if (root.TryGetProperty("bSandBoxMode", out e)) bSandBoxMode = e.GetBoolean();
+        if (root.TryGetProperty("bInvertMonsterBattleWithButtonPress", out e)) bInvertMonsterBattleWithButtonPress = e.GetBoolean();
 
         if (root.TryGetProperty("CurrentRule", out e)) CurrentRule = e.GetInt32();
 
