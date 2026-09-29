@@ -18,6 +18,11 @@ public class CardConstant
         CardLookup = List.ToDictionary(c => c.Name);
     }
 
+    public static void RebuildLookup()
+    {
+        CardLookup = List.ToDictionary(c => c.Name);
+    }
+
     public static List<CardConstant> Monsters
     {
         get

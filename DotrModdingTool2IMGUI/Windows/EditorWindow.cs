@@ -478,8 +478,8 @@ public class EditorWindow
                         DialogResult result = Dialog.FileSave("json");
                         if (result.IsOk)
                         {
-                            string isoPath = result.Path + ".json";
-                            StringEditor.ExportStringsToJSON(isoPath);
+                            string exportPath = result.Path + ".json";
+                            StringEditor.ExportStringsToJSON($"{exportPath}.json");
                         }
                         else
                         {
@@ -491,8 +491,8 @@ public class EditorWindow
                         DialogResult result = Dialog.FileSave("csv");
                         if (result.IsOk)
                         {
-                            string isoPath = result.Path;
-                            CardEditorWindow.ExportMonstersToCSV(isoPath);
+                            string exportPath = result.Path;
+                            CardEditorWindow.ExportMonstersToCSV($"{exportPath}.csv");
                         }
                         else
                         {
@@ -505,7 +505,7 @@ public class EditorWindow
                         if (result.IsOk)
                         {
                             string isoPath = result.Path;
-                            FusionData.ExportToCSV(isoPath);
+                            FusionData.ExportToCSV($"{isoPath}.csv");
                         }
                         else
                         {
@@ -517,7 +517,7 @@ public class EditorWindow
                         var result = Dialog.FileSave("txt");
                         if (result.IsOk)
                         {
-                            Map.ExportMapsToFile(result.Path);
+                            Map.ExportMapsToFile($"{result.Path}.txt");
                         }
                         else
                         {
@@ -541,7 +541,7 @@ public class EditorWindow
                         var result = Dialog.FileSave("json");
                         if (result.IsOk)
                         {
-                            _gameplayPatchesWindow.ExportToJson(result.Path);
+                            _gameplayPatchesWindow.ExportToJson($"{result.Path}.json");
                         }
                         else
                         {

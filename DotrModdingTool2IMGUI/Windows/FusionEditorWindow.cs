@@ -192,34 +192,7 @@ class FusionEditorWindow : IImGuiWindow
         ImGui.InputText("##SearchBar", ref searchText, 32);
         ImGui.SameLine();
         ImGui.TextColored(new GuiColour(Color.SkyBlue).value, "Shift + Right click to view monster in editor");
-        //ImGui.SameLine();
-        //if (ImGui.Button("Import from CSV"))
-        //{
-        //    DialogResult result = Dialog.FileOpen("csv");
-        //    if (result.IsOk)
-        //    {
-        //        string isoPath = result.Path;
-        //        if (result.Path.EndsWith(".csv"))
-        //        {
-        //            FusionData.ImportFromCSV(isoPath);
-        //            AllFusionData = FusionData.FusionTableData.ToList();
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("Should show pop up error");
-        //        }
-        //    }
-        //}
-        //ImGui.SameLine();
-        //if (ImGui.Button("Export to CSV"))
-        //{
-        //    DialogResult result = Dialog.FileSave("csv");
-        //    if (result.IsOk)
-        //    {
-        //        string isoPath = result.Path;
-        //        FusionData.ExportToCSV(isoPath);
-        //    }
-        //}
+      
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);

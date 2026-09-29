@@ -1589,9 +1589,20 @@ class CardEditorWindow : IImGuiWindow
     {
         if (selectedCards.Count == 0) return true;
 
-        T firstValue = propertySelector(CardConstant.List.Find(c => c.Name == selectedCards.First()));
+        var firstCard = CardConstant.List.Find(c => c.Name == selectedCards.First());
+        if (firstCard == null)
+            throw new InvalidOperationException($"No CardConstant found for name '{selectedCards.First()}'");
+
+        T firstValue = propertySelector(firstCard);
+
         return selectedCards.All(cardName =>
-            EqualityComparer<T>.Default.Equals(propertySelector(CardConstant.List.Find(c => c.Name == cardName)), firstValue));
+        {
+            var card = CardConstant.List.Find(c => c.Name == cardName);
+            if (card == null)
+                throw new InvalidOperationException($"No CardConstant found for name '{cardName}'");
+
+            return EqualityComparer<T>.Default.Equals(propertySelector(card), firstValue);
+        });
     }
 
     bool AllSelectedEnchantDataHaveSame<T>(Func<int, T> propertySelector)
@@ -1707,7 +1718,8 @@ class CardEditorWindow : IImGuiWindow
                 continue;
             }
             CardConstant card = CardConstant.List[i - 1];
-            card.Name = new ModdedStringName(Card.cardNameList[i - 1].Default, csvLine[0]);
+            card.Name.Default = Card.cardNameList[i - 1].Default;
+            card.Name.Edited = csvLine[0];
             card.CardKind = new CardKind(CardKind.Kinds.FirstOrDefault(x => x.Value == csvLine[1]).Key);
             card.Level = byte.Parse(csvLine[2]);
             card.DeckCost = byte.Parse(csvLine[3]);
@@ -1723,6 +1735,7 @@ class CardEditorWindow : IImGuiWindow
 
         }
         StringEditor.ReloadStrings();
+        CardConstant.RebuildLookup();
     }
 
 
