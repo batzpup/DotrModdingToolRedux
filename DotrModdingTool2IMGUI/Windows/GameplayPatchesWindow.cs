@@ -689,6 +689,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
+            ImGui.Text("By Blayr!");
             ImGui.Text(
                 "Holding the Cross(X) button during a monster's attack will invert the " + 
                 "\"Monster Battle\" setting (Display vs Abbreviate) for that battle only."

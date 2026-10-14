@@ -672,7 +672,9 @@ public class EditorWindow
                     OpenUrl("https://github.com/rjoken");
                 }
 
+
                 ImGui.Text("MonoCh");
+                ImGui.Text("Blayr");
                 ImGui.Separator();
                 ImGui.TextColored(new GuiColour(Color.MediumSpringGreen).value, "Testers:");
                 TextRenderer.Text("Woomy", woomyEffect);
