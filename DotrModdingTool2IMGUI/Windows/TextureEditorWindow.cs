@@ -292,6 +292,10 @@ public class TextureEditorWindow : IImGuiWindow
             {
                 currentImageByteArray[currentIndex] = ImageSaver.SavePaletteToBytes(currentImageByteArray[currentIndex]);
                 currentImageByteArray[currentIndex] = ImageSaver.SaveImageToBytes(currentImageByteArray[currentIndex], currentMrgFile, paintCanvas.Bitmap);
+                if (currentMrgFile == ImageMrgFile.Picture)
+                {
+                    GlobalImages.Instance.UpdateModifiedCard(currentIndex, currentImageByteArray[currentIndex]);
+                }
             }
         }
 

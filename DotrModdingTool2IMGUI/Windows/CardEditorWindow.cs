@@ -395,6 +395,7 @@ class CardEditorWindow : IImGuiWindow
 
         //draw card image
         ImGui.SetCursorPos(pos + new Vector2(32 * imageScale, 86 * imageScale));
+        cardImage = GlobalImages.Instance.OriginalCards[Card.cardNameList[currentCardIndex].Default];
         ImGui.Image(cardImage, cardImageSize);
 
         for (int i = currentCardConst.Level; i > 0; i--)

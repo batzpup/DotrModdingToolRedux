@@ -90,6 +90,18 @@ public class GlobalImages
         }
     }
 
+    public void UpdateModifiedCard(int pictureIndex, byte[] pictureBytes)
+    {
+        if (pictureIndex < 0 || pictureIndex >= 854)
+            return;
+        string name = Card.cardNameList[pictureIndex].Default;
+        if (ModifiedCards.TryGetValue(name, out var oldTexture))
+        {
+            Raylib.UnloadTexture(new Texture2D { Id = (uint)oldTexture });
+        }
+        ModifiedCards[name] = ImageCreator.LoadBytesToRaylibImage(pictureBytes);
+    }
+
     void LoadCardFrames()
     {
 
