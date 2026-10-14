@@ -7,6 +7,20 @@ class Program
 {
     public static void Main(string[] args)
     {
+        CrashLogger.Register();
+        try
+        {
+            Run();
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.HandleCrash(ex);
+            Environment.Exit(1);
+        }
+    }
+
+    static void Run()
+    {
         UserSettings.LoadSettings();
         AppDomain.CurrentDomain.DomainUnload += (sender, _) =>
         {

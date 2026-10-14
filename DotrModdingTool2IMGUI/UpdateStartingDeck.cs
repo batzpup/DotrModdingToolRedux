@@ -3,54 +3,75 @@
 public static class UpdateStartingDeck
 {
     static int patchLocation = 0x269E00;
+    const int StarterDeckCount = 17;
+    const int EntrySizeBytes = 12;
     static DataAccess dataAccess = DataAccess.Instance;
 
+    // The vanilla table was not generated with the formula below, so an entry is only
+    // regenerated when its computed value differs from the one computed at load time.
+    static byte[][] loadedEntryBytes = new byte[StarterDeckCount][];
+    static byte[][] loadedComputedBytes = new byte[StarterDeckCount][];
+
+    static readonly StartingDeckData.StarterDeckDataEnums.Attribute[] attributeEnumValues = Enum.GetValues<StartingDeckData.StarterDeckDataEnums.Attribute>();
+    static readonly StartingDeckData.StarterDeckDataEnums.Kind[] kindEnumValues = Enum.GetValues<StartingDeckData.StarterDeckDataEnums.Kind>();
+
+    public static void SnapshotLoadedData(List<Deck> decks)
+    {
+        byte[] isoBytes = dataAccess.ReadBytes(patchLocation, StarterDeckCount * EntrySizeBytes);
+        for (int i = 0; i < StarterDeckCount; i++)
+        {
+            loadedEntryBytes[i] = isoBytes.AsSpan(i * EntrySizeBytes, EntrySizeBytes).ToArray();
+            loadedComputedBytes[i] = BuildEntry(decks[i]);
+        }
+    }
 
     public static void CreateNewStartingDeckData(List<Deck> decks)
     {
-        byte[][] patchBytes = new byte[17][];
+        byte[][] patchBytes = new byte[StarterDeckCount][];
 
-        // Pre-initialize dictionaries
-        var attributeEnumValues = Enum.GetValues(typeof(StartingDeckData.StarterDeckDataEnums.Attribute)).Cast<StartingDeckData.StarterDeckDataEnums.Attribute>();
-        var kindEnumValues = Enum.GetValues(typeof(StartingDeckData.StarterDeckDataEnums.Kind)).Cast<StartingDeckData.StarterDeckDataEnums.Kind>();
-
-        for (int i = 0; i < 17; i++)
+        for (int i = 0; i < StarterDeckCount; i++)
         {
-            StartingDeckData startingDeckData = new StartingDeckData();
-            var attributeCounts = attributeEnumValues.ToDictionary(attr => attr, attr => (byte)0);
-            var kindCounts = kindEnumValues.ToDictionary(kind => kind, kind => (byte)0);
-            float totalSummonPower = 0;
-            Deck deck = decks[i];
-            startingDeckData.LeaderID = deck.DeckLeader.Number;
-            byte numberOfMonsters = 0;
-            for (int j = 0; j < deck.CardList.Count; j++)
-            {
-                DeckCard card = deck.CardList[j];
-                if (card.CardConstant.CardColor == CardColourType.NormalMonster || card.CardConstant.CardColor == CardColourType.EffectMonster)
-                {
-                    numberOfMonsters++;
-                    string kindString = card.CardConstant.CardKind.Name.Replace(' ', '_').Replace("-", "_");
-                    if (Enum.TryParse(card.Attribute, out StartingDeckData.StarterDeckDataEnums.Attribute attribute))
-                    {
-                        totalSummonPower += card.Level;
-                        attributeCounts[attribute]++;
-                    }
-                    if (Enum.TryParse(kindString, out StartingDeckData.StarterDeckDataEnums.Kind kind))
-                    {
-                        kindCounts[kind]++;
-                    }
-                }
-            }
-
-            SetStartingDeckDataAttributes(startingDeckData, attributeCounts);
-            SetStartingDeckDataKinds(startingDeckData, kindCounts);
-
-            startingDeckData.AverageSummonLevel = (ushort)((totalSummonPower / numberOfMonsters) * 100);
-            patchBytes[i] = startingDeckData.ToByteArray();
+            byte[] computed = BuildEntry(decks[i]);
+            bool unchanged = loadedComputedBytes[i] != null && computed.SequenceEqual(loadedComputedBytes[i]);
+            patchBytes[i] = unchanged ? loadedEntryBytes[i] : computed;
         }
 
         byte[] combinedArray = CombineArrays(patchBytes);
         dataAccess.ApplyPatch(patchLocation, combinedArray);
+    }
+
+    static byte[] BuildEntry(Deck deck)
+    {
+        StartingDeckData startingDeckData = new StartingDeckData();
+        var attributeCounts = attributeEnumValues.ToDictionary(attr => attr, attr => (byte)0);
+        var kindCounts = kindEnumValues.ToDictionary(kind => kind, kind => (byte)0);
+        float totalSummonPower = 0;
+        startingDeckData.LeaderID = deck.DeckLeader.Number;
+        byte numberOfMonsters = 0;
+        for (int j = 0; j < deck.CardList.Count; j++)
+        {
+            DeckCard card = deck.CardList[j];
+            if (card.CardConstant.CardColor == CardColourType.NormalMonster || card.CardConstant.CardColor == CardColourType.EffectMonster)
+            {
+                numberOfMonsters++;
+                string kindString = card.CardConstant.CardKind.Name.Replace(' ', '_').Replace("-", "_");
+                if (Enum.TryParse(card.Attribute, out StartingDeckData.StarterDeckDataEnums.Attribute attribute))
+                {
+                    totalSummonPower += card.Level;
+                    attributeCounts[attribute]++;
+                }
+                if (Enum.TryParse(kindString, out StartingDeckData.StarterDeckDataEnums.Kind kind))
+                {
+                    kindCounts[kind]++;
+                }
+            }
+        }
+
+        SetStartingDeckDataAttributes(startingDeckData, attributeCounts);
+        SetStartingDeckDataKinds(startingDeckData, kindCounts);
+
+        startingDeckData.AverageSummonLevel = (ushort)((totalSummonPower / numberOfMonsters) * 100);
+        return startingDeckData.ToByteArray();
     }
 
     private static void SetStartingDeckDataAttributes(StartingDeckData data, Dictionary<StartingDeckData.StarterDeckDataEnums.Attribute, byte> counts)

@@ -8,6 +8,8 @@ public static class StringEditor
     public static StringEncoder StringEncoder = new StringEncoder();
 
     public static Dictionary<int, string> StringTable;
+    // String table copy as decoded from the ISO, used to skip re-encoding when nothing was edited
+    public static Dictionary<int, string> LoadedStringTable = new Dictionary<int, string>();
     public static bool ShouldDumpText = false;
 
     public static List<byte> OffsetBytes = new List<byte>();
@@ -110,6 +112,22 @@ public static class StringEditor
         }
         StringTable = newStringTable;
         ReloadStrings();
+    }
+
+    public static bool HasChangesSinceLoad()
+    {
+        if (StringTable.Count != LoadedStringTable.Count)
+        {
+            return true;
+        }
+        foreach (var (index, text) in StringTable)
+        {
+            if (!LoadedStringTable.TryGetValue(index, out var loadedText) || loadedText != text)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void ExportStringsToJSON(string isoPath)

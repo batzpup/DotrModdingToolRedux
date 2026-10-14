@@ -6,6 +6,9 @@ namespace DotrModdingTool2IMGUI;
 public struct GuiColour
 {
     public Vector4 value;
+    
+    public static readonly GuiColour LancasterRed = new GuiColour(235, 2, 2); // HSV 0°, 0.99, 0.92
+    public static readonly GuiColour YorkistBlue = new GuiColour(2, 230, 228); // HSV 179°, 0.99, 0.90
 
     public GuiColour(int r, int g, int b, int a = 255)
     {

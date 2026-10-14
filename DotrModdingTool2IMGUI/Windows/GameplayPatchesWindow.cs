@@ -679,11 +679,11 @@ public class GameplayPatchesWindow : IImGuiWindow
             ImGui.TextColored(new GuiColour(Color.Orange).value, "NOTE: This only works when pressing continue.\nTo work with a new game:\nCreate a new game save and then press continue from the menu screen.");
             ImGui.EndTooltip();
         }
-        //ImGui.Checkbox("Exodia From Hand", ref bExodiaFromHand);
-        //if (ImGui.IsItemHovered())
-        //{
-        //    ImGui.SetTooltip("Exodia's win condition works from hand not on field");
-        //}
+        ImGui.Checkbox("Exodia From Hand", ref bExodiaFromHand);
+        if (ImGui.IsItemHovered())
+        {
+           ImGui.SetTooltip("Exodia's win condition works from hand not on field");
+        }
 
         ImGui.Checkbox("Hold Cross(X) to invert \"Monster Battle\" setting during battle", ref bInvertMonsterBattleWithButtonPress);
         if (ImGui.IsItemHovered())
@@ -755,7 +755,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         bAllKindsExtraSlots = new AllKindsExtraCardLeaderAbility().IsApplied();
 
         bSandBoxMode = new SandboxModePatch().IsApplied();
-        //bExodiaFromHand = new ExodiaFromHand().IsApplied();
+        bExodiaFromHand = new ExodiaFromHand().IsApplied();
         bInvertMonsterBattleWithButtonPress = new InvertMonsterBattleWithButtonPress().IsApplied();
         ReadValuesFromIso();
         ReadAiPatches();
@@ -949,7 +949,7 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         new AllKindsExtraCardLeaderAbility().ApplyOrRemove(bAllKindsExtraSlots);
         new DcRuleChanges().Apply((DcRules)CurrentRule);
-        //new ExodiaFromHand().ApplyOrRemove(bExodiaFromHand);
+        new ExodiaFromHand().ApplyOrRemove(bExodiaFromHand);
 
         ApplyValuePatches();
 

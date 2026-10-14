@@ -19,6 +19,7 @@ public static class GameImageManager
 
     public static HashSet<int> MonsterModelExlusions = new HashSet<int>();
     public static Dictionary<int, int> PicPackImages = new Dictionary<int, int>();
+    public static Dictionary<int, (int PictureIndex, byte[] PictureBytes)> InexactPicPackSources = new();
     public static ModdedStringName[] PreloadDefaultImageNameList;
     public static GameTexture CurrentTexture = new();
 
@@ -56,25 +57,56 @@ public static class GameImageManager
 
     
 
+    public static bool IsValidCardIndex(int index)
+    {
+        return index >= 0 && index < Card.TotalCardCount;
+    }
+
+    public static bool PicPackMatchesPicture(ReadOnlySpan<byte> PicPackBytes, int pictureIndex)
+    {
+        byte[] bytes = ConvertPictureToPicPack(PictureBytes[pictureIndex]);
+        if (bytes != null && ByteArraysEqual(PicPackBytes, bytes))
+        {
+            return true;
+        }
+        // Known exception: PicPack index 75 ("Performance of Sword") doesnt exact-matches Picture[195]
+        return pictureIndex == 195 && PicPackBytes.SequenceEqual(ImageHelper.PerformanceOfSwordSignature);
+    }
+
     public static int GetPicNumber(ReadOnlySpan<byte> PicPackBytes)
     {
-        // Known exception: PicPack index 75 ("Performance of Sword") doesnt exact-matches Picture[195] 
         for (int i = 0; i < 871; i++)
         {
-
-            byte[] bytes = ConvertPictureToPicPack(PictureBytes[i]);
-            if (ByteArraysEqual(PicPackBytes, bytes))
+            if (PicPackMatchesPicture(PicPackBytes, i))
             {
                 return i;
             }
         }
 
-        if (PicPackBytes.SequenceEqual(ImageHelper.PerformanceOfSwordSignature))
+        return -1;
+    }
+
+    /// <summary>
+    /// Resolves which picture a PicPack slot shows. The SLUS card index is authoritative; byte matching is only a
+    /// fallback for builds where that table holds an invalid index. Entries that aren't an exact copy of their picture
+    /// (e.g. translation patches that edit one but not the other) are recorded in InexactPicPackSources so saving
+    /// doesn't overwrite them unless the slot is reassigned or its picture is edited.
+    /// </summary>
+    public static void MapPicPackSlot(int slot, int slusCardIndex)
+    {
+        byte[] picPack = PicPackBytes[slot];
+        int pictureIndex = IsValidCardIndex(slusCardIndex) ? slusCardIndex : GetPicNumber(picPack);
+        PicPackImages[slot] = pictureIndex;
+        if (pictureIndex == -1)
         {
-            return 195;
+            return;
         }
 
-        return -1;
+        byte[] exactPicPack = ConvertPictureToPicPack(PictureBytes[pictureIndex]);
+        if (exactPicPack == null || !exactPicPack.AsSpan().SequenceEqual(picPack))
+        {
+            InexactPicPackSources[slot] = (pictureIndex, (byte[])PictureBytes[pictureIndex].Clone());
+        }
     }
 
 

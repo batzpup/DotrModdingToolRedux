@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using DotrModdingTool2IMGUI.ChangelogDiffCheckers;
 using ImGuiNET;
@@ -46,8 +43,12 @@ public class EditorWindow
     RandomiserWindow _randomiserWindow;
     MusicEditorWindow _musicEditorWindow;
     StringEditorWindow _stringEditorWindow;
+#if DEBUG
+    TextEffectDemoWindow _textEffectDemoWindow;
+#endif
 
     bool isCreditsOpen = false;
+
 
     //Data Access
     DataAccess dataAccess = DataAccess.Instance;
@@ -57,6 +58,22 @@ public class EditorWindow
 
     bool isSavingStrings = false;
     int stringCompressionProgress;
+
+
+    //Text rendering effects
+    TextEffect batzpupCreditEffect = TextEffect.Gradient(new GuiColour(Color.BlueViolet).value, new GuiColour(Color.CornflowerBlue).value) with {
+        RangeEnd = 7,
+        OutsideColour = new GuiColour(Color.White).value,
+        FillWidth = true
+    };
+
+
+    TextEffect woomyEffect = TextEffect.Gradient(GuiColour.LancasterRed.value, GuiColour.YorkistBlue.value) with {
+        Wave = WaveShape.Hold,
+        Easing = Easing.Smoothstep,
+        Speed = 0.25f,
+        Spread = 0.06f
+    };
 
     public static void PrintEmbeddedResources()
     {
@@ -91,7 +108,9 @@ public class EditorWindow
         _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
         _fusionEditorWindow.Init(_enemyEditorWindow.DeckEditorWindow.ViewCardInEditor);
         _imageEditorWindow = new ImageEditorWindow();
-
+#if DEBUG
+        _textEffectDemoWindow = new TextEffectDemoWindow(mainFont);
+#endif
         Updater.NeedsUpdate += HandleNeedsUpdate;
         //IS here so you can open an iso before the updater gives you a result
         Disabled = true;
@@ -178,7 +197,7 @@ public class EditorWindow
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10f, 10f));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10f, 10f));
         ImGui.Begin("Dotr Modding tool 2",
-            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
+            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse| ImGuiWindowFlags.NoBringToFrontOnFocus);
         ImGui.SetWindowPos(Vector2.Zero);
         ImGui.SetWindowSize(new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
         //Console.WriteLine(ImGui.GetWindowSize());
@@ -478,8 +497,7 @@ public class EditorWindow
                         DialogResult result = Dialog.FileSave("json");
                         if (result.IsOk)
                         {
-                            string exportPath = result.Path + ".json";
-                            StringEditor.ExportStringsToJSON($"{exportPath}.json");
+                            StringEditor.ExportStringsToJSON($"{result.Path}.json");
                         }
                         else
                         {
@@ -529,7 +547,7 @@ public class EditorWindow
                         var result = Dialog.FileSave("json");
                         if (result.IsOk)
                         {
-                            _randomiserWindow.ExportToJson(result.Path);
+                            _randomiserWindow.ExportToJson($"{result.Path}.json");
                         }
                         else
                         {
@@ -612,12 +630,9 @@ public class EditorWindow
             if (ImGui.BeginPopupModal("Credits", ref isCreditsOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.PushFont(mainFont);
-                CustomImguiTypes.RenderRainbowTextPerChar_Sine("Credits:");
+                TextRenderer.Text("Credits:", TextEffect.Breathing);
 
-                if (CustomImguiTypes.RenderGradientSelectable
-                    ("Batzpup: I made this", false, new GuiColour(Color.BlueViolet).value,
-                        new GuiColour(Color.CornflowerBlue).value,
-                        ImGuiSelectableFlags.AllowDoubleClick, 0, 7))
+                if (TextRenderer.Selectable("Batzpup: I made this", false, batzpupCreditEffect, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/batzpup");
                 }
@@ -654,20 +669,34 @@ public class EditorWindow
                 {
                     OpenUrl("https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor");
                 }
+                ImGui.Separator();
 
                 ImGui.TextColored(new GuiColour(Color.Cyan).value, "Code Contributors:");
                 if (ImGui.Selectable("hippochan", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
-                ImGui.Text("MonoCh");
 
+                ImGui.Text("MonoCh");
+                ImGui.Separator();
+                ImGui.TextColored(new GuiColour(Color.MediumSpringGreen).value, "Testers:");
+                TextRenderer.Text("Woomy", woomyEffect);
 
                 ImGui.Spacing();
                 if (ImGui.Button("Close"))
                 {
                     isCreditsOpen = false;
                 }
+#if DEBUG
+                ImGui.SameLine();
+                if (ImGui.Button("Text Effects Demo"))
+                {
+                    // modal blocks other windows, so close it before opening the demo
+                    isCreditsOpen = false;
+                    ImGui.CloseCurrentPopup();
+                    _textEffectDemoWindow.IsOpen = true;
+                }
+#endif
 
                 ImGui.EndPopup();
                 ImGui.PopFont();
@@ -720,6 +749,10 @@ public class EditorWindow
 
 
         ImGui.End();
+#if DEBUG
+        // separate top-level window, so it's drawn outside the main window's Begin/End
+        _textEffectDemoWindow.Render();
+#endif
         rlImGui.End();
     }
 
@@ -738,15 +771,39 @@ public class EditorWindow
     {
         if (!isSavingStrings)
         {
+            // Set before starting the task so a second save on the next frame can't start a concurrent compression
+            isSavingStrings = true;
+            Disabled = true;
             Task.Run(() =>
             {
-                isSavingStrings = true;
-                Disabled = true;
-                SaveStrings(showMessage);
-                isSavingStrings = false;
-                reloadStrings = true;
-                Disabled = false;
-                onComplete?.Invoke();
+                bool saved = false;
+                try
+                {
+                    saved = SaveStrings(showMessage);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"String save failed: {ex}");
+                    _modalPopup.Show($"{ex.GetType().Name}: {ex.Message}", "String save failed");
+                }
+                finally
+                {
+                    if (saved)
+                    {
+                        reloadStrings = true;
+                    }
+                    else
+                    {
+                        // Keep the unsaved edits, just discard the encoder's pointer state from the failed attempt
+                        StringEditor.StringEncoder = new StringEncoder();
+                    }
+                    isSavingStrings = false;
+                    Disabled = false;
+                }
+                if (saved)
+                {
+                    onComplete?.Invoke();
+                }
             });
         }
 
@@ -993,10 +1050,18 @@ public class EditorWindow
         {
             StringEditor.StringTable[i + StringEditor.CardNamesOffsetStart] = Card.cardNameList[i].Edited;
         }
+        if (!StringEditor.HasChangesSinceLoad())
+        {
+            if (showMessage)
+            {
+                _modalPopup.Show("No string changes to save", "Save success");
+            }
+            return true;
+        }
         stringCompressionProgress = 0;
         StringEditor.StringEncoder.CompressStrings(StringEditor.StringTable.Values.ToList(), ref stringCompressionProgress);
         StringEditor.StringEncoder.ExportToBytes();
-        if (StringEditor.StringBytes.Count > DataAccess.TotalTextLength)
+        if (StringEditor.StringBytes.Count > DataAccess.EnglishTextLength)
         {
             _modalPopup.Show("Too many bytes to save. Reduce string count or length", "Save failed");
             return false;

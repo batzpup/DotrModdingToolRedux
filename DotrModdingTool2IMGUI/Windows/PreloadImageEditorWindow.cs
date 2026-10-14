@@ -49,10 +49,13 @@ class PreloadImageEditorWindow : IImGuiWindow
         }
         else
         {
+
             filteredPreloadImages = GameImageManager.PicPackImages
-                .Where(kvp => Card.cardNameList[kvp.Value].Current.Contains(cardSearchLeft, StringComparison.OrdinalIgnoreCase)
-                              || kvp.Key.ToString().Contains(cardSearchLeft))
-                .Select(kvp => (preloadIndex: kvp.Key, name: Card.cardNameList[kvp.Value]))
+                .Select(kvp => (preloadIndex: kvp.Key, name: GameImageManager.IsValidCardIndex(kvp.Value)
+                    ? Card.cardNameList[kvp.Value]
+                    : GameImageManager.PreloadDefaultImageNameList[kvp.Key]))
+                .Where(x => x.name.Current.Contains(cardSearchLeft, StringComparison.OrdinalIgnoreCase)
+                            || x.preloadIndex.ToString().Contains(cardSearchLeft))
                 .ToList();
         }
 

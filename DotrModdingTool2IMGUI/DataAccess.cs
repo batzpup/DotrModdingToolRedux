@@ -119,12 +119,13 @@ public class DataAccess
 
     public static int TotalStringCount = 3073;
     public static int TotalTextLength = 74252 * 2;
+    public static int EnglishTextLength = TotalTextLength - (EnglishTextStart - TextDataTable);
 
 
     public DotrMap[] maps = new DotrMap[46];
     public static int MapOffset = 0x2CEE5C - IsoSlusRamOffset;
 
-    static readonly object FileStreamLock = new object();
+    public static readonly object FileStreamLock = new object();
     public static FileStream fileStream;
     public bool IsIsoLoaded = false;
 
@@ -187,13 +188,14 @@ public class DataAccess
     {
         CurrentHash = string.Empty;
 
+        using var md5 = MD5.Create();
+        var sw = Stopwatch.StartNew();
+        byte[] hash;
         lock (FileStreamLock)
         {
             fileStream.Seek(0, SeekOrigin.Begin);
+            hash = md5.ComputeHash(fileStream);
         }
-        using var md5 = MD5.Create();
-        var sw = Stopwatch.StartNew();
-        byte[] hash = md5.ComputeHash(fileStream);
         sw.Stop();
         Console.WriteLine($"Elapsed: {sw.Elapsed.TotalSeconds:F2}s");
         CurrentHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
@@ -304,6 +306,7 @@ public class DataAccess
     {
         Deck.DeckList.Clear();
         Deck.DeckList = Deck.LoadDeckListFromBytes(LoadDecks());
+        UpdateStartingDeck.SnapshotLoadedData(Deck.DeckList);
     }
 
     public byte[][] LoadMonsterEquipCardData()
@@ -778,13 +781,19 @@ public class DataAccess
 
             }
 
+            byte[] picPackCardIndices = new byte[PicPackCount * 2];
+            fileStream.Seek(picPackArtsSLUSArray, SeekOrigin.Begin);
+            fileStream.ReadExactly(picPackCardIndices, 0, picPackCardIndices.Length);
+
             fileStream.Seek(PicPackIsoOffset, SeekOrigin.Begin);
+            GameImageManager.PicPackImages.Clear();
+            GameImageManager.InexactPicPackSources.Clear();
             for (int i = 0; i < PicPackCount; i++)
             {
                 byte[] picture = new byte[PicPackSize];
                 fileStream.ReadExactly(picture, 0, PicPackSize);
                 GameImageManager.PicPackBytes[i] = picture;
-                GameImageManager.PicPackImages.TryAdd(i, GameImageManager.GetPicNumber(GameImageManager.PicPackBytes[i]));
+                GameImageManager.MapPicPackSlot(i, BitConverter.ToUInt16(picPackCardIndices, i * 2));
             }
             fileStream.Seek(PicMiniOffset, SeekOrigin.Begin);
             for (int i = 0; i < PicMiniCount; i++)
@@ -912,11 +921,19 @@ public class DataAccess
 
             for (int i = 0; i < GameImageManager.PicPackImages.Count; i++)
             {
-                if (GameImageManager.PicPackImages[i] == -1)
+                int pictureIndex = GameImageManager.PicPackImages[i];
+                if (pictureIndex == -1)
                 {
                     continue;
                 }
-                WritePicPackImage(GameImageManager.PicPackImages[i], i);
+                // Rewriting an inexact entry from an unchanged picture would alter vanilla data
+                bool keepInexactEntry = GameImageManager.InexactPicPackSources.TryGetValue(i, out var source)
+                    && source.PictureIndex == pictureIndex
+                    && source.PictureBytes.AsSpan().SequenceEqual(GameImageManager.PictureBytes[pictureIndex]);
+                if (!keepInexactEntry)
+                {
+                    WritePicPackImage(pictureIndex, i);
+                }
                 byte[] bytes = BitConverter.GetBytes((ushort)GameImageManager.PicPackImages[i]);
                 lock (FileStreamLock)
                 {

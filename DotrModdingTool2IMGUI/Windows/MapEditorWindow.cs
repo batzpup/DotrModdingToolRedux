@@ -38,10 +38,13 @@ public class MapEditorWindow : IImGuiWindow
 
     public void Render()
     {
-        ImGui.BeginChild("leftPanel", new Vector2(ImGui.GetContentRegionAvail().X * 0.33f, ImGui.GetContentRegionAvail().Y));
+        ImGui.BeginChild("leftPanel", new Vector2(ImGui.GetContentRegionAvail().X * 0.33f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+        float indent = ImGui.GetContentRegionAvail().X / 32;
+        ImGui.Indent(indent);
         DrawMapExtras();
         DrawTreasureDetails();
         DrawMapPalette();
+        ImGui.Unindent(indent);
         ImGui.EndChild();
         ImGui.SameLine();
         DrawMap();
@@ -220,7 +223,6 @@ public class MapEditorWindow : IImGuiWindow
 
     void DrawMapExtras()
     {
-        ImGui.Indent(ImGui.GetContentRegionAvail().X / 32);
         ImGui.Text("Maps");
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         string[] maps = Map.DuelistMaps.Select(c => c.Current ?? "").ToArray();

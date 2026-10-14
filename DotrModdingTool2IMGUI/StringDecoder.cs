@@ -16,7 +16,7 @@ public class StringDecoder
             { 0x00, '\n' }, { 0x01, StringEditor.PNamePlaceholder }, //PNAME_CHAR
             { 0x02, ',' }, { 0x03, '\u25CF' },
             { 0x1E, '~' }, { 0x1F, '\uFF3B' }, { 0x20, '\uFF3D' }, { 0x3B, '\uFF08' },
-            { 0x3C, '\uFF09' }, { 0x46, '\uFF11' }, { 0x47, '\uFF01' }, { 0x48, '\uFF02' },
+            { 0x3C, '\uFF09' }, { 0x46, '\uFF10' }, { 0x47, '\uFF01' }, { 0x48, '\uFF02' },
             { 0x49, '\uFF03' }, { 0x4A, '\uFF04' }, { 0x4B, '\uFF05' }, { 0x4C, '\uFF06' },
             { 0x4D, '\uFF07' }, { 0x4E, '\uFF1D' }, { 0x4F, '\uFF3E' }, { 0x50, '\uFF0D' },
             { 0x51, '\uFFE5' }, { 0x52, '\uFF0C' }, { 0x53, '\uFF0E' }, { 0x54, '\uFF0F' },
@@ -79,7 +79,7 @@ public class StringDecoder
     {
         List<List<int>> lines = new List<List<int>> { new List<int>() };
 
-        while (length > 0)
+        while (length > 0 && blobIndex < blob.Count)
         {
             if ((blob[blobIndex] & 0x4000) != 0)
             {
@@ -118,7 +118,8 @@ public class StringDecoder
         int blobIndex = offsets[index];
         List<List<int>> lines = new List<List<int>> { new List<int>() };
 
-        while (true)
+        // Strings saved by older versions could be missing their end flag, stop at the end of the blob instead of overrunning
+        while (blobIndex < blob.Count)
         {
             if ((blob[blobIndex] & 0x4000) != 0)
             {
@@ -152,12 +153,13 @@ public class StringDecoder
             if ((blob[blobIndex - 1] & 0x8000) != 0)
                 return lines;
         }
+        return lines;
     }
 
 
     public void Run()
     {
-        lock (DataAccess.fileStream)
+        lock (DataAccess.FileStreamLock)
         {
             var fs = DataAccess.fileStream;
             using (var reader = new BinaryReader(fs, Encoding.UTF8, true))
@@ -225,6 +227,7 @@ public class StringDecoder
                         .Replace("\uFFF3", "III");
                     StringEditor.StringTable.Add(i, tempStr);
                 }
+                StringEditor.LoadedStringTable = new Dictionary<int, string>(StringEditor.StringTable);
                 if (StringEditor.ShouldDumpText)
                 {
                     StringEditor.ExportStringsToJSON("strings.json");

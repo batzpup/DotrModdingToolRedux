@@ -12,17 +12,18 @@ public class StringEncoder
 
     string nameString = new string(StringEditor.PNamePlaceholder, 12);
 
-    //assumes strings before 30 cant be edited which is valid
 
     public void CompressStrings(List<string> strings, ref int progress)
     {
 
         modStrings = strings;
+        // Needed by WordOffsets to know which chars are dropped on export
+        DefaultCharByteDictionary();
         for (int i = 0; i < modStrings.Count; i++)
         {
             modStrings[i] = modStrings[i]
-                .Replace("PNAME_CHAR", StringEditor.PNamePlaceholder.ToString());
-            //.Replace("III", "\uFFF3")
+                .Replace("PNAME_CHAR", StringEditor.PNamePlaceholder.ToString())
+                .Replace("III", "\uFFF3");
         }
         for (int i = 0; i < modStrings.Count; i++)
         {
@@ -74,27 +75,10 @@ public class StringEncoder
             return instring;
         }
 
-        int length = 0;
-        int offset = 0;
-        for (int i = 0; i < substring.SubString.Length; i++)
-        {
-            if (substring.SubString[i] >= '\uE000' && substring.SubString[i] < '\uFF00')
-                length += 2;
-            else
-                length++;
-
-        }
-
-        for (int i = 0; i < modStrings[substring.Index].Length; i++)
-        {
-            if (i < substring.Offset)
-            {
-                if (modStrings[substring.Index][i] >= '\uE000' && modStrings[substring.Index][i] < '\uFF00')
-                    offset += 2;
-                else
-                    offset++;
-            }
-        }
+        // Offset and length are in exported 16-bit words, not chars
+        int[] wordOffsets = WordOffsets(modStrings[substring.Index]);
+        int offset = wordOffsets[substring.Offset];
+        int length = wordOffsets[substring.Offset + substring.Length] - offset;
 
         Pointer2 newPointer = new Pointer2(index, pindex, offset, length, substring.SubString);
         PointerDictionary.Add(replaceChar, newPointer);
@@ -115,7 +99,9 @@ public class StringEncoder
         List<int[]> foundchars = new List<int[]>();
         foreach (char c in findthis)
         {
-            if (c == '\n')
+            // Player name chars are never matched: a 12-char block exports as a single 2-word pointer,
+            // and replacing part of one in a later string would break that block
+            if (c == '\n' || c == StringEditor.PNamePlaceholder)
             {
                 foundchars.Add(new int[0] { });
             }
@@ -133,6 +119,7 @@ public class StringEncoder
 
         int longestLength = 0;
         int longestStart = -1;
+        int[] wordOffsets = WordOffsets(inthis);
 
         for (int i = 0; i < foundchars.Count; i++)
         {
@@ -141,22 +128,18 @@ public class StringEncoder
                 int currCount = 1;
                 int currIndex = i;
                 int currValue = foundchars[i][j];
-                int trueOffset = 0;
-                for (int k = 0; k < foundchars[i][j]; k++)
-                {
-                    if (inthis[k] >= '\uE000' && inthis[k] < '\uFF00')
-                        trueOffset += 2;
-                    else
-                        trueOffset++;
-                }
+                int trueOffset = wordOffsets[currValue];
                 // offset is saved with 7 bits, so cannot be greater than 127
                 if (trueOffset > 127)
                     continue;
-                ;
+                // length is saved with 6 bits, so cannot be greater than 63
+                if (wordOffsets[currValue + 1] - trueOffset > 63)
+                    continue;
+
                 while (true)
                 {
-                    // length is saved with 6 bits, so cannot be greater than 63
-                    if (trueOffset >= 62)
+                    // Stop before the next char would push the encoded length past 63
+                    if (currValue + 2 < wordOffsets.Length && wordOffsets[currValue + 2] - trueOffset > 63)
                         break;
 
                     if (currIndex + 1 < foundchars.Count)
@@ -192,6 +175,37 @@ public class StringEncoder
     bool NextInt(int[] checkthese, int followingthis)
     {
         return (checkthese.Contains(followingthis + 1));
+    }
+
+    // Word offset each char of s starts at once exported (length + 1 entries, last is the total), mirroring ExportToBytes:
+    // pointers take 2 words, a 12-char player name block takes 2 words, unknown chars are dropped
+    int[] WordOffsets(string s)
+    {
+        int[] offsets = new int[s.Length + 1];
+        int pos = 0;
+        int i = 0;
+        while (i < s.Length)
+        {
+            if (s[i] == StringEditor.PNamePlaceholder && i + 12 <= s.Length && s.AsSpan(i, 12).SequenceEqual(nameString))
+            {
+                for (int j = 0; j < 12; j++)
+                {
+                    offsets[i + j] = pos;
+                }
+                pos += 2;
+                i += 12;
+                continue;
+            }
+
+            offsets[i] = pos;
+            if (PointerDictionary.ContainsKey(s[i]))
+                pos += 2;
+            else if (CharByteDictionary.ContainsKey(s[i]))
+                pos++;
+            i++;
+        }
+        offsets[s.Length] = pos;
+        return offsets;
     }
 
 
@@ -263,7 +277,7 @@ public class StringEncoder
             CharByteDictionary.Add((char)(0xFF11 + i), new byte[2] { 0x00, (byte)(0x3D + i) });
         }
 
-        //What are these
+        // Glyphs with no unicode mapping (used by the debug menu and a few non-English strings), codes 0xA7-0x168
         for (int i = 0; i < 194; i++)
         {
             if (i == 168 | (i >= 170 && i <= 172))
@@ -271,8 +285,8 @@ public class StringEncoder
             }
             else
             {
-                // Shouldl this be + i?
-                CharByteDictionary.Add((char)(0xD0A7 + i), new byte[2] { 0x00, (byte)(0xA7 + 1) });
+                int code = 0xA7 + i;
+                CharByteDictionary.Add((char)(0xD0A7 + i), new byte[2] { (byte)(code >> 8), (byte)(code & 0xFF) });
             }
 
         }
@@ -293,6 +307,7 @@ public class StringEncoder
         for (int index = 30; index < modStrings.Count; index++)
         {
             Offsets.Add(currentoffset);
+            int stringStart = StringEditor.StringBytes.Count;
             for (int i = 0; i < modStrings[index].Length; i++)
             {
                 if (modStrings[index][i] == StringEditor.PNamePlaceholder)
@@ -310,11 +325,7 @@ public class StringEncoder
                     }
                     if (isPlayerName)
                     {
-                        bool isEndOfString = (i + 12) == modStrings[index].Length;
-
-                        byte[] pnameBytes = isEndOfString
-                            ? new byte[4] { 0x8C, 0x40, 0x02, 0xC0 }
-                            : new byte[4] { 0x8C, 0x40, 0x02, 0x40 };
+                        byte[] pnameBytes = new byte[4] { 0x8C, 0x40, 0x02, 0x40 };
 
                         foreach (byte b in pnameBytes)
                         {
@@ -336,18 +347,11 @@ public class StringEncoder
                 Array.Copy(charBytes, characterBytes, charBytes.Length);
 
                 bool isPointer = modStrings[index][i] >= '\uE000' && modStrings[index][i] < '\uF000';
-                bool isEnglish = characterBytes.Length == 2 && !isPointer;
+                bool isHalfWidth = characterBytes.Length == 2 && !isPointer && IsHalfWidthCode((characterBytes[0] << 8) | characterBytes[1]);
 
-                if (i == modStrings[index].Length - 1)
+                if (isHalfWidth)
                 {
-                    characterBytes[0] |= 0x80;
-                }
-                if (isEnglish)
-                {
-                    if (!characterBytes.SequenceEqual(CharByteDictionary[StringEditor.PNamePlaceholder]))
-                        characterBytes[0] |= 0x20;
-                    else
-                        characterBytes[0] |= 0x00;
+                    characterBytes[0] |= 0x20;
                 }
 
                 Array.Reverse(characterBytes);
@@ -355,11 +359,32 @@ public class StringEncoder
 
                 currentoffset += (characterBytes.Length / 2);
             }
+
+            // End of string flag (0x8000) goes on the last word written, which isn't necessarily the last char
+            // when unknown chars were dropped. Every word is written low byte first, so its high byte is the last byte
+            if (StringEditor.StringBytes.Count == stringStart)
+            {
+                // Empty string: write a terminated newline so it doesn't run into the next string
+                StringEditor.StringBytes.Add(0x00);
+                StringEditor.StringBytes.Add(0x80);
+                currentoffset++;
+            }
+            else
+            {
+                StringEditor.StringBytes[StringEditor.StringBytes.Count - 1] |= 0x80;
+            }
         }
 
         ExportOffsetsToBytes();
     }
 
+
+    // Vanilla only sets the 0x2000 flag on the half-width character codes: ',' (0x02), the 0x56-0xA6 block
+    // (latin letters, digits, punctuation) and '?', ':', '<', '>', ';'. Full-width chars, glyphs and newlines never have it
+    static bool IsHalfWidthCode(int code)
+    {
+        return code == 0x02 || (code >= 0x56 && code <= 0xA6) || code == 0x151 || code == 0x152 || code == 0x16A || code == 0x16B || code == 0x170;
+    }
 
     void ExportOffsetsToBytes()
     {

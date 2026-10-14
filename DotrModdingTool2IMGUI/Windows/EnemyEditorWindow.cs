@@ -45,7 +45,7 @@ public class EnemyEditorWindow : IImGuiWindow
                 ImGui.EndTabItem();
                 ImGui.PopFont();
             }
-            if (ImGui.BeginTabItem("Name Calculator"))
+            if (ImGui.BeginTabItem("Deck Calculator"))
             {
                 NameCalculatorWindow.Render();
                 ImGui.EndTabItem();

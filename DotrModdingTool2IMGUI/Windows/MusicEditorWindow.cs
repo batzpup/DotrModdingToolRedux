@@ -3,6 +3,7 @@ using System.Numerics;
 using DiscUtils.Iso9660;
 using GameplayPatches;
 using ImGuiNET;
+using NAudio;
 using NAudio.MediaFoundation;
 using NAudio.Wave;
 namespace DotrModdingTool2IMGUI;
@@ -16,9 +17,14 @@ public class MusicEditorWindow : IImGuiWindow
     static int AddCustomMusicPtr = 0x17ac58;
     static int TaTuto_DrawTrapArea = 0x24f800;
 
-    WaveOutEvent waveOut;
-    Mp3FileReader mp3Reader;
+    const float PlaybackVolume = 0.1f;
+    WaveOutEvent? waveOut;
+    Mp3FileReader? mp3Reader;
     bool isMusicPlaying = false;
+    bool hasAudioDevice;
+
+    volatile bool audioDeviceLost;
+    DateTime nextAudioDeviceCheck = DateTime.MinValue;
     DataAccess dataAccess = DataAccess.Instance;
     public Dictionary<int, int> DuelistMusic = new Dictionary<int, int>();
     string MusicDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Music");
@@ -117,8 +123,6 @@ public class MusicEditorWindow : IImGuiWindow
     public MusicEditorWindow()
     {
         LoadDefaultMusic();
-        waveOut = new WaveOutEvent();
-        waveOut.Volume = 0.1f;
         font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP,32);
         Instance = this;
     }
@@ -176,6 +180,14 @@ public class MusicEditorWindow : IImGuiWindow
             ImGui.Text("Please load ISO file");
             ImGui.PopFont();
             return;
+        }
+
+        UpdateAudioDeviceState();
+        if (!hasAudioDevice)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Red).value);
+            ImGui.TextWrapped("No audio output device detected. Music preview is disabled until an audio output device is connected.");
+            ImGui.PopStyleColor();
         }
 
         Vector2 windowSize = ImGui.GetWindowSize();
@@ -241,6 +253,7 @@ public class MusicEditorWindow : IImGuiWindow
             PlaySelectedTrack(currentSlotMusicIndex);
         }
 
+        ImGui.BeginDisabled(!hasAudioDevice);
         if (ImGui.Button(playStopButton, new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
             if (!isMusicPlaying)
@@ -252,6 +265,7 @@ public class MusicEditorWindow : IImGuiWindow
                 StopMusic();
             }
         }
+        ImGui.EndDisabled();
         if (ImGui.Button("Extract Music", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
         {
 
@@ -269,6 +283,63 @@ public class MusicEditorWindow : IImGuiWindow
 
         ImGui.PopFont();
         ImGui.EndChild();
+    }
+
+    void UpdateAudioDeviceState()
+    {
+        if (audioDeviceLost)
+        {
+            audioDeviceLost = false;
+            ReleaseAudioOutput();
+            nextAudioDeviceCheck = DateTime.MinValue;
+        }
+     
+        if (isMusicPlaying && waveOut?.PlaybackState == PlaybackState.Stopped)
+        {
+            mp3Reader?.Dispose();
+            mp3Reader = null;
+            isMusicPlaying = false;
+            playStopButton = "Play";
+        }
+        if (DateTime.Now < nextAudioDeviceCheck)
+        {
+            return;
+        }
+        nextAudioDeviceCheck = DateTime.Now.AddSeconds(1);
+        hasAudioDevice = WaveInterop.waveOutGetNumDevs() > 0;
+        if (!hasAudioDevice)
+        {
+            ReleaseAudioOutput();
+        }
+    }
+
+    void OnPlaybackStopped(object? sender, StoppedEventArgs e)
+    {
+        if (e.Exception != null)
+        {
+            audioDeviceLost = true;
+        }
+    }
+
+    void ReleaseAudioOutput()
+    {
+        if (waveOut != null)
+        {
+            waveOut.PlaybackStopped -= OnPlaybackStopped;
+            try
+            {
+                waveOut.Dispose();
+            }
+            catch (MmException)
+            {
+                
+            }
+            waveOut = null;
+        }
+        mp3Reader?.Dispose();
+        mp3Reader = null;
+        isMusicPlaying = false;
+        playStopButton = "Play";
     }
 
 
@@ -303,49 +374,57 @@ public class MusicEditorWindow : IImGuiWindow
         {
             Directory.CreateDirectory(MusicDirectory);
         }
+        
+        var extractedFiles = new List<(string IsoFile, string PcmPath)>();
+        lock (DataAccess.FileStreamLock)
+        {
+            // Own read-only handle so extraction doesn't share DataAccess.fileStream's position with other threads
+            using FileStream isoStream = new FileStream(DataAccess.Instance.currentIsoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using CDReader isoFile = new CDReader(isoStream, true);
+          
+            for (int i = 0; i < 5; i++)
+            {
+                var fileEntry = isoFile.GetFiles($"SOUND\\BGM\\0{i}");
+                if (fileEntry == null)
+                {
+                    if (ImGui.BeginPopup("resultFailure"))
+                    {
+                        ImGui.Text("File not found in ISO");
+                        if (ImGui.Button("Close"))
+                        {
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.EndPopup();
+                    }
+                    return Task.CompletedTask;
+                }
+
+                
+                foreach (var file in fileEntry)
+                {
+                    if (!Path.GetFileName(file).StartsWith("00"))
+                        continue;
+                    string fileName = Path.GetFileName(file);
+                    string extractedFilePath = Path.Combine("Music", fileName.Substring(0, fileName.Length - 2));
+                    using (FileStream fileStream = File.Create(extractedFilePath))
+                    using (var pcm = isoFile.OpenFile(file, FileMode.Open))
+                    {
+                        pcm.CopyTo(fileStream);
+                    }
+                    extractedFiles.Add((file, extractedFilePath));
+                }
+            }
+        }
 
         MediaFoundationApi.Startup();
-        CDReader isoFile = new CDReader(DataAccess.fileStream, true);
-        // Get the file from inside the ISO
-
-        for (int i = 0; i < 5; i++)
+        foreach (var (file, extractedFilePath) in extractedFiles)
         {
-            var fileEntry = isoFile.GetFiles($"SOUND\\BGM\\0{i}");
-            if (fileEntry == null)
+            using (FileStream fileStream = File.OpenRead(extractedFilePath))
             {
-                if (ImGui.BeginPopup("resultFailure"))
-                {
-                    ImGui.Text("File not found in ISO");
-                    if (ImGui.Button("Close"))
-                    {
-                        ImGui.CloseCurrentPopup();
-                    }
-                    ImGui.EndPopup();
-                }
-                return Task.CompletedTask;
-            }
-
-            // Extract the file to the destination folder
-            foreach (var file in fileEntry)
-            {
-                if (!Path.GetFileName(file).StartsWith("00"))
-                    continue;
-                string fileName = Path.GetFileName(file);
-                string extractedFilePath = Path.Combine("Music", fileName.Substring(0, fileName.Length - 2));
-                RawSourceWaveStream pcmReader;
-                using (FileStream fileStream = File.OpenWrite(extractedFilePath))
-                {
-                    var pcm = isoFile.OpenFile(file, FileMode.Open);
-                    pcm.CopyTo(fileStream);
-
-                }
-                using (FileStream fileStream = File.OpenRead(extractedFilePath))
-                {
-                    string mp3FilePath = Path.Combine(MusicDirectory, Path.GetFileNameWithoutExtension(file) + ".mp3");
-                    var desiredBitRate = 0; // ask for lowest available bitrate
-                    pcmReader = new RawSourceWaveStream(fileStream, new WaveFormat(48000, 16, 1));
-                    MediaFoundationEncoder.EncodeToMp3(pcmReader, mp3FilePath, desiredBitRate);
-                }
+                string mp3FilePath = Path.Combine(MusicDirectory, Path.GetFileNameWithoutExtension(file) + ".mp3");
+                var desiredBitRate = 0; // ask for lowest available bitrate
+                var pcmReader = new RawSourceWaveStream(fileStream, new WaveFormat(48000, 16, 1));
+                MediaFoundationEncoder.EncodeToMp3(pcmReader, mp3FilePath, desiredBitRate);
             }
         }
 
@@ -366,28 +445,56 @@ public class MusicEditorWindow : IImGuiWindow
     void PlaySelectedTrack(int trackNumber)
     {
         StopMusic();
+        if (!hasAudioDevice)
+        {
+            return;
+        }
         string selectedMp3FilePath = Path.Combine(MusicDirectory, "00" + musicTracks[trackNumber].Substring(0, 2) + ".mp3");
         if (File.Exists(selectedMp3FilePath))
         {
-            mp3Reader = new Mp3FileReader(selectedMp3FilePath);
-            playStopButton = "Stop";
-
-
-            // Play or stop the MP3 based on the current state
-            waveOut.Init(mp3Reader);
-            waveOut.Play();
-            isMusicPlaying = true;
+            try
+            {
+                if (waveOut == null)
+                {
+                    waveOut = new WaveOutEvent();
+                    waveOut.PlaybackStopped += OnPlaybackStopped;
+                }
+                mp3Reader = new Mp3FileReader(selectedMp3FilePath);
+                waveOut.Init(mp3Reader);
+                waveOut.Volume = PlaybackVolume;
+                waveOut.Play();
+                playStopButton = "Stop";
+                isMusicPlaying = true;
+            }
+            catch (MmException)
+            {
+                ReleaseAudioOutput();
+                hasAudioDevice = false;
+                nextAudioDeviceCheck = DateTime.Now.AddSeconds(1);
+            }
+        }
+        else
+        {
+             EditorWindow._modalPopup.Show("No local music found please extract the music from the game", "Music needs extracting");
         }
     }
 
     public void StopMusic()
     {
-        if (waveOut.PlaybackState != PlaybackState.Stopped)
+        if (waveOut != null && waveOut.PlaybackState != PlaybackState.Stopped)
         {
-            waveOut.Stop();
+            try
+            {
+                waveOut.Stop();
+            }
+            catch (MmException)
+            {
+                ReleaseAudioOutput();
+                return;
+            }
             mp3Reader?.Dispose();
             isMusicPlaying = false;
-            playStopButton = "Start";
+            playStopButton = "Play";
         }
     }
 
