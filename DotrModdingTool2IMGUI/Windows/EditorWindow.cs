@@ -197,7 +197,7 @@ public class EditorWindow
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10f, 10f));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10f, 10f));
         ImGui.Begin("Dotr Modding tool 2",
-            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse| ImGuiWindowFlags.NoBringToFrontOnFocus);
+            ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoBringToFrontOnFocus);
         ImGui.SetWindowPos(Vector2.Zero);
         ImGui.SetWindowSize(new Vector2(Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
         //Console.WriteLine(ImGui.GetWindowSize());
@@ -221,25 +221,20 @@ public class EditorWindow
         if (DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.PushFont(FontManager.GetBestFitFont("Vanilla Iso"));
-            if (DataAccess.Instance.CurrentHash != String.Empty)
+            string hash = DataAccess.Instance.CurrentHash;
+            if (!DataAccess.Instance.IsVanillaSize || (hash != String.Empty && hash != DataAccess.VanillaHash))
             {
-                if (DataAccess.VanillaHash != DataAccess.Instance.CurrentHash)
-                {
-                    ImGui.TextColored(new GuiColour(Color.Crimson).value, "Modded ISO");
-
-                }
-                else
-                {
-                    ImGui.TextColored(new GuiColour(Color.Green).value, "Vanilla ISO");
-                }
+                ImGui.TextColored(new GuiColour(Color.Crimson).value, "Modded ISO");
             }
-            else
+            else if (hash == String.Empty)
             {
                 ImGui.Text("Calculating Hash");
             }
-
+            else
+            {
+                ImGui.TextColored(new GuiColour(Color.Green).value, "Vanilla ISO");
+            }
             ImGui.PopFont();
-
         }
 
 
@@ -946,25 +941,29 @@ public class EditorWindow
             if (result.Path.EndsWith(".iso") || result.Path.EndsWith(".ISO"))
             {
                 DataAccess.Instance.OpenIso(isoPath);
+                DataAccess.Instance.CurrentHash = String.Empty;
                 LoadDataFromIso();
                 UserSettings.LastIsoPath = Path.GetDirectoryName(isoPath);
-                _ = Task.Run(async () =>
+                if (DataAccess.Instance.IsVanillaSize)
                 {
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        await DataAccess.Instance.GetMd5HashAsync();
-                        Console.WriteLine("MD5 hash completed successfully.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"MD5 hash failed: {ex}");
-                    }
-                });
+                        try
+                        {
+                            await DataAccess.Instance.GetMd5HashAsync();
+                            Console.WriteLine("MD5 hash completed successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"MD5 hash failed: {ex}");
+                        }
+                    });
+                }
+
                 if (UserSettings.AutoChangelog)
                 {
                     ChangelogManager.OldSnapshot = new ModSnapshot();
                 }
-
             }
             else
             {

@@ -136,6 +136,8 @@ public class DataAccess
     public bool AllImagesLoaded = false;
 
     public const string VanillaHash = "ca838dae26ff750936c0814d1c2d33f1";
+    public const long VanillaSize = 2112782336;
+    public bool IsVanillaSize = false;
 
     public static int ToRamOffset(int offset) => offset + 0x2FF00;
     public static int ToIsoOffset(int ramAddress) => ramAddress - 0x2FF00;
@@ -388,6 +390,7 @@ public class DataAccess
                 FileMode.Open,
                 FileAccess.ReadWrite,
                 FileShare.ReadWrite);
+            IsVanillaSize = fileStream.Length == VanillaSize;
         }
 
         IsIsoLoaded = true;
