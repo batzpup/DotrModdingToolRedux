@@ -1607,6 +1607,8 @@ public class GameplayPatchesWindow : IImGuiWindow
         if (root.TryGetProperty("bSaveMusic", out e)) bSaveMusic = e.GetBoolean();
         if (root.TryGetProperty("bSandBoxMode", out e)) bSandBoxMode = e.GetBoolean();
         if (root.TryGetProperty("bInvertMonsterBattleWithButtonPress", out e)) bInvertMonsterBattleWithButtonPress = e.GetBoolean();
+        if (root.TryGetProperty("bExodiaFromHand", out e)) bExodiaFromHand = e.GetBoolean();
+        if (root.TryGetProperty("bCustomResources", out e)) bCustomResources = e.GetBoolean();
 
         if (root.TryGetProperty("CurrentRule", out e)) CurrentRule = e.GetInt32();
 
@@ -1664,6 +1666,26 @@ public class GameplayPatchesWindow : IImGuiWindow
             int desiredLen = (rankExp != null && rankExp.Length > 0) ? rankExp.Length : 12;
             rankExp = ReadIntArray(e, desiredLen);
         }
+
+        if (root.TryGetProperty("redDuelResource", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            ReadResourceArray(e, redDuelResource);
+        }
+
+        if (root.TryGetProperty("whiteDuelResource", out e) && e.ValueKind == JsonValueKind.Array)
+        {
+            ReadResourceArray(e, whiteDuelResource);
+        }
+    }
+
+    static void ReadResourceArray(JsonElement arrayElement, CustomDuelResource[] resources)
+    {
+        CustomDuelResource[]? imported = arrayElement.Deserialize<CustomDuelResource[]>();
+        if (imported == null)
+        {
+            return;
+        }
+        Array.Copy(imported, resources, Math.Min(imported.Length, resources.Length));
     }
 
     //AI generated

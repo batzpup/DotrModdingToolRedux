@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using DotrModdingTool2IMGUI;
 namespace GameplayPatches
 {
@@ -40,12 +41,12 @@ namespace GameplayPatches
 
 public struct CustomDuelResource
 {
-    public ushort LP;
-    public byte SummonPower;
-    public byte SummonRecharge;
-    public byte StartingCol;
-    public byte StartingRow;
-    public ushort Zoom;
+    [JsonInclude] public ushort LP;
+    [JsonInclude] public byte SummonPower;
+    [JsonInclude] public byte SummonRecharge;
+    [JsonInclude] public byte StartingCol;
+    [JsonInclude] public byte StartingRow;
+    [JsonInclude] public ushort Zoom;
     
 
     public static byte[] GetBytesFromResource(CustomDuelResource[] resources)
