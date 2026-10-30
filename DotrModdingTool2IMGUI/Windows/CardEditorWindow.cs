@@ -143,7 +143,6 @@ class CardEditorWindow : IImGuiWindow
 
         Vector2 windowPos = ImGui.GetWindowPos();
         Vector2 windowSize = ImGui.GetWindowSize();
-        float windowBottom = windowPos.Y + windowSize.Y - 110f * EditorWindow.AspectRatio.Y;
 
         _modalPopup.Draw();
         ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, windowSize.Y),

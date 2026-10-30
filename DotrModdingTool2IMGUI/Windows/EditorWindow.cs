@@ -24,10 +24,11 @@ public class EditorWindow
     public static bool Disabled = false;
     float disabledTimer = 0;
     float maxDisabledTime = 30;
+    private static float buttonDownscaleFactor = 1.2f;
 
     public static Vector2 AspectRatio
     {
-        get { return ImGui.GetWindowSize() / new Vector2(2560, 1351f); }
+        get { return ImGui.GetWindowSize() / new Vector2(1920 * buttonDownscaleFactor, 1080 * buttonDownscaleFactor); }
     }
 
     float buttonWidthScaled = 200f;
@@ -243,26 +244,28 @@ public class EditorWindow
         {
             if (ImGui.BeginMenu("File"))
             {
-                if (ImGui.MenuItem("Open Iso"))
+                if (ImGui.MenuItem("Open ISO"))
                 {
                     OpenIso();
                 }
+
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
                     ImGui.Text("Ctrl + O");
                     ImGui.EndTooltip();
-
                 }
+
                 ImGui.Spacing();
 
                 if (!dataAccess.IsIsoLoaded)
                 {
                     ImGui.BeginDisabled();
                 }
+
                 if (ImGui.BeginMenu("Save"))
                 {
-                    if (ImGui.MenuItem("Save data"))
+                    if (ImGui.MenuItem("Save Data"))
                     {
                         if (dataAccess.IsIsoLoaded)
                         {
@@ -273,15 +276,17 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
 
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves all non string data");
+                        ImGui.Text("Saves all non-String data");
                         ImGui.Text("Ctrl + S");
                         ImGui.EndTooltip();
                     }
+
                     if (ImGui.MenuItem("Save Strings"))
                     {
                         if (dataAccess.IsIsoLoaded)
@@ -293,14 +298,16 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves string changes");
+                        ImGui.Text("Saves String changes");
                         ImGui.EndTooltip();
                     }
-                    if (ImGui.MenuItem("Save all data"))
+
+                    if (ImGui.MenuItem("Save ALL"))
                     {
                         if (dataAccess.IsIsoLoaded)
                         {
@@ -311,20 +318,22 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
 
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves data including strings");
+                        ImGui.Text("Saves data including Strings");
                         ImGui.Text("Ctrl + Alt + S");
                         ImGui.EndTooltip();
                     }
+
                     ImGui.EndMenu();
                 }
 
 
-                if (ImGui.MenuItem("Print passwords"))
+                if (ImGui.MenuItem("Print Passwords"))
                 {
                     if (dataAccess.IsIsoLoaded)
                     {
@@ -335,6 +344,7 @@ public class EditorWindow
                         _modalPopup.Show("No ISO open to save to");
                     }
                 }
+
                 ImGui.Spacing();
                 if (dataAccess.IsIsoLoaded)
                 {
@@ -343,15 +353,18 @@ public class EditorWindow
                         if (ImGui.MenuItem("Auto Changelog", null, ref UserSettings.AutoChangelog))
                         {
                         }
+
                         if (ImGui.MenuItem("Take old snapshot"))
                         {
                             ChangelogManager.OldSnapshot = new ModSnapshot();
                         }
+
                         if (ImGui.MenuItem("Take new snapshot"))
                         {
 
                             ChangelogManager.NewSnapshot = new ModSnapshot();
                         }
+
                         if (ImGui.MenuItem("Generate Changelog"))
                         {
                             if (ChangelogManager.OldSnapshot is null)
@@ -365,10 +378,13 @@ public class EditorWindow
                                 {
                                     ChangelogManager.NewSnapshot = new ModSnapshot();
                                 }
+
                                 DataAccess.Instance.GetMd5Hash();
-                                string changelogText = ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
+                                string changelogText =
+                                    ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
                                 Console.WriteLine("Passed Comparison");
-                                File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt", changelogText);
+                                File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt",
+                                    changelogText);
                                 _ = Task.Run(async () =>
                                 {
                                     try
@@ -392,8 +408,10 @@ public class EditorWindow
 
 
                         }
+
                         ImGui.EndMenu();
                     }
+
                     ImGui.Spacing();
                 }
 
@@ -416,6 +434,7 @@ public class EditorWindow
                             }
                         }
                     }
+
                     if (ImGui.MenuItem("Import Card Data"))
                     {
                         DialogResult result = Dialog.FileOpen("csv");
@@ -428,6 +447,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to card data");
                         }
                     }
+
                     if (ImGui.MenuItem("Import Fusion Data"))
                     {
                         DialogResult result = Dialog.FileOpen("csv");
@@ -445,6 +465,7 @@ public class EditorWindow
                             }
                         }
                     }
+
                     if (ImGui.MenuItem("Import Maps"))
                     {
                         var result = Dialog.FileOpen("txt");
@@ -470,6 +491,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import randomiser settings");
                         }
                     }
+
                     if (ImGui.MenuItem("Import Patches"))
                     {
                         var result = Dialog.FileOpen("json");
@@ -482,9 +504,11 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import patches");
                         }
                     }
+
                     ImGui.EndMenu();
 
                 }
+
                 if (ImGui.BeginMenu("Export"))
                 {
                     if (ImGui.MenuItem("Export Strings"))
@@ -499,6 +523,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export strings");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Card Data"))
                     {
                         DialogResult result = Dialog.FileSave("csv");
@@ -512,6 +537,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export card data ");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Fusion Data"))
                     {
                         DialogResult result = Dialog.FileSave("csv");
@@ -525,6 +551,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export fusion csv");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Maps"))
                     {
                         var result = Dialog.FileSave("txt");
@@ -537,6 +564,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export map text file");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Randomiser Settings"))
                     {
                         var result = Dialog.FileSave("json");
@@ -549,6 +577,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export randomiser settings");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Patches"))
                     {
                         var result = Dialog.FileSave("json");
@@ -561,6 +590,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export patches");
                         }
                     }
+
                     ImGui.EndMenu();
                 }
 
@@ -568,55 +598,80 @@ public class EditorWindow
                 {
                     ImGui.EndDisabled();
                 }
+
                 ImGui.EndMenu();
             }
-            if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
-            {
-
-            }
+            
             ImGui.Spacing();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Show Images when hovering over items");
-                ImGui.Text("Ctrl + T");
-                ImGui.EndTooltip();
 
-            }
-
-            ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode);
-            if (ImGui.IsItemHovered())
+            if (ImGui.BeginMenu("Options"))
             {
-                ImGui.BeginTooltip();
-                ImGui.Text("Caps the framerate to 30fps when the window isnt focused\nor an item isnt hovered");
-                ImGui.Text("Ctrl + P");
-                ImGui.EndTooltip();
+                if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
+                {
+                    
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Show Images when hovering over items");
+                    ImGui.Text("Ctrl + T");
+                    ImGui.EndTooltip();
+                }
+
+                ImGui.Spacing();
+
+                if (ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode)) 
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Caps the framerate to 30fps when the window is not focused\nor an item is not hovered");
+                    ImGui.Text("Ctrl + P");
+                    ImGui.EndTooltip();
+                }
+
+                ImGui.Spacing();
+                
+                if (ImGui.MenuItem("Use original Strings", null, ref UserSettings.UseDefaultNames))
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Show the games default card names");
+                    ImGui.EndTooltip();
+                }
+                
+                ImGui.Spacing();
+                
+                if (ImGui.MenuItem("Use original Images", null, ref UserSettings.UseOriginalImages))
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Show the games default text for cards and characters");
+                    ImGui.Text("Ctrl + D");
+                    ImGui.EndTooltip();
+
+                }
+                
+                ImGui.EndMenu();
             }
+            
             ImGui.Spacing();
-            if (ImGui.MenuItem("Use original strings", null, ref UserSettings.UseDefaultNames))
-            {
-
-            }
-            ImGui.Spacing();
-            if (ImGui.MenuItem("Use original Images", null, ref UserSettings.UseOriginalImages))
-            {
-
-            }
-            ImGui.Spacing();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Show the games default text for cards and characters");
-                ImGui.Text("Ctrl + D");
-                ImGui.EndTooltip();
-
-            }
-
-            ImGui.Spacing();
+            
             if (ImGui.MenuItem("Credits"))
             {
                 isCreditsOpen = true;
-
             }
             if (isCreditsOpen)
             {
