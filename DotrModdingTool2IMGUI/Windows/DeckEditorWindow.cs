@@ -45,6 +45,12 @@ public class DeckEditorWindow : IImGuiWindow
 
     public void Render()
     {
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text($"Please load ISO file");
+            return;
+        }
+        
         ImGui.PushFont(currentFont);
         float availableHeight = ImGui.GetContentRegionAvail().Y;
         ImGui.BeginChild("Trunk", new Vector2(ImGui.GetContentRegionAvail().X / 2f, availableHeight),

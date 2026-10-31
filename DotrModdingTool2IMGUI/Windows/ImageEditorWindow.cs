@@ -10,10 +10,7 @@ class ImageEditorWindow : IImGuiWindow
 
     public void Render()
     {
-        if (!DataAccess.Instance.IsIsoLoaded)
-        {
-            return;
-        }
+        
         if (ImGui.BeginTabBar("ImageEditorTabBar"))
         {
             if (ImGui.BeginTabItem("Image Texture Editor"))

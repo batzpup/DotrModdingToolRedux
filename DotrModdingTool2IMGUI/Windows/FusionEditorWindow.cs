@@ -133,6 +133,12 @@ class FusionEditorWindow : IImGuiWindow
 
     unsafe void DrawDeckFusionTable()
     {
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text("Please load ISO file");
+            return;
+        }
+        
         ImGui.PushFont(font);
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
@@ -143,12 +149,6 @@ class FusionEditorWindow : IImGuiWindow
         if (ImGui.ColorEdit4("Search Dropdown", ref searchColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {
             UserSettings.FusionDropdownColour = searchColour;
-        }
-        if (!DataAccess.Instance.IsIsoLoaded)
-        {
-            ImGui.Text("Please load ISO file");
-            ImGui.PopFont();
-            return;
         }
 
 

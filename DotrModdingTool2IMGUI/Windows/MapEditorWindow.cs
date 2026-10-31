@@ -38,6 +38,12 @@ public class MapEditorWindow : IImGuiWindow
 
     public void Render()
     {
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text($"Please load ISO file");
+            return;
+        }
+        
         ImGui.BeginChild("leftPanel", new Vector2(ImGui.GetContentRegionAvail().X * 0.33f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysVerticalScrollbar);
         float indent = ImGui.GetContentRegionAvail().X / 32;
         ImGui.Indent(indent);

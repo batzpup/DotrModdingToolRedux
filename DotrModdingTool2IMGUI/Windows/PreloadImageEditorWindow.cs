@@ -26,6 +26,12 @@ class PreloadImageEditorWindow : IImGuiWindow
 
     public void Render()
     {
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text($"Please load ISO file");
+            return;
+        }
+        
         Vector4 listBoxBg = ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
 
         ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.SpaceMono, 32));

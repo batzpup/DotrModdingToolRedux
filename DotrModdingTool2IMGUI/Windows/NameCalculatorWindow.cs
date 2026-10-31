@@ -76,6 +76,7 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.Text("Please load ISO file");
             return;
         }
+        
         ImGui.Text("Name");
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("AAAAAAAAAAAAA").X);
         if (ImGui.InputText("##Name", ref nameInput, 12, ImGuiInputTextFlags.CallbackCharFilter, FilterNameInput))

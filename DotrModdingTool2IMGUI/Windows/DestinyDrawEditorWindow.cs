@@ -63,9 +63,9 @@ public class DestinyDrawEditorWindow : IImGuiWindow
         if (!DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.Text("Please load ISO file");
-            ImGui.PopFont();
             return;
         }
+        
         ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 30));
         ImGui.BeginChild("leftSide", new Vector2(ImGui.GetContentRegionAvail().X / 10 * 6, ImGui.GetContentRegionAvail().Y));
         ImGui.Indent(ImGui.GetContentRegionAvail().X / 128);
