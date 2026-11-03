@@ -71,10 +71,10 @@ public class DestinyDrawEditorWindow : IImGuiWindow
         ImGui.Indent(ImGui.GetContentRegionAvail().X / 128);
         ImGui.Dummy(new Vector2(0, ImageHelper.DefaultImageSize.Y * 0.15f));
 
-        ImGui.PushFont(FontManager.GetBestFitFont("Destiny draw table"));
-        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X / 2 - ImGui.CalcTextSize("Destiny draw table").X / 2f);
-        ImGui.Text("Destiny draw table");
-        ImGui.PopFont();
+        //ImGui.PushFont(FontManager.GetBestFitFont("Destiny Draw Table"));
+        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X / 2 - ImGui.CalcTextSize("Destiny Draw Table").X / 2f);
+        ImGui.Text("Destiny Draw Table");
+        //ImGui.PopFont();
 
 
         if (ImGui.BeginTable("DestinyTable", 4, flags))
@@ -271,15 +271,15 @@ public class DestinyDrawEditorWindow : IImGuiWindow
 
         ImGui.Dummy(new Vector2(0, ImageHelper.DefaultImageSize.Y * 0.15f));
         ImGui.TextColored(new GuiColour(Color.Red).value, "Saving not implemented on modifiers yet ");
-        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X / 2f - ImGui.CalcTextSize("Leader kind modifiers").X / 2f);
-        ImGui.Text("Leader kind modifiers");
+        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X / 2f - ImGui.CalcTextSize("Leader Type Modifiers").X / 2f);
+        ImGui.Text("Leader Type Modifiers");
         float rowHeight = ImGui.GetTextLineHeightWithSpacing() + ImGui.GetStyle().CellPadding.Y;
         float tableHeight = rowHeight * 24.2f + ImGui.GetStyle().CellPadding.Y * 2;
         if (ImGui.BeginTable("KindModifiers", 3, flags, new Vector2(0, tableHeight)))
         {
             ImGui.TableSetupColumn("Kind", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("slot 1 bonus", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("slot 2 bonus", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Slot 1 Bonus", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Slot 2 Bonus", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableHeadersRow();
             for (int i = 0; i <= 20; i++)
             {
@@ -306,7 +306,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
             ImGui.EndTable();
 
         }
-        ImGui.Text("Genral bonuses");
+        ImGui.Text("General Bonuses");
 
         ImGui.Text("Slot 1");
         ImGui.SameLine();

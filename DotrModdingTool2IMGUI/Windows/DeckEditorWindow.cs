@@ -7,10 +7,11 @@ namespace DotrModdingTool2IMGUI;
 
 public class DeckEditorWindow : IImGuiWindow
 {
-    ImGuiTableFlags tableFlags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Sortable |
-                                 ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
-                                 ImGuiTableFlags.ScrollX |
-                                 ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.BordersInnerH;
+    private ImGuiTableFlags tableFlags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
+                                         ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                                         ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                                         ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                                         ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */ ;
 
 
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
@@ -84,11 +85,13 @@ public class DeckEditorWindow : IImGuiWindow
 
     void DrawDeckListTable()
     {
+        // Now unused ; keeping for debugging
         if (!DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.Text("No cards available.");
             return;
         }
+        
         if (currentDeckListIndex != lastDeckListIndex)
         {
             currentDeck = Deck.DeckList[currentDeckListIndex];
@@ -123,7 +126,7 @@ public class DeckEditorWindow : IImGuiWindow
             }
             ImGui.EndCombo();
         }
-        if (ImGui.BeginCombo("DeckLeader", currentDeck.DeckLeader.ToString(), ImGuiComboFlags.HeightLarge))
+        if (ImGui.BeginCombo("Deck Leader", currentDeck.DeckLeader.ToString(), ImGuiComboFlags.HeightLarge))
         {
             foreach (var monster in CardConstant.Monsters)
             {
@@ -236,25 +239,28 @@ public class DeckEditorWindow : IImGuiWindow
         {
             unsafe
             {
-                float idWidth = ImGui.CalcTextSize("999").X;
-                float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X;
-                float attackWidth = ImGui.CalcTextSize("9999").X;
-                float levelWidth = ImGui.CalcTextSize("LVL").X;
-                float attributeWidth = ImGui.CalcTextSize("Attribute").X;
-                float typeWidth = ImGui.CalcTextSize("Trap (Full Ranged)").X;
-                float actionWidth = ImGui.CalcTextSize("Remove").X;
-                float dcWidth = ImGui.CalcTextSize("99").X;
+                // Filtering out extremes and working out padding with font sizes to optimize spacing
+                float idWidth = ImGui.CalcTextSize("999").X; // 28 (at RefScale 24) ; 33 required
+                float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X; // 336 ; force 20% ?
+                float attackWidth = ImGui.CalcTextSize("9999").X ; // 37, 37 (two columns) ; 49 required
+                float levelWidth = ImGui.CalcTextSize("LV").X ; // 19 base ; 38 required
+                float attributeWidth = ImGui.CalcTextSize("Water").X ; // 46 base ; 56 required
+                float typeWidth = ImGui.CalcTextSize("Winged-Beast").X ; // 108, works as-is
+                float dcWidth = ImGui.CalcTextSize("255").X ; // 28 base ; 41 required ; support for DC beyond 100
+                float actionWidth = ImGui.CalcTextSize("Action").X ; // 50 for "Action", 63 for "Remove" ; " Remove " requires 67 on NoSort
 
                 ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags.None;
-                ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 10);
-                ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth);
-                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
-                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
-                ImGui.TableSetupColumn("LVL", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 20);
+                // Stretching Name, Type AND Action. Not ideal, but works pretty well on many font sizes and window screens.
+                ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 6);
+                ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth * 0.7f);
+                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 12);
+                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 12);
+                ImGui.TableSetupColumn("LV", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 19);
                 ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 10);
-                ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthFixed, typeWidth + 20);
-                ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 20);
-                ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthFixed, actionWidth + 20);
+                ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthStretch, typeWidth + 0);
+                ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 13);
+                ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoSort, actionWidth + 17); // Prevent Action column from sorting, also saves arrow space
+                ImGui.TableSetupScrollFreeze(0,1); // Prevent Header row right below from scrolling away
                 ImGui.TableHeadersRow();
 
 
@@ -357,9 +363,17 @@ public class DeckEditorWindow : IImGuiWindow
         {
             sortedTrunkList = new List<CardConstant>(CardConstant.List);
         }
-        ImGui.TextColored(new GuiColour(System.Drawing.Color.SkyBlue).value,
-            "Instructions: Left click = select card, \nCtrl + Left Click = add to selection or remove a card already selected\nShift + left click to add everything between your last clicked card and the this card, Ctrl + Right click to clear all\nShift + Right click = view hovered card in editor");
-
+        
+        ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(System.Drawing.Color.SkyBlue).value);
+        ImGui.TextWrapped(
+            "Instructions :\n" +
+            " Left Click : Select Card,\n" +
+            " Ctrl + Left Click : Select multiple cards individually,\n" +
+            " Shift + Left Click : Select all cards in-between,\n" +
+            " Ctrl + Right Click : Clear Selection,\n" +
+            " Shift + Right Click : View in Card Editor.");
+        ImGui.PopStyleColor();
+        
         ImGui.Text("Font Size");
         ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("12").X + ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetFrameHeight());
@@ -387,19 +401,14 @@ public class DeckEditorWindow : IImGuiWindow
         ImGui.Text("Search Bar");
         ImGui.SameLine();
         ImGui.InputText("##SearchBar", ref trunkSearchFilter, 32);
-        lineWidth += searchTotalWidth;
-
-        float radioWidth = ImGui.CalcTextSize("Use colour").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X;
-        if (lineWidth + radioWidth > maxWidth && lineWidth > 0)
-        {
-            lineWidth = 0;
-        }
-        else if (lineWidth > 0)
-        {
-            ImGui.SameLine();
-        }
-
-        if (ImGui.RadioButton("Use colour", UserSettings.deckEditorUseColours))
+        //lineWidth += searchTotalWidth;
+        
+        // Grouping Card Colour with Colour Highlight rather than Search Bar
+        lineWidth = 0; // Force Newline
+        
+        float radioWidth = ImGui.CalcTextSize("Show card colour").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X;
+        
+        if (ImGui.RadioButton("Show card colour", UserSettings.deckEditorUseColours))
         {
             UserSettings.deckEditorUseColours = !UserSettings.deckEditorUseColours;
         }
@@ -414,28 +423,32 @@ public class DeckEditorWindow : IImGuiWindow
         {
             UserSettings.DeckEditorHighlightcolour = highlightColour;
         }
-
+        
+        
         if (ImGui.BeginTable("Trunk", 9, tableFlags))
         {
-            float idWidth = ImGui.CalcTextSize("999").X;
-            float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X;
-            float attackWidth = ImGui.CalcTextSize("Defense").X;
-            float levelWidth = ImGui.CalcTextSize("Level").X;
-            float attributeWidth = ImGui.CalcTextSize("Attribute").X;
-            float typeWidth = ImGui.CalcTextSize("Trap (Full Ranged)").X;
-            float actionWidth = ImGui.CalcTextSize("Remove").X;
-            float dcWidth = ImGui.CalcTextSize("99").X;
+            // Filtering out extremes and working out padding with font sizes to optimize spacing
+            float idWidth = ImGui.CalcTextSize("999").X; // 28 (at RefScale 24) ; 33 required
+            float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X; // 336
+            float attackWidth = ImGui.CalcTextSize("9999").X ; // 37, 37 (two columns) ; 49 required
+            float levelWidth = ImGui.CalcTextSize("LV").X ; // 19 base ; 38 required
+            float attributeWidth = ImGui.CalcTextSize("Water").X ; // 46 base ; 56 required
+            float typeWidth = ImGui.CalcTextSize("Winged-Beast").X ; // 108, works as-is
+            float dcWidth = ImGui.CalcTextSize("255").X ; // 28 base ; 41 required ; support for DC beyond 100
+            float actionWidth = ImGui.CalcTextSize("Action").X ; // 50 for "Action", 63 for "Remove" ; " Remove " requires 67 on NoSort
 
             ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags.None;
-            ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 10);
-            ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth + 10);
-            ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth);
-            ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth);
-            ImGui.TableSetupColumn("LVL", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 10);
-            ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 20);
-            ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthFixed, typeWidth + 20);
-            ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 20);
-            ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthFixed, actionWidth);
+            // Stretching Name, Type AND Action. Not ideal, but works pretty well on many font sizes and window screens.
+            ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 6);
+            ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth * 0.7f);
+            ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 12);
+            ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 12);
+            ImGui.TableSetupColumn("LV", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 19);
+            ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 10);
+            ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthStretch, typeWidth + 0);
+            ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 13);
+            ImGui.TableSetupColumn("Action", columnFlags | ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoSort, actionWidth + 17); // Prevent Action column from sorting, also saves arrow space
+            ImGui.TableSetupScrollFreeze(0,1); // Prevent Header row right below from scrolling away
             ImGui.TableHeadersRow();
 
             ImGuiTableSortSpecsPtr sortSpecifications = ImGui.TableGetSortSpecs();

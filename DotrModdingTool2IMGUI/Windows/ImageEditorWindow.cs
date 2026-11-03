@@ -11,6 +11,9 @@ class ImageEditorWindow : IImGuiWindow
     public void Render()
     {
         
+        ImGui.PushStyleColor(ImGuiCol.TabSelected, new GuiColour(0, 189, 0).value);
+        ImGui.PushStyleColor(ImGuiCol.TabHovered, new GuiColour(128, 128, 0).value);
+        
         if (ImGui.BeginTabBar("ImageEditorTabBar"))
         {
             if (ImGui.BeginTabItem("Image Texture Editor"))
@@ -23,12 +26,11 @@ class ImageEditorWindow : IImGuiWindow
                 preloadImageEditorWindow.Render();
                 ImGui.EndTabItem();
             }
-
-
+            
             ImGui.EndTabBar();
         }
-
-
+        
+        ImGui.PopStyleColor(2);
 
     }
 

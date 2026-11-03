@@ -139,17 +139,12 @@ public class MapEditorWindow : IImGuiWindow
 
         ImGui.BeginTable("MapImageGrid", 5, ImGuiTableFlags.SizingStretchSame);
 
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-
-
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         ImGui.TableNextColumn();
         ImGui.TableNextColumn();
         ImGui.Image(currentMapPaletteImage, imageSize);
-        ImGui.TableNextColumn();
+
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         if (ImGui.ImageButton("Forest_Image", GlobalImages.Instance.Terrain[ETerrainImages.Forest], imageSize))
@@ -165,7 +160,6 @@ public class MapEditorWindow : IImGuiWindow
             currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Wasteland];
         }
 
-
         ImGui.TableNextColumn();
         if (ImGui.ImageButton("Mountain_Image", GlobalImages.Instance.Terrain[ETerrainImages.Mountain], imageSize))
         {
@@ -173,14 +167,12 @@ public class MapEditorWindow : IImGuiWindow
             currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Mountain];
         }
 
-
         ImGui.TableNextColumn();
         if (ImGui.ImageButton("Meadow_Image", GlobalImages.Instance.Terrain[ETerrainImages.Meadow], imageSize))
         {
             currentPaletteTerrain = Terrain.Meadow;
             currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Meadow];
         }
-
 
         ImGui.TableNextColumn();
         if (ImGui.ImageButton("Sea_Image", GlobalImages.Instance.Terrain[ETerrainImages.Sea], imageSize))
@@ -265,36 +257,8 @@ public class MapEditorWindow : IImGuiWindow
         float availableSpace = ImGui.GetContentRegionAvail().X;
         float lineWidth = 0;
 
-        GlobalImgui.AutoWrappingButton("Load Default Maps", () => LoadDefaultMapsAll(), ref lineWidth, availableSpace);
-        GlobalImgui.AutoWrappingButton("Make Current Map Default", () => LoadDefaultMap(currentMapIndex), ref lineWidth, availableSpace);
-        GlobalImgui.AutoWrappingButton("Save Current Map", () =>
-        {
-            Console.WriteLine("Saving current Maps");
-            SaveCurrentMap();
-        }, ref lineWidth, availableSpace, !DataAccess.Instance.IsIsoLoaded);
-        GlobalImgui.AutoWrappingButton("Save all maps to file", () =>
-        {
-            var result = Dialog.FileSave("txt");
-            if (result.IsOk)
-            {
-                int x;
-                int y;
-                string textData = "";
-                for (int mapIndex = 0; mapIndex < dataAccess.maps.Length; mapIndex++)
-                {
-                    DotrMap map = dataAccess.maps[mapIndex];
-                    for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
-                    {
-                        x = tileIndex % 7;
-                        y = tileIndex / 7;
-                        textData += ((int)map.tiles[x, y]).ToString();
-                    }
-                }
-                File.WriteAllText(result.Path, textData);
-            }
-        }, ref lineWidth, availableSpace);
-
-        GlobalImgui.AutoWrappingButton("Load all maps from file", () =>
+        // Moving Load from File between Map List and Restore Vanilla for safety
+        GlobalImgui.AutoWrappingButton("Load all Maps from File", () =>
         {
             var result = Dialog.FileOpen("txt");
             if (result.IsOk)
@@ -319,6 +283,40 @@ public class MapEditorWindow : IImGuiWindow
                 }
             }
         }, ref lineWidth, availableSpace);
+        GlobalImgui.AutoWrappingButton("Restore all Maps to Default", () => LoadDefaultMapsAll(), ref lineWidth, availableSpace);
+        GlobalImgui.AutoWrappingButton("Restore current Map to Default", () => LoadDefaultMap(currentMapIndex), ref lineWidth, availableSpace);
+        
+        // Separating Restore Vanilla and Save for safety
+        ImGui.NewLine();
+        
+        GlobalImgui.AutoWrappingButton("Save current Map", () =>
+        {
+            Console.WriteLine("Saving current Maps");
+            SaveCurrentMap();
+        }, ref lineWidth, availableSpace, !DataAccess.Instance.IsIsoLoaded);
+        GlobalImgui.AutoWrappingButton("Save all Maps to File", () =>
+        {
+            var result = Dialog.FileSave("txt");
+            if (result.IsOk)
+            {
+                int x;
+                int y;
+                string textData = "";
+                for (int mapIndex = 0; mapIndex < dataAccess.maps.Length; mapIndex++)
+                {
+                    DotrMap map = dataAccess.maps[mapIndex];
+                    for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
+                    {
+                        x = tileIndex % 7;
+                        y = tileIndex / 7;
+                        textData += ((int)map.tiles[x, y]).ToString();
+                    }
+                }
+                File.WriteAllText(result.Path, textData);
+            }
+        }, ref lineWidth, availableSpace);
+
+
 
         ImGui.PopFont();
     }
@@ -333,6 +331,9 @@ public class MapEditorWindow : IImGuiWindow
 
         ImGui.Text("Left click and/or drag to paint with the current tile.");
         ImGui.Text("Right click to move the hidden card.");
+
+        // Align map away from text
+        ImGui.NewLine();
 
         Vector2 availableSpace = ImGui.GetContentRegionAvail();
         Vector2 spacing = ImGui.GetStyle().ItemSpacing;

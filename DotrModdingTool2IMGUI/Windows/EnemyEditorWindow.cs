@@ -45,14 +45,14 @@ public class EnemyEditorWindow : IImGuiWindow
                 ImGui.EndTabItem();
                 ImGui.PopFont();
             }
-            if (ImGui.BeginTabItem("Deck Calculator"))
-            {
-                NameCalculatorWindow.Render();
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("Destiny Draw"))
+            if (ImGui.BeginTabItem("Destiny Draw Editor"))
             {
                 DestinyDrawEditorWindow.Render();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Starter Deck Calculator"))
+            {
+                NameCalculatorWindow.Render();
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
