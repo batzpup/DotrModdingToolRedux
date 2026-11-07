@@ -69,27 +69,27 @@ public class CardKind
 
     public bool isMonster()
     {
-        return this.Id < 32;
+        return this.Id / 32 == 0;
     }
 
     public bool isMagic()
     {
-        return this.Id >= 32 && !isTrap() && !isRitual() && !isPowerUp();
+        return this.Id / 32 == 1;
     }
 
     public bool isPowerUp()
     {
-        return Id == 64;
+        return this.Id / 32 == 2;
     }
 
     public bool isTrap()
     {
-        return this.Id == 96 || this.Id == 128;
+        return this.Id / 32 == 3 || this.Id / 32 == 4;
     }
 
     public bool isRitual()
     {
-        return id == 160;
+        return this.Id / 32 == 5;
     }
 
 
