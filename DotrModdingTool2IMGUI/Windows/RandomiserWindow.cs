@@ -124,7 +124,7 @@ public class RandomiserWindow : IImGuiWindow
     int? bannedCardToRemove = null;
     string SearchSortField = "ID";
     bool SearchAscending = true;
-    EnemyEditorWindow _enemyEditorWindow;
+    GeneralEditorWindow _generalEditorWindow;
 
     Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
@@ -165,11 +165,11 @@ public class RandomiserWindow : IImGuiWindow
 
     int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
 
-    public RandomiserWindow(EnemyEditorWindow enemyEditorWindow)
+    public RandomiserWindow(GeneralEditorWindow generalEditorWindow)
     {
         EditorWindow.OnIsoLoaded += FilterAndSort;
         EditorWindow.OnIsoLoaded += LoadLeaderRanks;
-        _enemyEditorWindow = enemyEditorWindow;
+        _generalEditorWindow = generalEditorWindow;
 
         CreateLeaderAbilityTooltips();
 
@@ -257,7 +257,7 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             RandomiseMaps();
             ChangeAllAi();
             RandomiseMusic();
-            _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
+            _generalEditorWindow.DeckEditorWindow.UpdateDeckData();
             ChangeDuelResources();
             SetRecommendedExpValues();
             RandomiseTerrainStatValues();

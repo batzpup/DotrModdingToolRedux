@@ -6,7 +6,9 @@ namespace DotrModdingTool2IMGUI;
 
 class FusionEditorWindow : IImGuiWindow
 {
-    ImFontPtr font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28);
+    ImFontPtr HeadFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
+    ImFontPtr MainFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28);
+    ImFontPtr SubFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 24);
     public List<KeyValuePair<int, FusionData>> AllFusionData;
     public List<FusionData> DeckFusionData;
     string filter1Text = "";
@@ -20,7 +22,6 @@ class FusionEditorWindow : IImGuiWindow
     Vector4 tableBgColour = UserSettings.FusionTableBgColour;
     Vector4 searchColour = UserSettings.FusionDropdownColour;
 
-
     Deck currentDeck;
     int currentDeckListIndex = 0;
 
@@ -29,7 +30,6 @@ class FusionEditorWindow : IImGuiWindow
     public FusionEditorWindow()
     {
         EditorWindow.OnIsoLoaded += HandleIsoLoaded;
-
     }
 
     public void HandleIsoLoaded()
@@ -110,25 +110,26 @@ class FusionEditorWindow : IImGuiWindow
 
     public void Render()
     {
+        ImGui.PushFont(HeadFont);
         ImGui.PushStyleColor(ImGuiCol.TabSelected, new GuiColour(0, 189, 0).value);
         ImGui.PushStyleColor(ImGuiCol.TabHovered, new GuiColour(128, 128, 0).value);
         if (ImGui.BeginTabBar("FusionsBar"))
         {
-            if (ImGui.BeginTabItem("All Fusions"))
+            if (ImGui.BeginTabItem("Fusion List"))
             {
                 DrawAllFusionTable();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Possible fusions from deck"))
+            if (ImGui.BeginTabItem("Fusion Deck Calculator"))
             {
                 DrawDeckFusionTable();
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
         }
+        ImGui.PopFont();
         ImGui.PopStyleColor(2);
-
     }
 
     unsafe void DrawDeckFusionTable()
@@ -139,7 +140,7 @@ class FusionEditorWindow : IImGuiWindow
             return;
         }
         
-        ImGui.PushFont(font);
+        ImGui.PushFont(MainFont);
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {
@@ -338,15 +339,13 @@ class FusionEditorWindow : IImGuiWindow
 
     unsafe void DrawAllFusionTable()
     {
-        ImGui.PushFont(font);
         if (!DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.Text("Please load ISO file");
-            ImGui.PopFont();
             return;
         }
 
-
+        ImGui.PushFont(MainFont);
         ImGuiListClipperPtr clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         if (ImGui.ColorEdit4("Table Background", ref tableBgColour, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs))
         {

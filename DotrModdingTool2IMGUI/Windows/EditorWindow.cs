@@ -36,7 +36,7 @@ public class EditorWindow
     float buttonSpacingScaled = 10f;
 
 
-    EnemyEditorWindow _enemyEditorWindow;
+    GeneralEditorWindow _generalEditorWindow;
     CardEditorWindow _cardEditorWindow;
     GameplayPatchesWindow _gameplayPatchesWindow;
     FusionEditorWindow _fusionEditorWindow;
@@ -95,7 +95,7 @@ public class EditorWindow
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
 
-        _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
+        _generalEditorWindow = new GeneralEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
         _cardEditorWindow = new CardEditorWindow();
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -104,10 +104,10 @@ public class EditorWindow
         }
         _fusionEditorWindow = new FusionEditorWindow();
 
-        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
+        _randomiserWindow = new RandomiserWindow(_generalEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
-        _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
-        _fusionEditorWindow.Init(_enemyEditorWindow.DeckEditorWindow.ViewCardInEditor);
+        _generalEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+        _fusionEditorWindow.Init(_generalEditorWindow.DeckEditorWindow.ViewCardInEditor);
         _imageEditorWindow = new ImageEditorWindow();
 #if DEBUG
         _textEffectDemoWindow = new TextEffectDemoWindow(mainFont);
@@ -952,7 +952,7 @@ public class EditorWindow
         switch (currentMode)
         {
             case EditorContentMode.EnemyEditor:
-                _enemyEditorWindow.Render();
+                _generalEditorWindow.Render();
                 break;
             case EditorContentMode.CardEditor:
                 _cardEditorWindow.Render();
@@ -1039,8 +1039,8 @@ public class EditorWindow
             return;
         }
 
-        _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
-        _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
+        _generalEditorWindow.DeckEditorWindow.SaveAllDecks();
+        _generalEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
 
@@ -1085,7 +1085,7 @@ public class EditorWindow
 
     void printComplete()
     {
-        if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
+        if (!_generalEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
             if (dataAccess.AllImagesLoaded)
             {
@@ -1139,9 +1139,9 @@ public class EditorWindow
         dataAccess.LoadEnemyAIData();
         dataAccess.LoadDecksData();
         dataAccess.LoadDestinyDrawCards();
-        _enemyEditorWindow.MapEditorWindow.LoadMapData();
-        _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
-        _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
+        _generalEditorWindow.MapEditorWindow.LoadMapData();
+        _generalEditorWindow.MapEditorWindow.LoadTreasureCardData();
+        _generalEditorWindow.DeckEditorWindow.UpdateDeckData();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _musicEditorWindow.LoadMusicFromIso();
