@@ -17,7 +17,7 @@ public class MusicEditorWindow : IImGuiWindow
     static int AddCustomMusicPtr = 0x17ac58;
     static int TaTuto_DrawTrapArea = 0x24f800;
 
-    const float PlaybackVolume = 0.1f;
+    const float PlaybackVolume = 0.2f;
     WaveOutEvent? waveOut;
     Mp3FileReader? mp3Reader;
     bool isMusicPlaying = false;
@@ -29,6 +29,8 @@ public class MusicEditorWindow : IImGuiWindow
     public Dictionary<int, int> DuelistMusic = new Dictionary<int, int>();
     string MusicDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Music");
     string playStopButton = "Play";
+    string playStopDisabled = "No Audio Device Detected";
+    string playStopDisplay;
     int currentDuelistSelected;
     int currentTrackIndex;
     int currentSlotMusicIndex;
@@ -36,7 +38,14 @@ public class MusicEditorWindow : IImGuiWindow
     ImFontPtr font;
     public static Action<bool> OnSaveCustomMusic;
 
-
+    // Size presets so Music boxes don't drag too far
+    // Actual box vectors depend on GetRegionAvail, so they should be called on the spot
+    int SmallBoxCount =  6; // Music Player
+    int LargeBoxCount = 12; // Duelist and Music Select
+    // Warning Colors with Opacity
+    Vector4 WarningColor = new Vector4(192f / 256f, 100f / 256f,  24f / 256f, 0.80f); //Hex #C06418
+    Vector4 WarningHover = new Vector4(234f / 256f,  96f / 256f,  72f / 256f, 0.92f); //Hex #EA6048
+    
     #region StringsArrays
 
     public static ModdedStringName[] MusicTargets;
@@ -175,6 +184,7 @@ public class MusicEditorWindow : IImGuiWindow
     public void Render()
     {
         ImGui.PushFont(font);
+        
         if (!dataAccess.IsIsoLoaded)
         {
             ImGui.Text("Please load ISO file");
@@ -193,96 +203,167 @@ public class MusicEditorWindow : IImGuiWindow
         Vector2 windowSize = ImGui.GetWindowSize();
         ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
         ImGui.TextWrapped(
-            "Note:\n Duelist music changes require fast intro to be enabled as it uses the spare bytes available from skipping the tutorial, if you enable custom music it will enable fast intro (see patches)");
+            "Duelist music changes require (and will enable) Fast Intro, as they use spare bytes available from skipping the Tutorial. See Patches.");
         ImGui.PopStyleColor();
         if (ImGui.Checkbox("Save music changes", ref bSaveMusicChanges))
         {
             OnSaveCustomMusic?.Invoke(bSaveMusicChanges);
         }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Enables Fast Intro");
+        }
+        
         ImGui.PopFont();
+
+        // Child Panels may be able to use a different font
         float remainingHeight = ImGui.GetContentRegionAvail().Y;
-        ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, remainingHeight),
-            ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
-
         ImGui.PushFont(font);
-        ImGui.Text("Duelist Music");
-        ImGui.PushItemWidth(windowSize.X / 3f);
-        if (ImGui.BeginListBox("##DuelistMusic", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * MusicTargets.Length)))
+        
+        if (ImGui.BeginChild("LeftThirdPanel", new Vector2(windowSize.X / 3f, remainingHeight),
+                ImGuiChildFlags.Border))
         {
-            for (int i = 0; i < MusicTargets.Length; i++)
+            ImGui.Text("Duelist Select");
+            
+            // Reworking ListBoxes. Check Middle Panel at MiddleThirdPanel for ListBox conversion data.
+            Vector2 LargeBoxSize = new Vector2(ImGui.GetContentRegionAvail().X, LargeBoxCount * 36);
+            if (ImGui.BeginListBox("##DuelistMusic", LargeBoxSize))
             {
-                bool isSelected = (currentDuelistSelected == i);
-                if (ImGui.Selectable(MusicTargets[i].Current, isSelected))
+                for (int i = 0; i < MusicTargets.Length; i++)
                 {
-                    currentDuelistSelected = i;
-                    currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
-                    PlaySelectedTrack(currentTrackIndex);
+                    bool isSelected = (currentDuelistSelected == i);
+                    if (ImGui.Selectable(MusicTargets[i].Current, isSelected))
+                    {
+                        currentDuelistSelected = i;
+                        currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
+                        // Not otherwise playing music ; keeping that for the Music Player tab
+                    }
+                    if (isSelected)
+                    {
+                        ImGui.SetItemDefaultFocus();
+                    }
                 }
-                if (isSelected)
-                {
-                    ImGui.SetItemDefaultFocus();
-                }
+                
+                ImGui.EndListBox();
             }
-            ImGui.EndListBox();
+            
+            ImGui.EndChild();
         }
-        ImGui.EndChild();
-
+        
+        
         ImGui.SameLine();
 
 
-        ImGui.BeginChild("MiddleThirdPanel", new Vector2(windowSize.X / 3f, ImGui.GetContentRegionAvail().Y),
-            ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Text("Music Tracks");
-        ImGui.PushItemWidth(windowSize.X / 3f);
-        if (ImGui.ListBox("MusicTrack", ref currentTrackIndex, musicTracks, musicTracks.Length,
-                (int)((ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing() - 1))))
+        if (ImGui.BeginChild("MiddleThirdPanel", new Vector2(windowSize.X / 3f, ImGui.GetContentRegionAvail().Y),
+                ImGuiChildFlags.Border))
         {
-            DuelistMusic[currentDuelistSelected] = currentTrackIndex + 1;
-            PlaySelectedTrack(currentTrackIndex);
-        }
-        ImGui.EndChild();
+            ImGui.Text("Music Select");
+            
+            /* Keeping backup for basically the only ListBox (old API) call I haven't found bugging out,
+             * in case we later want to convert ListBox <-> BeginListBox calls.
+            ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
+            if (ImGui.ListBox("##MusicSelect", ref currentTrackIndex, musicTracks, musicTracks.Length,
+                    (int)((ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing() - 1))))
+            {
+                // Main code
+                DuelistMusic[currentDuelistSelected] = currentTrackIndex + 1;
+                // Not otherwise playing music ; keeping that for the Music Player tab
+            }
+             * Converting everything Music to BeginListBox to customize size */
 
+            Vector2 LargeBoxSize = new Vector2(ImGui.GetContentRegionAvail().X, LargeBoxCount * 36);
+            if (ImGui.BeginListBox("##MusicSelect", LargeBoxSize))
+            {
+                for (int i = 0; i < musicTracks.Length; i++)
+                {
+                    bool isSelected = (currentTrackIndex == i);
+                    if (ImGui.Selectable(musicTracks[i], isSelected))
+                    {
+                        currentTrackIndex = i;
+                        // Main code
+                        DuelistMusic[currentDuelistSelected] = currentTrackIndex + 1;
+                        // Not otherwise playing music ; keeping that for the Music Player tab
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui.SetItemDefaultFocus();
+                    }
+                }
+
+                ImGui.EndListBox();
+            }
+
+            ImGui.EndChild();
+        }
+        
+        
         ImGui.SameLine();
-        ImGui.BeginChild("RightThirdPanel", new Vector2(windowSize.X / 3f, remainingHeight),
-            ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Text("Music Options");
-        ImGui.Separator();
-        ImGui.Text("Slot Music");
-        if (ImGui.ListBox("##SlotMusic", ref currentSlotMusicIndex, musicTracks, musicTracks.Length))
-        {
-            PlaySelectedTrack(currentSlotMusicIndex);
-        }
 
-        ImGui.BeginDisabled(!hasAudioDevice);
-        if (ImGui.Button(playStopButton, new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
+
+        if (ImGui.BeginChild("RightThirdPanel", new Vector2(windowSize.X / 3f, remainingHeight),
+                ImGuiChildFlags.Border))
         {
-            if (!isMusicPlaying)
+            //Disable the entire Music Player if no Audio Device detected
+            ImGui.BeginDisabled(!hasAudioDevice);
+            
+            ImGui.Text("Music Player");
+            ImGui.Separator();
+            
+            Vector2 SmallBoxSize = new Vector2(ImGui.GetContentRegionAvail().X, SmallBoxCount * 36);
+            if (ImGui.BeginListBox("##MusicSelect", SmallBoxSize))
             {
-                PlaySelectedTrack(currentTrackIndex);
+                for (int i = 0; i < musicTracks.Length; i++)
+                {
+                    bool isSelected = (currentSlotMusicIndex == i);
+                    if (ImGui.Selectable(musicTracks[i], isSelected))
+                    {
+                        currentSlotMusicIndex = i;
+                        // Main code
+                        PlaySelectedTrack(currentSlotMusicIndex);
+                        // Not otherwise changing game data
+                    }
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndListBox();
             }
-            else
+            
+            Vector2 ButtonSize = new Vector2(ImGui.GetContentRegionAvail().X, Math.Max(windowSize.Y / 10, 72));
+            
+            playStopDisplay = (hasAudioDevice) ? playStopButton : playStopDisabled;
+            if (ImGui.Button(playStopDisplay, ButtonSize))
             {
-                StopMusic();
+                if (!isMusicPlaying)
+                {
+                    // Play Music Player tracks, rather than Music Select
+                    PlaySelectedTrack(currentSlotMusicIndex);
+                }
+                else
+                {
+                    StopMusic();
+                }
             }
+            ImGui.EndDisabled();
+            
+            if (ImGui.Button("Extract Music", ButtonSize))
+            {
+                Task.Run(async () => await StartMusicTask());
+            }
+            
+            ImGui.PushStyleColor(ImGuiCol.Button, WarningColor);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, WarningHover);
+            if (ImGui.Button("Reset to Default", ButtonSize))
+            {
+                LoadDefaultMusic();
+                currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
+            }
+            ImGui.PopStyleColor(2);
+            
+            ImGui.EndChild();
         }
-        ImGui.EndDisabled();
-        if (ImGui.Button("Extract Music", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
-        {
-
-
-            Task.Run(async () => await StartMusicTask());
-
-        }
-        if (ImGui.Button("Reset to Default", new Vector2(windowSize.X / 3f, windowSize.Y / 8)))
-        {
-            LoadDefaultMusic();
-            currentTrackIndex = DuelistMusic[currentDuelistSelected] - 1;
-        }
-
-
-
+        
         ImGui.PopFont();
-        ImGui.EndChild();
     }
 
     void UpdateAudioDeviceState()
@@ -362,7 +443,7 @@ public class MusicEditorWindow : IImGuiWindow
     public async Task StartMusicTask()
     {
         EditorWindow.Disabled = true;
-        EditorWindow._modalPopup.Show("Extracting Music Please wait", "Loading Music");
+        EditorWindow._modalPopup.Show("Extracting Music. Please wait.", "Loading Music");
         await Task.Run(() => GetMusicFiles());
         EditorWindow.Disabled = false;
     }

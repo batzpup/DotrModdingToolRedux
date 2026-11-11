@@ -145,6 +145,7 @@ public class StringEditorWindow : IImGuiWindow
     public void Render()
     {
         ImGui.PushFont(jpFont);
+        
         if (!DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.Text($"Please load ISO file");
@@ -171,9 +172,9 @@ public class StringEditorWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.Text("Use this to make room for longer or more strings on other card texts\nWorks well with fast intro mod");
+            ImGui.Text("Use this to make room for longer or more strings on other card texts\n" +
+                       "Works well with the Fast Intro Patch");
             ImGui.EndTooltip();
-
         }
 
         ImGui.Dummy(new Vector2(0, 10));
@@ -198,7 +199,7 @@ public class StringEditorWindow : IImGuiWindow
             ImGui.PopFont();
             return;
         }
-        ImGui.Text("Jump to card name");
+        ImGui.Text("Jump to Card Name");
 
         if (ImGui.BeginCombo("##CardName", CardNames[currentCardNameIndex]))
         {
@@ -225,7 +226,7 @@ public class StringEditorWindow : IImGuiWindow
         }
 
 
-        ImGui.Text("Jump to card effect");
+        ImGui.Text("Jump to Card Effect");
         if (ImGui.BeginCombo("##CardEffect", CardNames[currentMonsterEffectIndex]))
         {
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
@@ -252,7 +253,7 @@ public class StringEditorWindow : IImGuiWindow
         }
 
 
-        ImGui.Text("Jump to duelist");
+        ImGui.Text("Jump to Duelist");
         if (ImGui.BeginCombo("##DuelistName", EnemyNames[currentDuelistNameIndex]))
         {
             for (int i = 0; i < EnemyNames.Length; i++)
@@ -273,7 +274,7 @@ public class StringEditorWindow : IImGuiWindow
         }
 
 
-        ImGui.Text("Jump to arena names");
+        ImGui.Text("Jump to Arena Names");
         if (ImGui.BeginCombo("##DuelArena", arenas[currentDuelArenaNameIndex]))
         {
             for (int i = 0; i < arenas.Length; i++)
@@ -293,7 +294,10 @@ public class StringEditorWindow : IImGuiWindow
         ImGui.Dummy(new Vector2(0, 20));
 
         ImGui.Text("Text Sections");
-        if (ImGui.BeginListBox("##Section", new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y - windowSize.Y / 20)))
+        
+        // Guaranteeing minimum vertical size for the Card List Table. Same base row height at 36.
+        Vector2 availArea = ImGui.GetContentRegionAvail();
+        if (ImGui.BeginListBox("##Section", new Vector2(availArea.X, Math.Max(availArea.Y, 6 * 36 + 9)) ))
         {
             for (int i = 0; i < sectionArray.Length; i++)
             {
@@ -311,23 +315,41 @@ public class StringEditorWindow : IImGuiWindow
         ImGui.EndChild();
 
         ImGui.SameLine();
+        
+        /*
         ImGui.Dummy(new Vector2(windowSize.X / 80f, 0));
         ImGui.SameLine();
-        ImGui.BeginChild("RightHalfPanel", new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X, 0), ImGuiChildFlags.Border);
+        */
+        
+        ImGui.BeginChild("RightHalfPanel", new Vector2(ImGui.GetContentRegionAvail().X /* - ImGui.GetStyle().ItemSpacing.X */, 0), ImGuiChildFlags.Border);
+        
         ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.CornflowerBlue).value);
         ImGui.Text("Use the scroll wheel to change the index");
-        ImGui.Text("Scroll does not work will editing text (click out of the box)");
+        ImGui.Text("Scroll does not work while editing text (click outside of the box)");
         ImGui.PopStyleColor();
-        if (ImGui.BeginListBox("##String", ImGui.GetContentRegionAvail()))
+        
+        /*if (ImGui.BeginListBox("##String", ImGui.GetContentRegionAvail()))
+           Using a 1x1 Table (with all the content) to work around Scrolling.
+           We basically have custom Scrolling on top of ImGui Scrolling (which ListBox does not customize).
+           Keeping the ability to scroll (ScrollY flag) so actual Strings can inherit and scroll,
+           but freezing all the tabs ImGui-wise (ScrollFreeze) to freeze the scrolling stack. */
+        if (ImGui.BeginTable("##String", 1, ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg, ImGui.GetContentRegionAvail()))
         {
+            ImGui.TableSetupScrollFreeze(1,1);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            
             UpdateIndexOnScrollWindow();
 
             int prevIndex = (currentStringIndex - 1 + StringEditor.StringTable.Count) % StringEditor.StringTable.Count;
             int nextIndex = (currentStringIndex + 1) % StringEditor.StringTable.Count;
+
             RenderMultiLineBox(prevIndex, "##PrevString");
             RenderMultiLineBox(currentStringIndex, "##CurrentString");
             RenderMultiLineBox(nextIndex, "##NextString");
-            ImGui.EndListBox();
+            
+            /*ImGui.EndListBox();*/
+            ImGui.EndTable();
         }
         ImGui.EndChild();
 
@@ -392,7 +414,9 @@ public class StringEditorWindow : IImGuiWindow
 
 
         ImGui.Text($"Index: {index}{(uneditable ? " (uneditable)" : "")} \n{nameText}");
-        if (ImGui.InputTextMultiline(label, ref text, 4000, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 8)))
+        // The Tool can afford more, but few Strings span more than six lines, and they scroll fine anyway.
+        // Note - on smaller screens, ImGui still shows a "master" elevator, but the latter no longer has any effect.
+        if (ImGui.InputTextMultiline(label, ref text, 4000, new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 6)))
         {
             if (uneditable)
                 return;
