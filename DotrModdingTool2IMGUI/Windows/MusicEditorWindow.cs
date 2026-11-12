@@ -269,6 +269,7 @@ public class MusicEditorWindow : IImGuiWindow
                 DuelistMusic[currentDuelistSelected] = currentTrackIndex + 1;
                 // Not otherwise playing music ; keeping that for the Music Player tab
             }
+            ImGui.PopItemWidth();
              * Converting everything Music to BeginListBox to customize size */
 
             Vector2 LargeBoxSize = new Vector2(ImGui.GetContentRegionAvail().X, LargeBoxCount * 36);

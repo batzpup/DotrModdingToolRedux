@@ -79,10 +79,10 @@ public class DestinyDrawEditorWindow : IImGuiWindow
 
         if (ImGui.BeginTable("DestinyTable", 4, flags))
         {
-            ImGui.TableSetupColumn(String.Empty, ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("Slot 1    ").X);
-            ImGui.TableSetupColumn("Slot 1", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Slot 2", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Slot 3", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn(String.Empty, ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort, ImGui.CalcTextSize("Slot 1    ").X);
+            ImGui.TableSetupColumn("Slot 1", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort);
+            ImGui.TableSetupColumn("Slot 2", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort);
+            ImGui.TableSetupColumn("Slot 3", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort);
 
             ImGui.TableHeadersRow();
 
@@ -90,11 +90,12 @@ public class DestinyDrawEditorWindow : IImGuiWindow
             {
                 var pool = DestinyDrawData.DestinyCardPools[i];
                 ImGui.TableNextRow();
+                
                 ImGui.TableSetColumnIndex(0);
                 ImGui.Text($"Pool {i + 1}");
+                
                 ImGui.TableSetColumnIndex(1);
-
-
+                
                 ImGui.PushItemWidth(-1);
                 if (ImGui.BeginCombo($"##slot1_{i}", Card.cardNameList[pool[0]].Current))
                 {
@@ -148,9 +149,10 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[0]].Default);
                 }
                 ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[0]].Default], ImageHelper.DefaultImageSize * 0.85f);
+                ImGui.PopItemWidth();
+                
                 ImGui.TableSetColumnIndex(2);
-
-
+                
                 ImGui.PushItemWidth(-1);
                 if (ImGui.BeginCombo($"##slot2_{i}", Card.cardNameList[pool[1]].Current))
                 {
@@ -204,8 +206,9 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[1]].Default);
                 }
                 ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[1]].Default], ImageHelper.DefaultImageSize* 0.85f);
+                ImGui.PopItemWidth();
+                
                 ImGui.TableSetColumnIndex(3);
-
 
                 ImGui.PushItemWidth(-1);
                 if (ImGui.BeginCombo($"##slot3_{i}", Card.cardNameList[pool[2]].Current))
@@ -259,6 +262,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[pool[2]].Default);
                 }
                 ImGui.Image(GlobalImages.Instance.OriginalCards[Card.cardNameList[pool[2]].Default], ImageHelper.DefaultImageSize* 0.85f);
+                ImGui.PopItemWidth();
             }
 
             ImGui.EndTable();
@@ -277,9 +281,9 @@ public class DestinyDrawEditorWindow : IImGuiWindow
         float tableHeight = rowHeight * 24.2f + ImGui.GetStyle().CellPadding.Y * 2;
         if (ImGui.BeginTable("KindModifiers", 3, flags, new Vector2(0, tableHeight)))
         {
-            ImGui.TableSetupColumn("Kind", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Slot 1 Bonus", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Slot 2 Bonus", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Kind", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort );
+            ImGui.TableSetupColumn("Slot 1 Bonus", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort);
+            ImGui.TableSetupColumn("Slot 2 Bonus", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoReorder | ImGuiTableColumnFlags.NoSort);
             ImGui.TableHeadersRow();
             for (int i = 0; i <= 20; i++)
             {
@@ -294,6 +298,7 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                 {
                     DestinyDrawModifiers[type].slot1 = Math.Clamp(DestinyDrawModifiers[type].slot1, -100, 100);
                 }
+                ImGui.PopItemWidth();
 
                 ImGui.TableSetColumnIndex(2);
                 ImGui.PushItemWidth(-1);
@@ -301,30 +306,30 @@ public class DestinyDrawEditorWindow : IImGuiWindow
                 {
                     DestinyDrawModifiers[type].slot2 = Math.Clamp(DestinyDrawModifiers[type].slot2, -100, 100);
                 }
+                ImGui.PopItemWidth();
 
             }
             ImGui.EndTable();
 
         }
+        
         ImGui.Text("General Bonuses");
 
-        ImGui.Text("Slot 1");
+        ImGui.Text("Slot 1 "); // Tiny padding
         ImGui.SameLine();
-        ImGui.Text("Slot 2");
+        ImGui.Text("Slot 2 "); // Tiny padding
+        
         ImGui.PushItemWidth(ImGui.CalcTextSize("10000").X);
         if (ImGui.InputInt("##Slot1Bonus", ref slot1Bonus, 0))
         {
             slot1Bonus = Math.Clamp(slot1Bonus, 0, 100);
-
         }
-
-
-        ImGui.PushItemWidth(ImGui.CalcTextSize("10000").X);
         ImGui.SameLine();
         if (ImGui.InputInt("##Slot2Bonus", ref slot2Bonus, 0))
         {
-            slot1Bonus = Math.Clamp(slot2Bonus, 0, 100);
+            slot2Bonus = Math.Clamp(slot2Bonus, 0, 100);
         }
+        ImGui.PopItemWidth();
 
         ImGui.EndChild();
         ImGui.PopFont();

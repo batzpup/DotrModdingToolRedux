@@ -456,6 +456,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 {
                     rankExp[i] = Math.Clamp(rankExp[i], 0, 65535);
                 }
+                ImGui.PopItemWidth();
 
             }
             ImGui.EndTable();
@@ -500,15 +501,11 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
-        if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
-                                                            ImGuiTableFlags.Sortable |
-                                                            ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
-                                                            ImGuiTableFlags.Borders |
-                                                            ImGuiTableFlags.ScrollX |
-                                                            ImGuiTableFlags.ScrollY |
-                                                            ImGuiTableFlags.BordersInnerH))
+        if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, 
+                ImGuiTableFlags.Resizable | ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                ImGuiTableFlags.ScrollY))
         {
-
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("IDX").X + 10);
             ImGui.TableSetupColumn("Three in a row", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Reward", ImGuiTableColumnFlags.WidthStretch);
@@ -517,15 +514,16 @@ public class GameplayPatchesWindow : IImGuiWindow
             for (int i = 0; i < 30; i++)
             {
                 ImGui.TableNextRow();
+                
                 ImGui.TableSetColumnIndex(0);
                 ImGui.Text(i.ToString());
+                
                 ImGui.TableSetColumnIndex(1);
                 ImGui.PushItemWidth(-1);
                 List<ModdedStringName> filteredListThree = Card.cardNameList.Where(s => s.Current.Contains(filteredStringThreeInARow, StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 if (ImGui.BeginCombo($"##ThreeInARow{i}", Card.cardNameList[SpecialThreeInARows[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
-                    ImGui.PushItemWidth(-1);
                     ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
                     ImGui.InputText($"##ThreeInARowSearch{i}", ref filteredStringThreeInARow, 32);
                     ImGui.PopStyleColor();
@@ -548,15 +546,14 @@ public class GameplayPatchesWindow : IImGuiWindow
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialThreeInARows[i]].Default);
-
                 }
+                ImGui.PopItemWidth();
+                
                 ImGui.TableSetColumnIndex(2);
                 ImGui.PushItemWidth(-1);
-
                 List<ModdedStringName> filteredList = Card.cardNameList.Where(s => s.Current.Contains(filteredStringReward, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (ImGui.BeginCombo($"##Reward{i}", Card.cardNameList[SpecialSlotRewards[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
-                    ImGui.PushItemWidth(-1);
                     ImGui.InputText($"##RewardSearch{i}", ref filteredStringReward, 32);
                     foreach (var cardName in filteredList)
                     {
@@ -569,19 +566,16 @@ public class GameplayPatchesWindow : IImGuiWindow
                         }
                         if (ImGui.IsItemHovered())
                         {
-
                             GlobalImgui.RenderTooltipCardImage(cardName.Default);
-
                         }
                     }
                     ImGui.EndCombo();
                 }
                 if (ImGui.IsItemHovered())
                 {
-
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialSlotRewards[i]].Default);
-
                 }
+                ImGui.PopItemWidth();
             }
             ImGui.EndTable();
         }

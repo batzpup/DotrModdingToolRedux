@@ -68,7 +68,15 @@ public class EditorWindow
         FillWidth = true
     };
 
-
+    TextEffect sppCreditEffect = new TextEffect
+    {
+        Source = ColourSource.Gradient,
+        Stops = new[]
+            { new Vector4(256f / 256f, 72f / 256f, 206f / 256f, 1.00f), new Vector4(218f / 256f, 218f / 256f, 20f / 256f, 1.00f) },
+        Speed = 0.480f,
+        Spread = 0.078f,
+    };
+    
     TextEffect woomyEffect = TextEffect.Gradient(GuiColour.LancasterRed.value, GuiColour.YorkistBlue.value) with {
         Wave = WaveShape.Hold,
         Easing = Easing.Smoothstep,
@@ -690,13 +698,11 @@ public class EditorWindow
                 if (ImGui.Selectable("Blayr: Original modding tool developer", false,
                         ImGuiSelectableFlags.AllowDoubleClick))
                 {
-
                     OpenUrl("https://github.com/Blayr");
                 }
                 if (ImGui.Selectable("This tool is heavily based on Blayr's original tool", false,
                         ImGuiSelectableFlags.AllowDoubleClick))
                 {
-
                     OpenUrl("https://github.com/Blayr/DOTR-Modding-Tool");
                 }
 
@@ -715,26 +721,45 @@ public class EditorWindow
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
+
+                /* Uncomment when SP Wave 3 (Fusion Engine) is up
+                if (ImGui.Selectable("StarlightPhoenix: SPEX Mod Author ; Fusion Engine and some Patches", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://www.youtube.com/@StarlightPhoenixProject");
+                }
+                */
+
                 if (ImGui.Selectable("LordMewTwo73 for the text editing capability", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor");
                 }
+                
                 ImGui.Separator();
-
                 ImGui.TextColored(new GuiColour(Color.Cyan).value, "Code Contributors:");
+
                 if (ImGui.Selectable("hippochan", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
 
-
+                if (ImGui.Selectable("StarlightPhoenix", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://codeberg.org/StarlightPhoenixProject");
+                }
+                
                 ImGui.Text("MonoCh");
+
                 ImGui.Text("Blayr");
+
                 ImGui.Separator();
                 ImGui.TextColored(new GuiColour(Color.MediumSpringGreen).value, "Testers:");
+                
+                TextRenderer.Text("StarlightPhoenix", sppCreditEffect);
+
                 TextRenderer.Text("Woomy", woomyEffect);
 
                 ImGui.Spacing();
+                
                 if (ImGui.Button("Close"))
                 {
                     isCreditsOpen = false;

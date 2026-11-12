@@ -243,7 +243,6 @@ class CardEditorWindow : IImGuiWindow
         ImGui.PushItemWidth(windowSize.X / 3f);
         ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 18f);
 
-
         ImGui.Text("Card Search");
         Vector2 availArea = ImGui.GetContentRegionAvail();
         ImGui.SetNextItemWidth(availArea.X);
@@ -251,6 +250,7 @@ class CardEditorWindow : IImGuiWindow
         {
             FilterAndSort();
         }
+        
         Vector4 listBoxBg = ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
         ImGui.PushStyleColor(ImGuiCol.TableRowBg, listBoxBg);
         ImGui.PushStyleColor(ImGuiCol.TableRowBgAlt, listBoxBg);
@@ -341,6 +341,7 @@ class CardEditorWindow : IImGuiWindow
             ImGui.EndTable();
 
         }
+        ImGui.PopItemWidth();
         ImGui.PopStyleVar(1);
         ImGui.PopStyleColor(2);
 
@@ -724,8 +725,11 @@ class CardEditorWindow : IImGuiWindow
             int currentEnchantId = EnchantData.EnchantIds[currentCardIndex - Card.EquipCardStartIndex];
 
             ImGui.TableSetColumnIndex(0);
+            
             ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2f);
             ImGui.Text(EnchantData.GetEnchantIdName(currentEnchantId));
+            ImGui.PopItemWidth();
+            
             ImGui.TableNextColumn();
 
             ColourMatchFrame(() => !AllSelectedEnchantDataHaveSame(index => EnchantData.EnchantIds[index]), () =>
@@ -752,8 +756,11 @@ class CardEditorWindow : IImGuiWindow
 
             int currentEnchantScore = EnchantData.EnchantScores[currentCardIndex - Card.EquipCardStartIndex];
             ImGui.TableSetColumnIndex(0);
+            
             ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2f);
             ImGui.Text(EnchantData.GetEnchantScoreName(currentEnchantScore));
+            ImGui.PopItemWidth();
+            
             ImGui.TableNextColumn();
 
             ColourMatchFrame(() => !AllSelectedEnchantDataHaveSame(index => EnchantData.EnchantScores[index]), () =>

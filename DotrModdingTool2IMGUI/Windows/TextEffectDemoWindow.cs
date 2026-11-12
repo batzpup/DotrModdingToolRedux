@@ -19,6 +19,10 @@ public class TextEffectDemoWindow : IImGuiWindow
     static readonly Vector4 Grey = new Vector4(0.55f, 0.55f, 0.55f, 1f);
     static readonly Vector4 White = Vector4.One;
 
+    // Window Data
+    private Vector2 TexPos;
+    private Vector2 TexSz;
+    
     record Example(string Sample, string Code, TextEffect Effect);
 
     record Section(string Title, Example[] Examples);
@@ -94,10 +98,16 @@ public class TextEffectDemoWindow : IImGuiWindow
         if (!IsOpen)
             return;
 
-        ImGui.SetNextWindowSize(new Vector2(1100, 800), ImGuiCond.FirstUseEver);
+        /* Basically, it's a separate, resizable window, rendered on top of the main Tool window ;
+         * any content past the Tool window itself gets cropped though, including resizing corners.
+         * Now works on 720p, still looks good on 1080p. Ideally better with actual window scaling,
+         * but getting program.cs's Raylib data through ImGui looks like a pain. */
+        ImGui.SetNextWindowSize(new Vector2(1150,600), ImGuiCond.FirstUseEver);
+        
         ImGui.PushFont(font);
         if (ImGui.Begin("Text Effects Demo", ref IsOpen))
         {
+            Console.WriteLine(ImGui.GetWindowSize());
             if (ImGui.BeginTabBar("TextEffectDemoTabs"))
             {
                 if (ImGui.BeginTabItem("Examples"))
@@ -187,19 +197,19 @@ public class TextEffectDemoWindow : IImGuiWindow
 
         // Preview
         ImGui.Separator();
-        ImGui.InputText("Preview text", ref p.Text, 128);
+        ImGui.InputText("Preview Text", ref p.PlaygroundText, 128);
         ImGui.Checkbox("Show as selectable", ref p.AsSelectable);
         ImGui.Spacing();
         if (p.AsSelectable)
-            TextRenderer.Selectable(p.Text, false, effect, ImGuiSelectableFlags.None, "PlaygroundPreview");
+            TextRenderer.Selectable(p.PlaygroundText, false, effect, ImGuiSelectableFlags.None, "PlaygroundPreview");
         else
-            TextRenderer.Text(p.Text, effect);
+            TextRenderer.Text(p.PlaygroundText, effect);
         ImGui.Spacing();
         ImGui.Separator();
 
         float half = ImGui.GetContentRegionAvail().X * 0.5f;
         ImGui.BeginChild("PlaygroundControls", new Vector2(half, 0));
-        ImGui.PushItemWidth(half * 0.55f);
+        ImGui.PushItemWidth(half * 0.65f);
 
         ImGui.SeparatorText("Colour");
         EnumCombo("Source", ref p.Source);
@@ -242,8 +252,8 @@ public class TextEffectDemoWindow : IImGuiWindow
         ImGui.Checkbox("Limit range", ref p.UseRange);
         if (p.UseRange)
         {
-            ImGui.SliderInt("Range start", ref p.RangeStart, 0, Math.Max(p.Text.Length, 1));
-            ImGui.SliderInt("Range end", ref p.RangeEnd, 0, Math.Max(p.Text.Length, 1));
+            ImGui.SliderInt("Range start", ref p.RangeStart, 0, Math.Max(p.PlaygroundText.Length, 1));
+            ImGui.SliderInt("Range end", ref p.RangeEnd, 0, Math.Max(p.PlaygroundText.Length, 1));
             ImGui.Checkbox("Outside colour", ref p.UseOutsideColour);
             if (p.UseOutsideColour)
             {
@@ -304,7 +314,7 @@ public class TextEffectDemoWindow : IImGuiWindow
     {
         public const int MaxStops = 6;
 
-        public string Text = "Text effects are fun!";
+        public string PlaygroundText = "Text effects are fun!";
         public bool AsSelectable = false;
 
         public ColourSource Source = ColourSource.Gradient;
