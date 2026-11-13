@@ -98,7 +98,7 @@ public class NameCalculatorWindow : IImGuiWindow
             float availableHeight = ImGui.GetContentRegionAvail().Y;
             ImGui.BeginChild("Deck1", new Vector2(ImGui.GetContentRegionAvail().X / 3f, availableHeight), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
 
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[2]].ToString()).X) / 2f);
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[0]].ToString()).X) / 2f);
             ImGui.Text(Deck.DeckList[resultDeckIndices[0]].ToString());
            
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
@@ -110,7 +110,7 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.SameLine();
             ImGui.BeginChild("Deck2", new Vector2(ImGui.GetContentRegionAvail().X / 2, availableHeight), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
 
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[2]].ToString()).X) / 2f);
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[1]].ToString()).X) / 2f);
             ImGui.Text(Deck.DeckList[resultDeckIndices[1]].ToString());
 
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);

@@ -179,8 +179,14 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public CustomDuelResource[] whiteDuelResource = new CustomDuelResource[21];
     [JsonInclude] public CustomDuelResource[] redDuelResource = new CustomDuelResource[21];
 
-    // UI
+    // UI + Polish Color Palette
     private Vector2 GMPPad = new Vector2(0, 20);
+    Vector4 DefaultColor = new Vector4(192f / 256f, 100f / 256f,  24f / 256f, 0.80f); //Hex #C06418
+    Vector4 DefaultHover = new Vector4(234f / 256f,  96f / 256f,  72f / 256f, 0.92f); //Hex #EA6048
+    Vector4 RecColor = new Vector4(0.00f, 0.80f, 0.00f, 0.80f);
+    Vector4 RecHover = new Vector4(0.24f, 0.85f, 0.24f, 0.92f);
+    Vector4 ModColor    = new Vector4(192f / 256f,  16f / 256f, 176f / 256f, 0.80f); //Hex #C010B0
+    Vector4 ModHover    = new Vector4(198f / 256f,  64f / 256f, 188f / 256f, 0.92f); //Hex #C640BC
 
     public static GameplayPatchesWindow Instance { get; private set; }
 
@@ -277,7 +283,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 ImGui.EndTabItem();
 
             }
-            if (ImGui.BeginTabItem("Starting Resources"))
+            if (ImGui.BeginTabItem("Custom Resources"))
             {
                 ImGui.PushFont(MainFont);
                 RenderCustomResources();
@@ -291,7 +297,7 @@ public class GameplayPatchesWindow : IImGuiWindow
                 ImGui.PopFont();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Rank Exp Editor"))
+            if (ImGui.BeginTabItem("Rank EXP Editor"))
             {
                 ImGui.PushFont(MainFont);
                 RenderExpEditor();
@@ -310,6 +316,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     {
         ImGui.Text(label);
 
+        ImGui.PushItemWidth(80); // Only needs to handle 5 figures ; leaves room for a third Panel
         if (bChangeLpCap)
         {
             ImGuiExt.InputUShort("LP", ref resource.LP, 0, lpCap);
@@ -331,13 +338,14 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             ImGuiExt.InputUShort("Starting Zoom", ref resource.Zoom, 100, 500);
         }
+        ImGui.PopItemWidth();
     }
 
     void RenderCustomResources()
     {
         Vector2 avail = ImGui.GetContentRegionAvail();
 
-        float duelListWidth = avail.X * 0.25f;
+        float duelListWidth = avail.X * 0.30f;
         float resourcePanelWidth = avail.X - duelListWidth - ImGui.GetStyle().ItemSpacing.X;
         float height = avail.Y;
 
@@ -353,7 +361,9 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         ImGui.BeginChild("Duel Selection", new Vector2(duelListWidth, height));
         ImGui.Checkbox("Use Custom Resources", ref bCustomResources);
+        ImGui.PushItemWidth(Math.Max(ImGui.CalcTextSize("Manawyddan Fab Llyr (Skull Knight)").X, duelListWidth * 0.80f));
         ImGui.ListBox("##Duels", ref currentDuelIndex, CrEnemyNameArray, CrEnemyNameArray.Length, CrEnemyNameArray.Length);
+        ImGui.PopItemWidth();
 
         ImGui.EndChild();
 
@@ -372,6 +382,7 @@ public class GameplayPatchesWindow : IImGuiWindow
             redName = CrEnemyNameArray[currentDuelIndex];
         }
 
+        ImGui.Dummy(new Vector2(0, 2)); // Tiny padding
         ImGui.PushID($"red Resource {currentDuelIndex}");
         DrawDuelResourceEditor($"Resources for {redName}", ref redDuelResource[currentDuelIndex]);
         ImGui.Dummy(new Vector2(0, height / 16));
@@ -395,51 +406,67 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.Text("Rank Thresholds");
         ImGui.PopFont();
         
-        ImGui.Dummy(ExpPad);
+        float availableSpace = ImGui.GetContentRegionAvail().X;
+        Vector2 fullTextSize = ImGui.CalcTextSize("Recommended Hardcore");
+        Vector2 expButtonSize = new Vector2( Math.Max(availableSpace * 0.7f, fullTextSize.X + 12), fullTextSize.Y + 8);
         
-        if (ImGui.Button("Use Default values"))
+        ImGui.Dummy(ExpPad);
+        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(0.0f, 0.5f)); // Align Text to Left
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, DefaultColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, DefaultHover);
+        if (ImGui.Button("Use Default values", expButtonSize))
         {
             SetDefaultExp();
         }
-
-        if (ImGui.Button("Recommended Casual"))
+        ImGui.PopStyleColor(2);
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, RecColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, RecHover);
+        if (ImGui.Button("Recommended Casual", expButtonSize))
         {
             rankExp = casualFriendlyExp;
         }
         
         // See below ; inspired from Hazel mods, with a constant fix for BG/RADM
-        if (ImGui.Button("Recommended Hardcore"))
+        if (ImGui.Button("Recommended Hardcore", expButtonSize))
         {
             rankExp = fixedHazelExp;
         }
+        ImGui.PopStyleColor(2);
         
         // How about a button for Redux, SPEX or any specific mod's values
         ImGui.Dummy(ExpPad);
         
-        if (ImGui.Button("Use Redux values"))
+        ImGui.PushStyleColor(ImGuiCol.Button, ModColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ModHover);
+        if (ImGui.Button("Use Redux values", expButtonSize))
         {
             rankExp = reduxExp;
         }
         
-        if (ImGui.Button("Use SPEX values"))
+        if (ImGui.Button("Use SPEX values", expButtonSize))
         {
             rankExp = spexExp;
         }
         
-        if (ImGui.Button("Use Gemini values"))
+        if (ImGui.Button("Use Gemini values", expButtonSize))
         {
             rankExp = geminiExp;
         }
+        ImGui.PopStyleColor(2);
         
+        ImGui.PopStyleVar();
         ImGui.Dummy(ExpPad);
         
         // Rank Table
         if (ImGui.BeginTable("RankThreshold", 3,
-                ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Resizable))
+                ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Resizable
+                | ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
         {
-            ImGui.TableSetupColumn("Img");
-            ImGui.TableSetupColumn("Rank");
-            ImGui.TableSetupColumn("Exp");
+            ImGui.TableSetupColumn("Icon", 0,72);
+            ImGui.TableSetupColumn("Rank",0,60);
+            ImGui.TableSetupColumn("EXP",0,64);
             ImGui.TableHeadersRow();
 
             for (int i = 0; i < 12; i++)
@@ -502,9 +529,10 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
         if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, 
-                ImGuiTableFlags.Resizable | ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                ImGuiTableFlags.Resizable /* | ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti */ |
                 ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
-                ImGuiTableFlags.ScrollY))
+                ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
         {
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("IDX").X + 10);
             ImGui.TableSetupColumn("Three in a row", ImGuiTableColumnFlags.WidthStretch);
@@ -906,7 +934,7 @@ public class GameplayPatchesWindow : IImGuiWindow
         
         // Fixes for original game hardcode and bugs
         
-        ImGui.Checkbox("[Leader] Extra Slots Ability Fix", ref bAllKindsExtraSlots);
+        ImGui.Checkbox("[Leader / Slots] Extra Slots Ability Fix", ref bAllKindsExtraSlots);
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip("The original game ignores Leader Abilities and hardcodes which Types have Extra Slots\n" +

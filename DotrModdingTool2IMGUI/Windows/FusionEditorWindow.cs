@@ -201,16 +201,12 @@ class FusionEditorWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
 
         if (ImGui.BeginTable("##FusionTable", 4,
-                ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
-                ImGuiTableFlags.Sortable |
-                ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
-                ImGuiTableFlags.Borders |
-                ImGuiTableFlags.ScrollX |
-                ImGuiTableFlags.ScrollY |
-                ImGuiTableFlags.BordersInnerH))
+                ImGuiTableFlags.Resizable /* | ImGuiTableFlags.Reorderable */ | ImGuiTableFlags.Hideable |
+                ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
         {
-
-
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("12456").X);
             ImGui.TableSetupColumn("Card 1", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Card 2", ImGuiTableColumnFlags.WidthStretch);
@@ -393,16 +389,12 @@ class FusionEditorWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
 
         if (ImGui.BeginTable("##FusionTable", 4,
-                ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
-                ImGuiTableFlags.Sortable |
-                ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
-                ImGuiTableFlags.Borders |
-                ImGuiTableFlags.ScrollX |
-                ImGuiTableFlags.ScrollY |
-                ImGuiTableFlags.BordersInnerH))
+                ImGuiTableFlags.Resizable /* | ImGuiTableFlags.Reorderable */ | ImGuiTableFlags.Hideable |
+                ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
         {
-
-
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("12456").X);
             ImGui.TableSetupColumn("Card 1", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Card 2", ImGuiTableColumnFlags.WidthStretch);

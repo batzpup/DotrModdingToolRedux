@@ -226,7 +226,8 @@ public class EditorWindow
             ImGui.BeginDisabled();
             disabledTimer += ImGui.GetIO().DeltaTime;
         }
-        ImGui.Text($"FPS: {ImGui.GetIO().Framerate.ToString()}");
+        // Locale Management : Force '.', also get rid of float-irrelevant digits
+        ImGui.Text($"FPS: {Math.Round(ImGui.GetIO().Framerate, 3).ToString().Replace(',','.')}");
         if (DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.PushFont(FontManager.GetBestFitFont("Vanilla Iso"));
@@ -652,7 +653,9 @@ public class EditorWindow
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
-                    ImGui.Text("Show the games default card names");
+                    ImGui.Text("Shows Vanilla texts in editors rather than current ones\n" +
+                               "for cards and characters");
+                    ImGui.Text("Ctrl + D");
                     ImGui.EndTooltip();
                 }
                 
@@ -666,8 +669,8 @@ public class EditorWindow
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
-                    ImGui.Text("Show the games default text for cards and characters");
-                    ImGui.Text("Ctrl + D");
+                    ImGui.Text("Shows Vanilla images in editors rather than current ones");
+                    ImGui.Text("Ctrl + I");
                     ImGui.EndTooltip();
 
                 }
@@ -911,6 +914,10 @@ public class EditorWindow
         else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.D, ImGuiInputFlags.RouteGlobal))
         {
             UserSettings.UseDefaultNames = !UserSettings.UseDefaultNames;
+        }
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.I, ImGuiInputFlags.RouteGlobal))
+        {
+            UserSettings.UseOriginalImages = !UserSettings.UseOriginalImages;
         }
         else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.U, ImGuiInputFlags.RouteGlobal))
         {

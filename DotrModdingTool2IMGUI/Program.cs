@@ -33,7 +33,7 @@ class Program
 
         /* Scaling the window on the monitor size for compatibility ;
            Raylib does not properly call window size before InitWindow. */
-        Raylib.InitWindow(0, 0, "Dotr Modding Tools");
+        Raylib.InitWindow(0, 0, "DotR Modding Tool Redux");
         int monitorWidth = Raylib.GetMonitorWidth(Raylib.GetCurrentMonitor());
         int monitorHeight = Raylib.GetMonitorHeight(Raylib.GetCurrentMonitor());
         int screenWidth  = monitorWidth * 2 / 3;   // 1920x1080 > 1280x720

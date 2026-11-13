@@ -19,10 +19,6 @@ public class TextEffectDemoWindow : IImGuiWindow
     static readonly Vector4 Grey = new Vector4(0.55f, 0.55f, 0.55f, 1f);
     static readonly Vector4 White = Vector4.One;
 
-    // Window Data
-    private Vector2 TexPos;
-    private Vector2 TexSz;
-    
     record Example(string Sample, string Code, TextEffect Effect);
 
     record Section(string Title, Example[] Examples);
@@ -107,7 +103,6 @@ public class TextEffectDemoWindow : IImGuiWindow
         ImGui.PushFont(font);
         if (ImGui.Begin("Text Effects Demo", ref IsOpen))
         {
-            Console.WriteLine(ImGui.GetWindowSize());
             if (ImGui.BeginTabBar("TextEffectDemoTabs"))
             {
                 if (ImGui.BeginTabItem("Examples"))

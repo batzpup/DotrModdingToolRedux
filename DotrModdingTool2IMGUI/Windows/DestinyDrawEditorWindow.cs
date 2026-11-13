@@ -5,13 +5,11 @@ namespace DotrModdingTool2IMGUI;
 
 public class DestinyDrawEditorWindow : IImGuiWindow
 {
-    ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
-                            ImGuiTableFlags.Sortable |
-                            ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
-                            ImGuiTableFlags.Borders |
-                            ImGuiTableFlags.ScrollX |
-                            ImGuiTableFlags.ScrollY |
-                            ImGuiTableFlags.BordersInnerH;
+    ImGuiTableFlags flags = ImGuiTableFlags.Resizable /* | ImGuiTableFlags.Reorderable */ | ImGuiTableFlags.Hideable |
+                            ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                            ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                            ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                            ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */ ;
 
     public class PoolWeights
     {

@@ -13,7 +13,6 @@ public class DeckEditorWindow : IImGuiWindow
                                          ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
                                          ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */ ;
 
-
     List<CardConstant> sortedTrunkList = new List<CardConstant>();
     List<DeckCard> sortedDeckList = new List<DeckCard>();
     HashSet<int> trunkSelection = new HashSet<int>();
@@ -41,7 +40,11 @@ public class DeckEditorWindow : IImGuiWindow
     {
         currentFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, UserSettings.LastDeckEditorFontSize);
         currentFontIndex = Array.IndexOf(fontSizes, UserSettings.LastDeckEditorFontSize.ToString());
-
+        
+        // User Setting for Deck Editor was unused, so far
+        try { highlightColour = UserSettings.DeckEditorHighlightcolour; }
+        catch (Exception ex) { /* Use default highlightColour declaration */ }
+        
     }
 
     public void Render()

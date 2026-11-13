@@ -70,8 +70,12 @@ public class StringEditorWindow : IImGuiWindow
         { "Enemy Dialogue (Playing as White)", StringEditor.LancasterDuelistDialogueStart },
         { "Memory Card Stuff", StringEditor.MemoryCardStuffStart },
         { "Tutorial", StringEditor.TutorialStart },
-
     };
+
+    // UI + Polish Color Palette
+    Vector4 ModPurpleColor = new Vector4(192f / 256f,  16f / 256f, 152f / 256f, 0.80f); //Hex #C01098
+    Vector4 ModPurpleHover = new Vector4(198f / 256f,  64f / 256f, 188f / 256f, 0.92f); //Hex #C640BC
+    Vector4 ModPurpleHoverText = new Vector4(198f / 256f,  96f / 256f, 188f / 256f, 1.00f);
 
     record Section(string Label, int[] Indices);
 
@@ -163,8 +167,10 @@ public class StringEditorWindow : IImGuiWindow
         EnemyNames[21] = $"{StringEditor.StringTable[21 + StringEditor.DuelistNameOffsetStart]} ({Deck.DeckList[21 + 26].DeckLeader.Name.Current})";
         string[] arenas = ArenaNames.Select(c => c.Current ?? "").ToArray();
 
+        ImGui.PushStyleColor(ImGuiCol.Button, ModPurpleColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ModPurpleHover);
         ImGui.TextColored(new GuiColour(Color.Orange).value, "Some strings are uneditable for convenience and encoding sakes");
-        if (ImGui.Button("Remove tutorial strings"))
+        if (ImGui.Button("Remove Tutorial Strings"))
         {
             for (int i = StringEditor.TutorialStart; i < StringEditor.StringTable.Count; i++)
                 StringEditor.StringTable[i] = "~";
@@ -172,10 +178,13 @@ public class StringEditorWindow : IImGuiWindow
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
+            ImGui.PushStyleColor(ImGuiCol.Text, ModPurpleHoverText);
             ImGui.Text("Use this to make room for longer or more strings on other card texts\n" +
                        "Works well with the Fast Intro Patch");
+            ImGui.PopStyleColor();
             ImGui.EndTooltip();
         }
+        ImGui.PopStyleColor(2);
 
         ImGui.Dummy(new Vector2(0, 10));
         ImGui.BeginChild("LeftHalfPanel", new Vector2(windowSize.X / 2.5f, 0), ImGuiChildFlags.Border);

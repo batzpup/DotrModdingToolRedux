@@ -36,9 +36,16 @@ class PreloadImageEditorWindow : IImGuiWindow
 
         ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.SpaceMono, 32));
         ImGui.BeginChild("leftHandMisc", new Vector2(ImGui.GetContentRegionAvail().X / 2f, ImGui.GetContentRegionAvail().Y));
-        ImGui.Text("Preloaded Images");
+        ImGui.Text("Preloaded Images (PICPACK)");
         ImGui.Separator();
         ImGui.Checkbox("Use Default names", ref useDefaultNames);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text("Show the original game's PICPACK instead of yours.\n" +
+                       "Useful to spot differences.");
+            ImGui.EndTooltip();
+        }
         ImGui.Text("Card Search");
         ImGui.SetNextItemWidth(-1);
         ImGui.InputText("##CardSearchLeft", ref cardSearchLeft, 32);
@@ -55,11 +62,11 @@ class PreloadImageEditorWindow : IImGuiWindow
         }
         else
         {
-
             filteredPreloadImages = GameImageManager.PicPackImages
                 .Select(kvp => (preloadIndex: kvp.Key, name: GameImageManager.IsValidCardIndex(kvp.Value)
                     ? Card.cardNameList[kvp.Value]
-                    : GameImageManager.PreloadDefaultImageNameList[kvp.Key]))
+                    //: GameImageManager.PreloadDefaultImageNameList[kvp.Key]))
+                    : Card.unknownName))
                 .Where(x => x.name.Current.Contains(cardSearchLeft, StringComparison.OrdinalIgnoreCase)
                             || x.preloadIndex.ToString().Contains(cardSearchLeft))
                 .ToList();
@@ -87,6 +94,7 @@ class PreloadImageEditorWindow : IImGuiWindow
                 {
                     currentPreloadedImageIndex = preloadIndex;
                     currentImageAssignedIndex = GameImageManager.PicPackImages[preloadIndex];
+                    //Console.WriteLine(currentPreloadedImageIndex + " " + currentImageAssignedIndex);
                     scrollToSelected = true;
                 }
                 bool hovered = ImGui.IsItemHovered();
