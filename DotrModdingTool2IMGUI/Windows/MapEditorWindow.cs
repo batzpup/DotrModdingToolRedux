@@ -9,8 +9,6 @@ public class MapEditorWindow : IImGuiWindow
 {
     DataAccess dataAccess;
 
-
-
     //Maps data
     DotrMap currentMap;
     int currentMapIndex;
@@ -22,6 +20,16 @@ public class MapEditorWindow : IImGuiWindow
     Vector2 paletteImageSize = new Vector2(128, 128);
     TreasureCard currentTreasureCard;
 
+    // UI + Polish Color Palette
+    int DynamicPaletteColumnCount;
+    ImFontPtr DynamicTextFont;
+    int DynamicTextFontSize;
+    Vector4 WarningColor = new Vector4(192f / 256f, 100f / 256f,  24f / 256f, 0.80f); //Hex #C06418
+    Vector4 WarningHover = new Vector4(234f / 256f,  96f / 256f,  72f / 256f, 0.92f); //Hex #EA6048
+    Vector4 LoadColor = new Vector4(0.00f, 0.80f, 0.00f, 0.80f);
+    Vector4 LoadHover = new Vector4(0.24f, 0.85f, 0.24f, 0.92f);
+    Vector4 SaveColor    = new Vector4(192f / 256f,  16f / 256f, 176f / 256f, 0.80f); //Hex #C010B0
+    Vector4 SaveHover    = new Vector4(198f / 256f,  64f / 256f, 188f / 256f, 0.92f); //Hex #C640BC
 
     public MapEditorWindow(ImFontPtr fontPtr)
     {
@@ -38,6 +46,12 @@ public class MapEditorWindow : IImGuiWindow
 
     public void Render()
     {
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text($"Please load ISO file");
+            return;
+        }
+        
         ImGui.BeginChild("leftPanel", new Vector2(ImGui.GetContentRegionAvail().X * 0.33f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.None, ImGuiWindowFlags.AlwaysVerticalScrollbar);
         float indent = ImGui.GetContentRegionAvail().X / 32;
         ImGui.Indent(indent);
@@ -120,104 +134,136 @@ public class MapEditorWindow : IImGuiWindow
 
     void DrawMapPalette()
     {
+        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(3f, 3f));
 
-        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(5f, 5f));
         float availableWidth = ImGui.GetContentRegionAvail().X;
-        float cellSize = availableWidth / ImGui.GetStyle().CellPadding.X - 20;
-        Vector2 imageSize = new Vector2(cellSize, cellSize);
+        float mapXPad = ImGui.GetStyle().CellPadding.X;
 
-        Vector2 textSize = ImGui.CalcTextSize($"Current tile:\n{currentPaletteTerrain}");
-        float textX = (availableWidth - textSize.X) * 0.5f + ImGui.GetStyle().CellPadding.X * 3;
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + textX);
-        ImGui.Text($"Current tile:\n{currentPaletteTerrain}");
+        ImGui.NewLine();
+        ImGui.Text("Map Editor Palette");
+        
+        // Dynamic Icon and Font Size Support
+        float cellSize = availableWidth / 5 - 12;                      // 5 as base Palette Column amount
+        float cellResize = Math.Clamp(cellSize, 36, 72);
+        Vector2 imageSize = new Vector2(cellResize, cellResize);
+        //Console.WriteLine("<MapPalette> Image" + imageSize + " Pad " + mapXPad);
+        
+        DynamicPaletteColumnCount = ((availableWidth >= 270) ? 5 : 4); // CR every 4 when 5 does not fit
+        if      (availableWidth < 270) { DynamicTextFontSize = 20; }
+        else if (availableWidth < 290) { DynamicTextFontSize = 22; }
+        else if (availableWidth < 330) { DynamicTextFontSize = 24; }
+        else if (availableWidth < 370) { DynamicTextFontSize = 28; }
+        else                           { DynamicTextFontSize = 32; }
+        DynamicTextFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, DynamicTextFontSize);
+        //Console.WriteLine("<MapPalette> Room " + availableWidth + " Font " + DynamicTextFontSize);
 
-        ImGui.BeginTable("MapImageGrid", 5, ImGuiTableFlags.SizingStretchSame);
-
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-
-
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGui.Image(currentMapPaletteImage, imageSize);
-        ImGui.TableNextColumn();
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Forest_Image", GlobalImages.Instance.Terrain[ETerrainImages.Forest], imageSize))
+        /* Fixing layout for Current Tile into a Table similar to the Palette below. See below.
+         * (Ignore) Alignment padding on Column 0 ; Tile Icon on Column 1, Tile Text on Columns 2+. */
+        if (ImGui.BeginTable("MapCurrentTile", 3, ImGuiTableFlags.None, ImGui.GetContentRegionAvail()))
         {
-            currentPaletteTerrain = Terrain.Forest;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Forest];
+            ImGui.TableSetupColumn("##CurrentTilePadding", 0, mapXPad * 2);
+            ImGui.TableSetupColumn("##CurrentTileIcon", 0, availableWidth * 0.26f);
+            ImGui.TableSetupColumn("##CurrentTileText", 0, ImGui.GetContentRegionAvail().X);
+
+            ImGui.TableNextRow();
+            // Nothing in Column 0 ; it's only there to fix ImGui alignment
+
+            ImGui.TableSetColumnIndex(1);
+            // Fixing ImGui alignment issues and giving room for Text padding
+            ImGui.Dummy(new Vector2(0, 6));
+            ImGui.Image(currentMapPaletteImage, imageSize);
+
+            ImGui.TableNextColumn();
+            // Fixing ImGui alignment issues
+            float mapYTextPad = 2 + Math.Min(availableWidth / 220, 2.2f);
+            ImGui.Dummy(new Vector2(0, mapYTextPad));
+            //Console.WriteLine("<MapPaletteText> Pad " + mapYTextPad);
+            ImGui.PushFont(DynamicTextFont);
+            ImGui.Text($"Current Tile :\n{currentPaletteTerrain}");
+            ImGui.PopFont();
+
+            ImGui.EndTable();
         }
 
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Wasteland_Image", GlobalImages.Instance.Terrain[ETerrainImages.Wasteland], imageSize))
+        /* The fact ImGui automatically handles new Rows with TableNextColumn calls on last Column,
+         * allows pretty easy dynamic Table column counting depending on window size. */
+        if (ImGui.BeginTable("MapTileSelect", DynamicPaletteColumnCount, ImGuiTableFlags.None))
         {
-            currentPaletteTerrain = Terrain.Wasteland;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Wasteland];
+            ImGui.TableNextRow();
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Forest_Image", GlobalImages.Instance.Terrain[ETerrainImages.Forest], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Forest;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Forest];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Wasteland_Image", GlobalImages.Instance.Terrain[ETerrainImages.Wasteland], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Wasteland;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Wasteland];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Mountain_Image", GlobalImages.Instance.Terrain[ETerrainImages.Mountain], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Mountain;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Mountain];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Meadow_Image", GlobalImages.Instance.Terrain[ETerrainImages.Meadow], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Meadow;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Meadow];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Sea_Image", GlobalImages.Instance.Terrain[ETerrainImages.Sea], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Sea;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Sea];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Dark_Image", GlobalImages.Instance.Terrain[ETerrainImages.Dark], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Dark;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Dark];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Toon_Image", GlobalImages.Instance.Terrain[ETerrainImages.Toon], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Toon;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Toon];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Normal_Image", GlobalImages.Instance.Terrain[ETerrainImages.Normal], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Normal;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Normal];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Lab_Image", GlobalImages.Instance.Terrain[ETerrainImages.Labyrinth], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Labyrinth;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Labyrinth];
+            }
+
+            ImGui.TableNextColumn();
+            if (ImGui.ImageButton("Crush_Image", GlobalImages.Instance.Terrain[ETerrainImages.Crush], imageSize))
+            {
+                currentPaletteTerrain = Terrain.Crush;
+                currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Crush];
+            }
+
+            ImGui.EndTable();
         }
 
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Mountain_Image", GlobalImages.Instance.Terrain[ETerrainImages.Mountain], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Mountain;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Mountain];
-        }
-
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Meadow_Image", GlobalImages.Instance.Terrain[ETerrainImages.Meadow], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Meadow;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Meadow];
-        }
-
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Sea_Image", GlobalImages.Instance.Terrain[ETerrainImages.Sea], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Sea;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Sea];
-        }
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Dark_Image", GlobalImages.Instance.Terrain[ETerrainImages.Dark], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Dark;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Dark];
-        }
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Toon_Image", GlobalImages.Instance.Terrain[ETerrainImages.Toon], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Toon;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Toon];
-        }
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Normal_Image", GlobalImages.Instance.Terrain[ETerrainImages.Normal], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Normal;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Normal];
-        }
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Lab_Image", GlobalImages.Instance.Terrain[ETerrainImages.Labyrinth], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Labyrinth;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Labyrinth];
-        }
-
-        ImGui.TableNextColumn();
-        if (ImGui.ImageButton("Crush_Image", GlobalImages.Instance.Terrain[ETerrainImages.Crush], imageSize))
-        {
-            currentPaletteTerrain = Terrain.Crush;
-            currentMapPaletteImage = GlobalImages.Instance.Terrain[ETerrainImages.Crush];
-        }
-        ImGui.EndTable();
         ImGui.PopStyleVar();
     }
 
@@ -254,41 +300,19 @@ public class MapEditorWindow : IImGuiWindow
             }
             ImGui.EndListBox();
         }
-        ImGui.PushFont(FontManager.GetBestFitFont("Make Current Map Default", false, FontManager.FontFamily.NotoSansJP));
+        
         ImGui.Dummy(new Vector2(0, ImGui.GetContentRegionAvail().Y / 128));
         float availableSpace = ImGui.GetContentRegionAvail().X;
-        float lineWidth = 0;
-
-        GlobalImgui.AutoWrappingButton("Load Default Maps", () => LoadDefaultMapsAll(), ref lineWidth, availableSpace);
-        GlobalImgui.AutoWrappingButton("Make Current Map Default", () => LoadDefaultMap(currentMapIndex), ref lineWidth, availableSpace);
-        GlobalImgui.AutoWrappingButton("Save Current Map", () =>
-        {
-            Console.WriteLine("Saving current Maps");
-            SaveCurrentMap();
-        }, ref lineWidth, availableSpace, !DataAccess.Instance.IsIsoLoaded);
-        GlobalImgui.AutoWrappingButton("Save all maps to file", () =>
-        {
-            var result = Dialog.FileSave("txt");
-            if (result.IsOk)
-            {
-                int x;
-                int y;
-                string textData = "";
-                for (int mapIndex = 0; mapIndex < dataAccess.maps.Length; mapIndex++)
-                {
-                    DotrMap map = dataAccess.maps[mapIndex];
-                    for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
-                    {
-                        x = tileIndex % 7;
-                        y = tileIndex / 7;
-                        textData += ((int)map.tiles[x, y]).ToString();
-                    }
-                }
-                File.WriteAllText(result.Path, textData);
-            }
-        }, ref lineWidth, availableSpace);
-
-        GlobalImgui.AutoWrappingButton("Load all maps from file", () =>
+        Vector2 fullTextSize = ImGui.CalcTextSize("Restore current Map to Default");
+        Vector2 mapButtonSize = new Vector2( Math.Max(availableSpace * 0.8f, fullTextSize.X + 12), fullTextSize.Y + 8);
+        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(0.0f, 0.5f)); // Align Text to Left
+        
+        // Moving Load from File between Map List and Restore Vanilla for safety
+        // Bits of extra polish with colors and size
+        ImGui.BeginDisabled(!DataAccess.Instance.IsIsoLoaded);
+        ImGui.PushStyleColor(ImGuiCol.Button, LoadColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, LoadHover);
+        if (ImGui.Button("Load all Maps from File", mapButtonSize))
         {
             var result = Dialog.FileOpen("txt");
             if (result.IsOk)
@@ -312,9 +336,55 @@ public class MapEditorWindow : IImGuiWindow
                     }
                 }
             }
-        }, ref lineWidth, availableSpace);
+        }
+        ImGui.PopStyleColor(2);
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, WarningColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, WarningHover);
+        if (ImGui.Button("Restore all Maps to Default", mapButtonSize))
+        {
+            LoadDefaultMapsAll();
+        }
+        if (ImGui.Button("Restore current Map to Default", mapButtonSize))
+        {
+            LoadDefaultMap(currentMapIndex);
+        }
+        ImGui.PopStyleColor(2);
+        
+        // Separating Restore Vanilla and Save for safety
+        ImGui.NewLine();
 
-        ImGui.PopFont();
+        ImGui.PushStyleColor(ImGuiCol.Button, SaveColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, SaveHover);
+        if (ImGui.Button("Save current Map", mapButtonSize))
+        {
+            SaveCurrentMap();
+        }
+        if (ImGui.Button("Save all Maps to File", mapButtonSize))
+        {
+            var result = Dialog.FileSave("txt");
+            if (result.IsOk)
+            {
+                int x;
+                int y;
+                string textData = "";
+                for (int mapIndex = 0; mapIndex < dataAccess.maps.Length; mapIndex++)
+                {
+                    DotrMap map = dataAccess.maps[mapIndex];
+                    for (int tileIndex = 0; tileIndex < map.tiles.Length; tileIndex++)
+                    {
+                        x = tileIndex % 7;
+                        y = tileIndex / 7;
+                        textData += ((int)map.tiles[x, y]).ToString();
+                    }
+                }
+                File.WriteAllText(result.Path, textData);
+            }
+        }
+        ImGui.PopStyleColor(2);
+        
+        ImGui.PopStyleVar();
+        ImGui.EndDisabled();
     }
     
 
@@ -327,6 +397,9 @@ public class MapEditorWindow : IImGuiWindow
 
         ImGui.Text("Left click and/or drag to paint with the current tile.");
         ImGui.Text("Right click to move the hidden card.");
+
+        // Align map away from text
+        ImGui.NewLine();
 
         Vector2 availableSpace = ImGui.GetContentRegionAvail();
         Vector2 spacing = ImGui.GetStyle().ItemSpacing;

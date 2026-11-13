@@ -24,10 +24,11 @@ public class EditorWindow
     public static bool Disabled = false;
     float disabledTimer = 0;
     float maxDisabledTime = 30;
+    private static float buttonDownscaleFactor = 1.2f;
 
     public static Vector2 AspectRatio
     {
-        get { return ImGui.GetWindowSize() / new Vector2(2560, 1351f); }
+        get { return ImGui.GetWindowSize() / new Vector2(1920 * buttonDownscaleFactor, 1080 * buttonDownscaleFactor); }
     }
 
     float buttonWidthScaled = 200f;
@@ -35,7 +36,7 @@ public class EditorWindow
     float buttonSpacingScaled = 10f;
 
 
-    EnemyEditorWindow _enemyEditorWindow;
+    GeneralEditorWindow _generalEditorWindow;
     CardEditorWindow _cardEditorWindow;
     GameplayPatchesWindow _gameplayPatchesWindow;
     FusionEditorWindow _fusionEditorWindow;
@@ -67,7 +68,15 @@ public class EditorWindow
         FillWidth = true
     };
 
-
+    TextEffect sppCreditEffect = new TextEffect
+    {
+        Source = ColourSource.Gradient,
+        Stops = new[]
+            { new Vector4(256f / 256f, 72f / 256f, 206f / 256f, 1.00f), new Vector4(218f / 256f, 218f / 256f, 20f / 256f, 1.00f) },
+        Speed = 0.480f,
+        Spread = 0.078f,
+    };
+    
     TextEffect woomyEffect = TextEffect.Gradient(GuiColour.LancasterRed.value, GuiColour.YorkistBlue.value) with {
         Wave = WaveShape.Hold,
         Easing = Easing.Smoothstep,
@@ -94,7 +103,7 @@ public class EditorWindow
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DpiEnableScaleFonts | ImGuiConfigFlags.DpiEnableScaleViewports;
 
 
-        _enemyEditorWindow = new EnemyEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
+        _generalEditorWindow = new GeneralEditorWindow(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 26));
         _cardEditorWindow = new CardEditorWindow();
         _gameplayPatchesWindow = new GameplayPatchesWindow();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -103,10 +112,10 @@ public class EditorWindow
         }
         _fusionEditorWindow = new FusionEditorWindow();
 
-        _randomiserWindow = new RandomiserWindow(_enemyEditorWindow);
+        _randomiserWindow = new RandomiserWindow(_generalEditorWindow);
         _stringEditorWindow = new StringEditorWindow();
-        _enemyEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
-        _fusionEditorWindow.Init(_enemyEditorWindow.DeckEditorWindow.ViewCardInEditor);
+        _generalEditorWindow.DeckEditorWindow.ViewCardInEditor += ViewCardInEditor;
+        _fusionEditorWindow.Init(_generalEditorWindow.DeckEditorWindow.ViewCardInEditor);
         _imageEditorWindow = new ImageEditorWindow();
 #if DEBUG
         _textEffectDemoWindow = new TextEffectDemoWindow(mainFont);
@@ -217,7 +226,8 @@ public class EditorWindow
             ImGui.BeginDisabled();
             disabledTimer += ImGui.GetIO().DeltaTime;
         }
-        ImGui.Text($"FPS: {ImGui.GetIO().Framerate.ToString()}");
+        // Locale Management : Force '.', also get rid of float-irrelevant digits
+        ImGui.Text($"FPS: {Math.Round(ImGui.GetIO().Framerate, 3).ToString().Replace(',','.')}");
         if (DataAccess.Instance.IsIsoLoaded)
         {
             ImGui.PushFont(FontManager.GetBestFitFont("Vanilla Iso"));
@@ -243,26 +253,28 @@ public class EditorWindow
         {
             if (ImGui.BeginMenu("File"))
             {
-                if (ImGui.MenuItem("Open Iso"))
+                if (ImGui.MenuItem("Open ISO"))
                 {
                     OpenIso();
                 }
+
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
                     ImGui.Text("Ctrl + O");
                     ImGui.EndTooltip();
-
                 }
+
                 ImGui.Spacing();
 
                 if (!dataAccess.IsIsoLoaded)
                 {
                     ImGui.BeginDisabled();
                 }
+
                 if (ImGui.BeginMenu("Save"))
                 {
-                    if (ImGui.MenuItem("Save data"))
+                    if (ImGui.MenuItem("Save Data"))
                     {
                         if (dataAccess.IsIsoLoaded)
                         {
@@ -273,15 +285,17 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
 
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves all non string data");
+                        ImGui.Text("Saves all non-String data");
                         ImGui.Text("Ctrl + S");
                         ImGui.EndTooltip();
                     }
+
                     if (ImGui.MenuItem("Save Strings"))
                     {
                         if (dataAccess.IsIsoLoaded)
@@ -293,14 +307,16 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves string changes");
+                        ImGui.Text("Saves String changes");
                         ImGui.EndTooltip();
                     }
-                    if (ImGui.MenuItem("Save all data"))
+
+                    if (ImGui.MenuItem("Save ALL"))
                     {
                         if (dataAccess.IsIsoLoaded)
                         {
@@ -311,20 +327,22 @@ public class EditorWindow
                             _modalPopup.Show("No ISO open to save to");
                         }
                     }
+
                     ImGui.Spacing();
 
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        ImGui.Text("Saves data including strings");
+                        ImGui.Text("Saves data including Strings");
                         ImGui.Text("Ctrl + Alt + S");
                         ImGui.EndTooltip();
                     }
+
                     ImGui.EndMenu();
                 }
 
 
-                if (ImGui.MenuItem("Print passwords"))
+                if (ImGui.MenuItem("Print Passwords"))
                 {
                     if (dataAccess.IsIsoLoaded)
                     {
@@ -335,6 +353,7 @@ public class EditorWindow
                         _modalPopup.Show("No ISO open to save to");
                     }
                 }
+
                 ImGui.Spacing();
                 if (dataAccess.IsIsoLoaded)
                 {
@@ -343,15 +362,18 @@ public class EditorWindow
                         if (ImGui.MenuItem("Auto Changelog", null, ref UserSettings.AutoChangelog))
                         {
                         }
+
                         if (ImGui.MenuItem("Take old snapshot"))
                         {
                             ChangelogManager.OldSnapshot = new ModSnapshot();
                         }
+
                         if (ImGui.MenuItem("Take new snapshot"))
                         {
 
                             ChangelogManager.NewSnapshot = new ModSnapshot();
                         }
+
                         if (ImGui.MenuItem("Generate Changelog"))
                         {
                             if (ChangelogManager.OldSnapshot is null)
@@ -365,10 +387,13 @@ public class EditorWindow
                                 {
                                     ChangelogManager.NewSnapshot = new ModSnapshot();
                                 }
+
                                 DataAccess.Instance.GetMd5Hash();
-                                string changelogText = ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
+                                string changelogText =
+                                    ChangelogManager.FormatResultsAsString(ChangelogManager.CompareAll());
                                 Console.WriteLine("Passed Comparison");
-                                File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt", changelogText);
+                                File.WriteAllText($"Logs/Changelog_{DataAccess.Instance.CurrentHash}.txt",
+                                    changelogText);
                                 _ = Task.Run(async () =>
                                 {
                                     try
@@ -392,8 +417,10 @@ public class EditorWindow
 
 
                         }
+
                         ImGui.EndMenu();
                     }
+
                     ImGui.Spacing();
                 }
 
@@ -416,6 +443,7 @@ public class EditorWindow
                             }
                         }
                     }
+
                     if (ImGui.MenuItem("Import Card Data"))
                     {
                         DialogResult result = Dialog.FileOpen("csv");
@@ -428,6 +456,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to card data");
                         }
                     }
+
                     if (ImGui.MenuItem("Import Fusion Data"))
                     {
                         DialogResult result = Dialog.FileOpen("csv");
@@ -445,6 +474,7 @@ public class EditorWindow
                             }
                         }
                     }
+
                     if (ImGui.MenuItem("Import Maps"))
                     {
                         var result = Dialog.FileOpen("txt");
@@ -470,6 +500,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import randomiser settings");
                         }
                     }
+
                     if (ImGui.MenuItem("Import Patches"))
                     {
                         var result = Dialog.FileOpen("json");
@@ -482,9 +513,11 @@ public class EditorWindow
                             _modalPopup.Show("Failed to import patches");
                         }
                     }
+
                     ImGui.EndMenu();
 
                 }
+
                 if (ImGui.BeginMenu("Export"))
                 {
                     if (ImGui.MenuItem("Export Strings"))
@@ -499,6 +532,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export strings");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Card Data"))
                     {
                         DialogResult result = Dialog.FileSave("csv");
@@ -512,6 +546,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export card data ");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Fusion Data"))
                     {
                         DialogResult result = Dialog.FileSave("csv");
@@ -525,6 +560,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export fusion csv");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Maps"))
                     {
                         var result = Dialog.FileSave("txt");
@@ -537,6 +573,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export map text file");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Randomiser Settings"))
                     {
                         var result = Dialog.FileSave("json");
@@ -549,6 +586,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export randomiser settings");
                         }
                     }
+
                     if (ImGui.MenuItem("Export Patches"))
                     {
                         var result = Dialog.FileSave("json");
@@ -561,6 +599,7 @@ public class EditorWindow
                             _modalPopup.Show("Failed to export patches");
                         }
                     }
+
                     ImGui.EndMenu();
                 }
 
@@ -568,55 +607,82 @@ public class EditorWindow
                 {
                     ImGui.EndDisabled();
                 }
+
                 ImGui.EndMenu();
             }
-            if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
-            {
-
-            }
+            
             ImGui.Spacing();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Show Images when hovering over items");
-                ImGui.Text("Ctrl + T");
-                ImGui.EndTooltip();
 
-            }
-
-            ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode);
-            if (ImGui.IsItemHovered())
+            if (ImGui.BeginMenu("Options"))
             {
-                ImGui.BeginTooltip();
-                ImGui.Text("Caps the framerate to 30fps when the window isnt focused\nor an item isnt hovered");
-                ImGui.Text("Ctrl + P");
-                ImGui.EndTooltip();
+                if (ImGui.MenuItem("Toggle Image tooltips", null, ref UserSettings.ToggleImageTooltips))
+                {
+                    
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Show Images when hovering over items");
+                    ImGui.Text("Ctrl + T");
+                    ImGui.EndTooltip();
+                }
+
+                ImGui.Spacing();
+
+                if (ImGui.MenuItem("Performance Mode", null, ref UserSettings.performanceMode)) 
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Caps the framerate to 30fps when the window is not focused\nor an item is not hovered");
+                    ImGui.Text("Ctrl + P");
+                    ImGui.EndTooltip();
+                }
+
+                ImGui.Spacing();
+                
+                if (ImGui.MenuItem("Use original Strings", null, ref UserSettings.UseDefaultNames))
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Shows Vanilla texts in editors rather than current ones\n" +
+                               "for cards and characters");
+                    ImGui.Text("Ctrl + D");
+                    ImGui.EndTooltip();
+                }
+                
+                ImGui.Spacing();
+                
+                if (ImGui.MenuItem("Use original Images", null, ref UserSettings.UseOriginalImages))
+                {
+                    
+                }
+                
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text("Shows Vanilla images in editors rather than current ones");
+                    ImGui.Text("Ctrl + I");
+                    ImGui.EndTooltip();
+
+                }
+                
+                ImGui.EndMenu();
             }
+            
             ImGui.Spacing();
-            if (ImGui.MenuItem("Use original strings", null, ref UserSettings.UseDefaultNames))
-            {
-
-            }
-            ImGui.Spacing();
-            if (ImGui.MenuItem("Use original Images", null, ref UserSettings.UseOriginalImages))
-            {
-
-            }
-            ImGui.Spacing();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.Text("Show the games default text for cards and characters");
-                ImGui.Text("Ctrl + D");
-                ImGui.EndTooltip();
-
-            }
-
-            ImGui.Spacing();
+            
             if (ImGui.MenuItem("Credits"))
             {
                 isCreditsOpen = true;
-
             }
             if (isCreditsOpen)
             {
@@ -635,13 +701,11 @@ public class EditorWindow
                 if (ImGui.Selectable("Blayr: Original modding tool developer", false,
                         ImGuiSelectableFlags.AllowDoubleClick))
                 {
-
                     OpenUrl("https://github.com/Blayr");
                 }
                 if (ImGui.Selectable("This tool is heavily based on Blayr's original tool", false,
                         ImGuiSelectableFlags.AllowDoubleClick))
                 {
-
                     OpenUrl("https://github.com/Blayr/DOTR-Modding-Tool");
                 }
 
@@ -660,26 +724,45 @@ public class EditorWindow
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
+
+                /* Uncomment when SP Wave 3 (Fusion Engine) is up
+                if (ImGui.Selectable("StarlightPhoenix: SPEX Mod Author ; Fusion Engine and some Patches", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://www.youtube.com/@StarlightPhoenixProject");
+                }
+                */
+
                 if (ImGui.Selectable("LordMewTwo73 for the text editing capability", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/LordMewtwo73/YGO-DOTR-Text-Editor");
                 }
+                
                 ImGui.Separator();
-
                 ImGui.TextColored(new GuiColour(Color.Cyan).value, "Code Contributors:");
+
                 if (ImGui.Selectable("hippochan", false, ImGuiSelectableFlags.AllowDoubleClick))
                 {
                     OpenUrl("https://github.com/rjoken");
                 }
 
-
+                if (ImGui.Selectable("StarlightPhoenix", false, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    OpenUrl("https://codeberg.org/StarlightPhoenixProject");
+                }
+                
                 ImGui.Text("MonoCh");
+
                 ImGui.Text("Blayr");
+
                 ImGui.Separator();
                 ImGui.TextColored(new GuiColour(Color.MediumSpringGreen).value, "Testers:");
+                
+                TextRenderer.Text("StarlightPhoenix", sppCreditEffect);
+
                 TextRenderer.Text("Woomy", woomyEffect);
 
                 ImGui.Spacing();
+                
                 if (ImGui.Button("Close"))
                 {
                     isCreditsOpen = false;
@@ -832,6 +915,10 @@ public class EditorWindow
         {
             UserSettings.UseDefaultNames = !UserSettings.UseDefaultNames;
         }
+        else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.I, ImGuiInputFlags.RouteGlobal))
+        {
+            UserSettings.UseOriginalImages = !UserSettings.UseOriginalImages;
+        }
         else if (ImGui.Shortcut(ImGuiKey.ModCtrl | ImGuiKey.U, ImGuiInputFlags.RouteGlobal))
         {
             Task.Run(async () =>
@@ -897,7 +984,7 @@ public class EditorWindow
         switch (currentMode)
         {
             case EditorContentMode.EnemyEditor:
-                _enemyEditorWindow.Render();
+                _generalEditorWindow.Render();
                 break;
             case EditorContentMode.CardEditor:
                 _cardEditorWindow.Render();
@@ -984,8 +1071,8 @@ public class EditorWindow
             return;
         }
 
-        _enemyEditorWindow.DeckEditorWindow.SaveAllDecks();
-        _enemyEditorWindow.MapEditorWindow.SaveAllMaps();
+        _generalEditorWindow.DeckEditorWindow.SaveAllDecks();
+        _generalEditorWindow.MapEditorWindow.SaveAllMaps();
         _cardEditorWindow.SaveCardChanges();
         _gameplayPatchesWindow.ApplyPatches();
 
@@ -1030,7 +1117,7 @@ public class EditorWindow
 
     void printComplete()
     {
-        if (!_enemyEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
+        if (!_generalEditorWindow.DeckEditorWindow.modalPopup.showErrorPopup)
         {
             if (dataAccess.AllImagesLoaded)
             {
@@ -1084,9 +1171,9 @@ public class EditorWindow
         dataAccess.LoadEnemyAIData();
         dataAccess.LoadDecksData();
         dataAccess.LoadDestinyDrawCards();
-        _enemyEditorWindow.MapEditorWindow.LoadMapData();
-        _enemyEditorWindow.MapEditorWindow.LoadTreasureCardData();
-        _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
+        _generalEditorWindow.MapEditorWindow.LoadMapData();
+        _generalEditorWindow.MapEditorWindow.LoadTreasureCardData();
+        _generalEditorWindow.DeckEditorWindow.UpdateDeckData();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _musicEditorWindow.LoadMusicFromIso();

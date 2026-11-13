@@ -11,6 +11,7 @@ public class Card
     public const int MonsterCardEndIndex = 682;
 
     public static ModdedStringName[] cardNameList;
+    public static ModdedStringName unknownName = new ModdedStringName("(Invalid Card)", "(Unknown Card)");
 
     static string[] currentCardNameCache;
     static string[] defaultCardNameCache;
@@ -91,14 +92,13 @@ public class Card
             return defaultCardNameCache;
         }
         return currentCardNameCache;
-
     }
 
     public static ModdedStringName GetNameByIndex(int index)
     {
-        if (index >= cardNameList.Length)
+        if (index < 0 || index >= cardNameList.Length)
         {
-            return new ModdedStringName("???????", "???????");
+            return unknownName;
         }
         return cardNameList[index];
     }

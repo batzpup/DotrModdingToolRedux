@@ -76,12 +76,12 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.Text("Please load ISO file");
             return;
         }
+        
         ImGui.Text("Name");
-        ImGui.SetNextItemWidth(ImGui.CalcTextSize("AAAAAAAAAAAAA").X);
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize("mmmmmmmmmmmmm").X);
         if (ImGui.InputText("##Name", ref nameInput, 12, ImGuiInputTextFlags.CallbackCharFilter, FilterNameInput))
         {
             currentValue = 0;
-
 
             foreach (var character in nameInput)
             {
@@ -92,12 +92,13 @@ public class NameCalculatorWindow : IImGuiWindow
             resultDeckIndices = GetStarterDeckPool(currentValue);
             UpdateDeckData();
         }
+        
         if (resultDeckIndices != null)
         {
             float availableHeight = ImGui.GetContentRegionAvail().Y;
             ImGui.BeginChild("Deck1", new Vector2(ImGui.GetContentRegionAvail().X / 3f, availableHeight), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
 
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[2]].ToString()).X) / 2f);
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[0]].ToString()).X) / 2f);
             ImGui.Text(Deck.DeckList[resultDeckIndices[0]].ToString());
            
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
@@ -109,14 +110,12 @@ public class NameCalculatorWindow : IImGuiWindow
             ImGui.SameLine();
             ImGui.BeginChild("Deck2", new Vector2(ImGui.GetContentRegionAvail().X / 2, availableHeight), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
 
-
-            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[2]].ToString()).X) / 2f);
+            ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(Deck.DeckList[resultDeckIndices[1]].ToString()).X) / 2f);
             ImGui.Text(Deck.DeckList[resultDeckIndices[1]].ToString());
-          
+
             ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImageHelper.DefaultImageSize.X) / 2f);
             ImGui.Image(GlobalImages.Instance.OriginalCards[Deck.DeckList[resultDeckIndices[1]].DeckLeader.Name.Default], ImageHelper.DefaultImageSize);
-
-
+            
             RenderDeckTable(1);
             ImGui.EndChild();
 
@@ -132,21 +131,16 @@ public class NameCalculatorWindow : IImGuiWindow
             RenderDeckTable(2);
             ImGui.EndChild();
 
-
-
-
-
-
-
         }
 
     }
 
-
-    ImGuiTableFlags tableFlags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Sortable |
-                                 ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
-                                 ImGuiTableFlags.ScrollX |
-                                 ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.BordersInnerH;
+    // Reusing Deck Editor flags
+    ImGuiTableFlags tableFlags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
+                                         ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti |
+                                         ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                                         ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                                         ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */ ;
 
     void RenderDeckTable(int deckIndex)
     {
@@ -155,24 +149,25 @@ public class NameCalculatorWindow : IImGuiWindow
         {
             unsafe
             {
-                float idWidth = ImGui.CalcTextSize("999").X;
-                float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X;
-                float attackWidth = ImGui.CalcTextSize("9999").X;
-                float levelWidth = ImGui.CalcTextSize("LVL").X;
-                float attributeWidth = ImGui.CalcTextSize("Attribute").X;
-                float typeWidth = ImGui.CalcTextSize("Trap (Full Ranged)").X;
-                float dcWidth = ImGui.CalcTextSize("99").X;
-
+                // Reusing Deck Editor Settings, redoing padding
+                float idWidth = ImGui.CalcTextSize("999").X; // 23
+                float nameWidth = ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1").X; // 280
+                float attackWidth = ImGui.CalcTextSize("9999").X ; // 31
+                float levelWidth = ImGui.CalcTextSize("LV").X ; // 16
+                float attributeWidth = ImGui.CalcTextSize("Water").X ; // 39
+                float typeWidth = ImGui.CalcTextSize("Winged-Beast").X ; // 90
+                float dcWidth = ImGui.CalcTextSize("255").X ; // 23
+                
                 ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags.None;
-                ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 10);
-                ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth);
-                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
-                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 20);
-                ImGui.TableSetupColumn("LVL", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 20);
-                ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 10);
-                ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthFixed, typeWidth + 20);
-                ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth);
-                ImGui.TableHeadersRow();
+                // No Header arrow thing this time, we shouldn't need padding hacks
+                ImGui.TableSetupColumn("ID", columnFlags | ImGuiTableColumnFlags.WidthFixed, idWidth + 0);
+                ImGui.TableSetupColumn("Name", columnFlags | ImGuiTableColumnFlags.WidthStretch, nameWidth * 0.7f);
+                ImGui.TableSetupColumn("ATK", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 0);
+                ImGui.TableSetupColumn("DEF", columnFlags | ImGuiTableColumnFlags.WidthFixed, attackWidth + 0);
+                ImGui.TableSetupColumn("LV", columnFlags | ImGuiTableColumnFlags.WidthFixed, levelWidth + 0);
+                ImGui.TableSetupColumn("Attribute", columnFlags | ImGuiTableColumnFlags.WidthFixed, attributeWidth + 0);
+                ImGui.TableSetupColumn("Type", columnFlags | ImGuiTableColumnFlags.WidthStretch, typeWidth + 0);
+                ImGui.TableSetupColumn("DC", columnFlags | ImGuiTableColumnFlags.WidthFixed, dcWidth + 0);
 
 
                 ImGuiTableSortSpecsPtr sortSpecifications = ImGui.TableGetSortSpecs();

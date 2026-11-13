@@ -94,6 +94,8 @@ public class GlobalImgui
         }
     }
 
+    // Not used in Map Editor anymore, as buttons there are better off vertically aligned.
+    // Keeping as a base for anything better with horizontal alignment.
     public static void AutoWrappingButton(string label, Action onClick, ref float lineWidth, float availableSpace, bool disabled = false)
     {
         ImGui.PushFont(FontManager.GetBestFitFont("Make Current Map Default", false, FontManager.FontFamily.NotoSansJP));

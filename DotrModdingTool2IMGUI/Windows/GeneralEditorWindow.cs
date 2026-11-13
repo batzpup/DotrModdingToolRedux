@@ -2,35 +2,30 @@
 using ImGuiNET;
 namespace DotrModdingTool2IMGUI;
 
-public class EnemyEditorWindow : IImGuiWindow
+public class GeneralEditorWindow : IImGuiWindow
 {
     public MapEditorWindow MapEditorWindow;
     public DeckEditorWindow DeckEditorWindow;
-    public NameCalculatorWindow NameCalculatorWindow;
     public DestinyDrawEditorWindow DestinyDrawEditorWindow;
-    
-
+    public NameCalculatorWindow NameCalculatorWindow;
 
     int currentDeckListIndex;
     Deck currentDeck;
-    public EnemyEditorWindow(ImFontPtr mapEditorFont)
+    
+    public GeneralEditorWindow(ImFontPtr mapEditorFont)
     {
-        
         MapEditorWindow = new MapEditorWindow(mapEditorFont);
         DeckEditorWindow = new DeckEditorWindow();
-        NameCalculatorWindow = new NameCalculatorWindow();
         DestinyDrawEditorWindow = new DestinyDrawEditorWindow();
-
-
+        NameCalculatorWindow = new NameCalculatorWindow();
     }
-
-    
 
     public void Render()
     {
         ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32));
         ImGui.PushStyleColor(ImGuiCol.TabSelected, new GuiColour(0, 189, 0).value);
         ImGui.PushStyleColor(ImGuiCol.TabHovered, new GuiColour(128, 128, 0).value);
+        
         if (ImGui.BeginTabBar("CardEditorMode"))
         {
             if (ImGui.BeginTabItem("Deck Editor"))
@@ -40,34 +35,25 @@ public class EnemyEditorWindow : IImGuiWindow
             }
             if (ImGui.BeginTabItem("Map Editor"))
             {
-                ImGui.PushFont(FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32));
                 MapEditorWindow.Render();
                 ImGui.EndTabItem();
-                ImGui.PopFont();
             }
-            if (ImGui.BeginTabItem("Deck Calculator"))
-            {
-                NameCalculatorWindow.Render();
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("Destiny Draw"))
+            if (ImGui.BeginTabItem("Destiny Draw Editor"))
             {
                 DestinyDrawEditorWindow.Render();
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Starter Deck Calculator"))
+            {
+                NameCalculatorWindow.Render();
+                ImGui.EndTabItem();
+            }
             ImGui.EndTabBar();
-
         }
-
-
 
         ImGui.PopFont();
         ImGui.PopStyleColor(2);
-
     }
-
-    
-    
 
     public void Free()
     {

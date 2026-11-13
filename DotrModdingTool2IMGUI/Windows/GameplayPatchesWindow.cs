@@ -8,7 +8,8 @@ namespace DotrModdingTool2IMGUI;
 
 public class GameplayPatchesWindow : IImGuiWindow
 {
-    ImFontPtr font;
+    ImFontPtr HeadFont;
+    ImFontPtr MainFont;
 
     DataAccess dataAccess = DataAccess.Instance;
 
@@ -25,7 +26,6 @@ public class GameplayPatchesWindow : IImGuiWindow
 
 
     //LP cap
-
     const int ChangeLPCapOffset1 = 0x2508D4 - DataAccess.IsoSlusRamOffset;
     const int ChangeLPCapOffset2 = 0x2508E0 - DataAccess.IsoSlusRamOffset;
     const int ChangeLPCapOffset3 = 0x2508EC - DataAccess.IsoSlusRamOffset;
@@ -39,6 +39,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     const int DuelDrawMovePlayerPic = 0x1B1B2C - DataAccess.IsoSlusRamOffset;
     const int DuelDrawLpBgWiden = 0x1B1B9C - DataAccess.IsoSlusRamOffset;
     const int DuelDrawWidenUiBox = 0x1B1AFC - DataAccess.IsoSlusRamOffset;
+
 
     //BELOW HERE REQUIRE FAST INTRO TO BE ENABLED:
     //Remove Dc Requirements
@@ -56,6 +57,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     //TutorialStuff
     static int TaTutoSetDeck35 = 0x178320 - DataAccess.IsoSlusRamOffset;
 
+
     //Slots
     static int AddSlotRewardsPtr = 0x251510 - DataAccess.IsoSlusRamOffset;
     static int TaTutoFocusUnit032 = 0x172510 - DataAccess.IsoSlusRamOffset;
@@ -66,8 +68,8 @@ public class GameplayPatchesWindow : IImGuiWindow
     static int AI_Tut_05 = 0x17AA70 - DataAccess.IsoSlusRamOffset;
     static int TaTuto_GetCardNameMsgID = 0x0027fda0 - DataAccess.IsoSlusRamOffset;
 
-    #region Toggle only
 
+    #region Toggle only
     [JsonInclude] public bool bAiDoubleTap;
     [JsonInclude] public bool bFastIntro;
     [JsonInclude] public bool bUserToggledFastIntro = false;
@@ -79,7 +81,6 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bAllCustomDuels;
     [JsonInclude] public bool bKeepReincarnatedCard;
 
-
     [JsonInclude] public bool bToonLeaderLandChange;
     [JsonInclude] public bool bAllKindsExtraSlots;
     [JsonInclude] public bool bSaveMusic;
@@ -88,16 +89,13 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bInvertMonsterBattleWithButtonPress;
 
     [JsonInclude] public int CurrentRule;
-    public static string[] RuleList = new[] { "Normal", "No requirements post game", "No requirements" };
-
+    public static string[] RuleList = new[] { "Normal", "Remove post-game", "None" };
     #endregion
-
+    
     #region Toggle and value
-
-    public static string[] sideStrings = { "Lancastrians (red)", "Yorkists (white)" };
+    public static string[] sideStrings = { "Lancastrians (Red Rose)", "Yorkists (White Rose)" };
 
     [JsonInclude] public int currentSideToGoFirst;
-
     [JsonInclude] public bool bSideToGoFirst;
     [JsonInclude] public bool bForceNewStartSide;
     [JsonInclude] public bool bChangeLpCap;
@@ -111,8 +109,6 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bMaxCardLimitInDeck;
     [JsonInclude] public bool bChangeDefaultZoom;
 
-
-
     [JsonInclude] public int forceSideIndex;
     [JsonInclude] public int lpCap;
     [JsonInclude] public int reincarnationCount;
@@ -120,20 +116,16 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public int leaderRecovery;
 
     [JsonInclude] public int maxCardLimitInDeck;
-    [JsonInclude] public int defaultZoom = 200;
-
+    [JsonInclude] public int defaultZoom = 200; // !!! ??? UNUSED ; probably not 200
     #endregion
 
     #region CustomSlots
-
     [JsonInclude] public bool bSaveCustomSlotRewards;
     Vector4 tableBgColour = UserSettings.CustomSlotTableBgColour;
     Vector4 searchColour = UserSettings.CustomSlotDropdownColour;
-
     #endregion
 
     #region AIPatches
-
     [JsonInclude] public bool bFixDarkHole;
     [JsonInclude] public bool bMaiFeatherDuster;
     [JsonInclude] public bool bFixGetMaxApList;
@@ -144,7 +136,6 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public bool bGiveJoeyReviveMission;
     [JsonInclude] public bool bYugiRaigeki;
     [JsonInclude] public bool bTeaInsectImitation;
-
     #endregion
 
     [JsonInclude] public int[] SpecialThreeInARows = Enumerable.Repeat(671, 30).ToArray();
@@ -153,12 +144,16 @@ public class GameplayPatchesWindow : IImGuiWindow
     string filteredStringReward = "";
 
     #region Exp Mods
-
     Vector2 rankImageSize = new Vector2(72, 72);
     [JsonInclude] public static int[] rankExp = new int[12];
     int[] defaultExp = new int[12] { 500, 1000, 2000, 4000, 7000, 11000, 16000, 22000, 30000, 40000, 52000, 65535 };
     int[] casualFriendlyExp = new int[12] { 200, 500, 900, 1400, 2000, 2700, 3500, 4500, 5700, 7000, 8500, 10000 };
-
+    int[] fixedHazelExp = new int[12] { 500, 1000, 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000} ;
+    
+    private int[] reduxExp = new int[12] { 100, 250, 450, 700, 1200, 1900, 2800, 3800, 5000, 6500, 8500, 11000 };
+    private int[] spexExp = new int[12] { 96, 240, 432, 696, 1056, 1536, 2160, 2952, 3936, 5128, 6544, 8200 };
+    private int[] geminiExp = new int[12] { 50, 200, 470, 830, 1300, 1875, 2550, 3325, 4212, 5200, 6300, 7500 };
+    
     public static string[] RankNames = new string[13] {
         "NCO",
         "2LT",
@@ -174,9 +169,9 @@ public class GameplayPatchesWindow : IImGuiWindow
         "SADM",
         "SD"
     };
-
     #endregion
 
+    
     //Custom duel resource listbox
     int currentDuelIndex = 0;
     string[] CrEnemyNameArray;
@@ -184,13 +179,22 @@ public class GameplayPatchesWindow : IImGuiWindow
     [JsonInclude] public CustomDuelResource[] whiteDuelResource = new CustomDuelResource[21];
     [JsonInclude] public CustomDuelResource[] redDuelResource = new CustomDuelResource[21];
 
+    // UI + Polish Color Palette
+    private Vector2 GMPPad = new Vector2(0, 20);
+    Vector4 DefaultColor = new Vector4(192f / 256f, 100f / 256f,  24f / 256f, 0.80f); //Hex #C06418
+    Vector4 DefaultHover = new Vector4(234f / 256f,  96f / 256f,  72f / 256f, 0.92f); //Hex #EA6048
+    Vector4 RecColor = new Vector4(0.00f, 0.80f, 0.00f, 0.80f);
+    Vector4 RecHover = new Vector4(0.24f, 0.85f, 0.24f, 0.92f);
+    Vector4 ModColor    = new Vector4(192f / 256f,  16f / 256f, 176f / 256f, 0.80f); //Hex #C010B0
+    Vector4 ModHover    = new Vector4(198f / 256f,  64f / 256f, 188f / 256f, 0.92f); //Hex #C640BC
 
     public static GameplayPatchesWindow Instance { get; private set; }
 
     public GameplayPatchesWindow()
     {
         Instance = this;
-        font = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
+        HeadFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 32);
+        MainFont = FontManager.GetFont(FontManager.FontFamily.NotoSansJP, 28);
         EditorWindow.OnIsoLoaded += OnIsoLoaded;
         MusicEditorWindow.OnSaveCustomMusic += onSaveMusicChanged;
     }
@@ -217,57 +221,94 @@ public class GameplayPatchesWindow : IImGuiWindow
         CrEnemyNameArray[19] += " White Rose";
         CrEnemyNameArray[20] += " Red Rose";
         ReadGameplayPatchesFromIso();
-
-
     }
 
     public void Render()
     {
+        ImGui.PushFont(HeadFont);
         Vector2 windowSize = ImGui.GetWindowSize();
-        ImGui.PushFont(font);
+        
+        // Only showing tabs if loading an ISO
         if (!dataAccess.IsIsoLoaded)
         {
             ImGui.Text("Please load ISO file");
             ImGui.PopFont();
             return;
         }
+        
         ImGui.PushStyleColor(ImGuiCol.TabSelected, new GuiColour(0, 189, 0).value);
         ImGui.PushStyleColor(ImGuiCol.TabHovered, new GuiColour(128, 128, 0).value);
+        
         if (ImGui.BeginTabBar("PatchesTabBar"))
         {
-            if (ImGui.BeginTabItem("Mechanic patches"))
+            // Tabs on HeadFont, Tab Contents on MainFont
+            if (ImGui.BeginTabItem("Game Mechanics"))
             {
-                DrawBoolPatches(windowSize);
+                ImGui.PushFont(MainFont);
+                
+                // Calling Child Windows here gives more room for customization
+                if ( ImGui.BeginChild("LeftPanel", new Vector2(windowSize.X / 2f, ImGui.GetContentRegionAvail().Y),
+                        ImGuiChildFlags.Border) )
+                {
+                    // Focusing on general stuff
+                    DrawGeneralPatches();
+                    DrawDuelPatches();
+                    DrawDeckPatches();
+                    DrawLeaderPatches();
+                    DrawSlotsPatches();
+                        
+                    ImGui.EndChild();
+                }
+                
                 ImGui.SameLine();
-                DrawValuePatches(windowSize);
+                
+                if (ImGui.BeginChild("RightPanel", new Vector2(windowSize.X / 2f, ImGui.GetContentRegionAvail().Y),
+                        ImGuiChildFlags.Border))
+                {
+                    // Focusing on 1P content
+                    DrawCampaignPatches();
+                    DrawAIPatches();
+                    DrawCameraPatches();
+                    
+                    // Toggle on/off to enable Alpha/Debug
+                    // DrawWIPPatches();
+                    
+                    ImGui.EndChild();
+                }
+                
+                // Keeping the Fast Intro auto-toggle
+                bFastIntro = IsUsingFastIntroMods();
+
+                ImGui.PopFont();
                 ImGui.EndTabItem();
+
             }
-            if (ImGui.BeginTabItem("Starting Resources"))
+            if (ImGui.BeginTabItem("Custom Resources"))
             {
+                ImGui.PushFont(MainFont);
                 RenderCustomResources();
+                ImGui.PopFont();
                 ImGui.EndTabItem();
             }
             if (ImGui.BeginTabItem("Custom Slot Rares"))
             {
+                ImGui.PushFont(MainFont);
                 DrawCustomSlotRewards();
+                ImGui.PopFont();
                 ImGui.EndTabItem();
             }
-
-            if (ImGui.BeginTabItem("Rank Exp Editor"))
+            if (ImGui.BeginTabItem("Rank EXP Editor"))
             {
-
+                ImGui.PushFont(MainFont);
                 RenderExpEditor();
+                ImGui.PopFont();
                 ImGui.EndTabItem();
             }
 
             ImGui.EndTabBar();
         }
         ImGui.PopStyleColor(2);
-
-
-
         ImGui.PopFont();
-
     }
 
 
@@ -275,6 +316,7 @@ public class GameplayPatchesWindow : IImGuiWindow
     {
         ImGui.Text(label);
 
+        ImGui.PushItemWidth(80); // Only needs to handle 5 figures ; leaves room for a third Panel
         if (bChangeLpCap)
         {
             ImGuiExt.InputUShort("LP", ref resource.LP, 0, lpCap);
@@ -296,17 +338,14 @@ public class GameplayPatchesWindow : IImGuiWindow
         {
             ImGuiExt.InputUShort("Starting Zoom", ref resource.Zoom, 100, 500);
         }
-
-
-
-
+        ImGui.PopItemWidth();
     }
 
     void RenderCustomResources()
     {
         Vector2 avail = ImGui.GetContentRegionAvail();
 
-        float duelListWidth = avail.X * 0.25f;
+        float duelListWidth = avail.X * 0.30f;
         float resourcePanelWidth = avail.X - duelListWidth - ImGui.GetStyle().ItemSpacing.X;
         float height = avail.Y;
 
@@ -322,7 +361,9 @@ public class GameplayPatchesWindow : IImGuiWindow
 
         ImGui.BeginChild("Duel Selection", new Vector2(duelListWidth, height));
         ImGui.Checkbox("Use Custom Resources", ref bCustomResources);
+        ImGui.PushItemWidth(Math.Max(ImGui.CalcTextSize("Manawyddan Fab Llyr (Skull Knight)").X, duelListWidth * 0.80f));
         ImGui.ListBox("##Duels", ref currentDuelIndex, CrEnemyNameArray, CrEnemyNameArray.Length, CrEnemyNameArray.Length);
+        ImGui.PopItemWidth();
 
         ImGui.EndChild();
 
@@ -341,6 +382,7 @@ public class GameplayPatchesWindow : IImGuiWindow
             redName = CrEnemyNameArray[currentDuelIndex];
         }
 
+        ImGui.Dummy(new Vector2(0, 2)); // Tiny padding
         ImGui.PushID($"red Resource {currentDuelIndex}");
         DrawDuelResourceEditor($"Resources for {redName}", ref redDuelResource[currentDuelIndex]);
         ImGui.Dummy(new Vector2(0, height / 16));
@@ -353,24 +395,78 @@ public class GameplayPatchesWindow : IImGuiWindow
 
     void RenderExpEditor()
     {
-        ImGui.BeginChild("Rank Thresholds", new Vector2(ImGui.GetContentRegionAvail().X / 4, ImGui.GetContentRegionAvail().Y));
+        Vector2 ExpPad = new Vector2(0, 12);
+        
+        //Guaranteeing minimum space for the Rank Table and buttons
+        //Console.WriteLine("Available : " + ImGui.GetContentRegionAvail().X);
+        float ExpMinSpace = 200 ;
+        ImGui.BeginChild("Rank Thresholds", new Vector2(Math.Max(ImGui.GetContentRegionAvail().X / 4, ExpMinSpace), ImGui.GetContentRegionAvail().Y));
+        
+        ImGui.PushFont(HeadFont);
         ImGui.Text("Rank Thresholds");
-
-        if (ImGui.Button("Reset to default exp values  "))
+        ImGui.PopFont();
+        
+        float availableSpace = ImGui.GetContentRegionAvail().X;
+        Vector2 fullTextSize = ImGui.CalcTextSize("Recommended Hardcore");
+        Vector2 expButtonSize = new Vector2( Math.Max(availableSpace * 0.7f, fullTextSize.X + 12), fullTextSize.Y + 8);
+        
+        ImGui.Dummy(ExpPad);
+        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(0.0f, 0.5f)); // Align Text to Left
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, DefaultColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, DefaultHover);
+        if (ImGui.Button("Use Default values", expButtonSize))
         {
             SetDefaultExp();
         }
-
-        if (ImGui.Button("Recommended casual exp values"))
+        ImGui.PopStyleColor(2);
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, RecColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, RecHover);
+        if (ImGui.Button("Recommended Casual", expButtonSize))
         {
             rankExp = casualFriendlyExp;
         }
-        if (ImGui.BeginTable("RankThreshold", 3,
-                ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Resizable))
+        
+        // See below ; inspired from Hazel mods, with a constant fix for BG/RADM
+        if (ImGui.Button("Recommended Hardcore", expButtonSize))
         {
-            ImGui.TableSetupColumn("Img");
-            ImGui.TableSetupColumn("Rank");
-            ImGui.TableSetupColumn("Exp");
+            rankExp = fixedHazelExp;
+        }
+        ImGui.PopStyleColor(2);
+        
+        // How about a button for Redux, SPEX or any specific mod's values
+        ImGui.Dummy(ExpPad);
+        
+        ImGui.PushStyleColor(ImGuiCol.Button, ModColor);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ModHover);
+        if (ImGui.Button("Use Redux values", expButtonSize))
+        {
+            rankExp = reduxExp;
+        }
+        
+        if (ImGui.Button("Use SPEX values", expButtonSize))
+        {
+            rankExp = spexExp;
+        }
+        
+        if (ImGui.Button("Use Gemini values", expButtonSize))
+        {
+            rankExp = geminiExp;
+        }
+        ImGui.PopStyleColor(2);
+        
+        ImGui.PopStyleVar();
+        ImGui.Dummy(ExpPad);
+        
+        // Rank Table
+        if (ImGui.BeginTable("RankThreshold", 3,
+                ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Resizable
+                | ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
+        {
+            ImGui.TableSetupColumn("Icon", 0,72);
+            ImGui.TableSetupColumn("Rank",0,60);
+            ImGui.TableSetupColumn("EXP",0,64);
             ImGui.TableHeadersRow();
 
             for (int i = 0; i < 12; i++)
@@ -387,13 +483,18 @@ public class GameplayPatchesWindow : IImGuiWindow
                 {
                     rankExp[i] = Math.Clamp(rankExp[i], 0, 65535);
                 }
+                ImGui.PopItemWidth();
 
             }
             ImGui.EndTable();
         }
 
         ImGui.EndChild();
+        
+        
         ImGui.SameLine();
+        
+        
         ImGui.BeginChild("Exp Per Action/Event", ImGui.GetContentRegionAvail());
         //TODO eventually needs research
         //ImGui.Text("Exp Per Action/Event");
@@ -427,15 +528,12 @@ public class GameplayPatchesWindow : IImGuiWindow
         ImGui.PushStyleColor(ImGuiCol.FrameBg, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.Button, tableBgColour);
         ImGui.PushStyleColor(ImGuiCol.PopupBg, searchColour);
-        if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable |
-                                                            ImGuiTableFlags.Sortable |
-                                                            ImGuiTableFlags.SortMulti | ImGuiTableFlags.BordersV | ImGuiTableFlags.RowBg |
-                                                            ImGuiTableFlags.Borders |
-                                                            ImGuiTableFlags.ScrollX |
-                                                            ImGuiTableFlags.ScrollY |
-                                                            ImGuiTableFlags.BordersInnerH))
+        if (ImGui.BeginTable("##CustomSlotRewardsTable", 3, 
+                ImGuiTableFlags.Resizable /* | ImGuiTableFlags.Sortable | ImGuiTableFlags.SortMulti */ |
+                ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders |
+                ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+                ImGuiTableFlags.NoSavedSettings /* imgui.ini prolly is too tech for end-users */))
         {
-
             ImGui.TableSetupColumn("Id", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("IDX").X + 10);
             ImGui.TableSetupColumn("Three in a row", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Reward", ImGuiTableColumnFlags.WidthStretch);
@@ -444,15 +542,16 @@ public class GameplayPatchesWindow : IImGuiWindow
             for (int i = 0; i < 30; i++)
             {
                 ImGui.TableNextRow();
+                
                 ImGui.TableSetColumnIndex(0);
                 ImGui.Text(i.ToString());
+                
                 ImGui.TableSetColumnIndex(1);
                 ImGui.PushItemWidth(-1);
                 List<ModdedStringName> filteredListThree = Card.cardNameList.Where(s => s.Current.Contains(filteredStringThreeInARow, StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 if (ImGui.BeginCombo($"##ThreeInARow{i}", Card.cardNameList[SpecialThreeInARows[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
-                    ImGui.PushItemWidth(-1);
                     ImGui.PushStyleColor(ImGuiCol.FrameBg, searchColour);
                     ImGui.InputText($"##ThreeInARowSearch{i}", ref filteredStringThreeInARow, 32);
                     ImGui.PopStyleColor();
@@ -475,15 +574,14 @@ public class GameplayPatchesWindow : IImGuiWindow
                 if (ImGui.IsItemHovered())
                 {
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialThreeInARows[i]].Default);
-
                 }
+                ImGui.PopItemWidth();
+                
                 ImGui.TableSetColumnIndex(2);
                 ImGui.PushItemWidth(-1);
-
                 List<ModdedStringName> filteredList = Card.cardNameList.Where(s => s.Current.Contains(filteredStringReward, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (ImGui.BeginCombo($"##Reward{i}", Card.cardNameList[SpecialSlotRewards[i]].Current, ImGuiComboFlags.HeightLarge))
                 {
-                    ImGui.PushItemWidth(-1);
                     ImGui.InputText($"##RewardSearch{i}", ref filteredStringReward, 32);
                     foreach (var cardName in filteredList)
                     {
@@ -496,44 +594,68 @@ public class GameplayPatchesWindow : IImGuiWindow
                         }
                         if (ImGui.IsItemHovered())
                         {
-
                             GlobalImgui.RenderTooltipCardImage(cardName.Default);
-
                         }
                     }
                     ImGui.EndCombo();
                 }
                 if (ImGui.IsItemHovered())
                 {
-
                     GlobalImgui.RenderTooltipCardImage(Card.cardNameList[SpecialSlotRewards[i]].Default);
-
                 }
+                ImGui.PopItemWidth();
             }
             ImGui.EndTable();
         }
         ImGui.PopStyleColor(5);
     }
-
-
-    void DrawValuePatches(Vector2 windowSize)
+    
+    
+    // Patches - Game Mechanics
+    
+    void DrawGeneralPatches()
     {
-
-        ImGui.BeginChild("RightHalfPanel", new Vector2(windowSize.X / 2f, ImGui.GetContentRegionAvail().Y),
-            ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Text("Value based patches");
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("General Patches");
         ImGui.Separator();
-        ImGui.Checkbox("Side to go first", ref bSideToGoFirst);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Which team gets to play cards first");
-        if (bSideToGoFirst)
+        ImGui.PopFont();
+        
+        if (ImGui.Checkbox("[General] Fast Intro", ref bFastIntro))
         {
-            if (ImGui.ListBox("##SideToGoFirst", ref currentSideToGoFirst, sideStrings, 2))
-            {
-                currentSideToGoFirst = Math.Clamp(currentSideToGoFirst, 0, 1);
-            }
+            bUserToggledFastIntro = !bUserToggledFastIntro;
         }
-        ImGui.Checkbox("Force new game side", ref bForceNewStartSide);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("When starting a new campaign force the player to pick a particular side");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Skips unneeded cutscenes when starting a new campaign\nRemoves the tutorial to allow space for new mods");
+        // Fast Intro Notice
+        ImGui.TextColored(new GuiColour(Color.Orange).value, "  Other patches tagged [Fast] require\n" +
+                                                                    "  Fast Intro and will enable it.");
+        
+        ImGui.Checkbox("[General / Fast] All Custom Duels", ref bAllCustomDuels);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text("Allows you to fight all Deck Masters in Custom Duel before campaign completion");
+            ImGui.Text("Allows you to fight all Duelists in Custom Duel after campaign completion");
+            ImGui.EndTooltip();
+        }
+        
+        // Insert any other General, non-AI patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
+    
+    void DrawCampaignPatches() 
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("Campaign Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        // Opponent Management
+        
+        ImGui.Checkbox("[Campaign / Fast] Force New Game side", ref bForceNewStartSide);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("When starting a new campaign, force the player to pick a particular side");
         if (bForceNewStartSide)
         {
             if (ImGui.ListBox("##forceNewGameSide", ref forceSideIndex, sideStrings, 2))
@@ -541,200 +663,370 @@ public class GameplayPatchesWindow : IImGuiWindow
                 forceSideIndex = Math.Clamp(forceSideIndex, 0, 1);
             }
         }
-
-        ImGui.Checkbox("Change LP cap", ref bChangeLpCap);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Exceed the 9999 LP Cap");
-        if (bChangeLpCap)
+        
+        ImGui.Checkbox("[Campaign] New Game Sandbox Mode", ref bSandBoxMode);
+        if (ImGui.IsItemHovered())
         {
-
-            ImGui.InputInt("##lpCap", ref lpCap, 100, 1000);
-            lpCap = Math.Clamp(lpCap, 1000, 32000);
+            ImGui.BeginTooltip();
+            ImGui.Text("Unlocks all opponents at all times");
+            ImGui.TextColored(new GuiColour(Color.Orange).value, "NOTE: This only works when pressing 'Continue'.\n" +
+                                                                 "To use with New Game, Save your game, Return to Title, then press 'Continue'.");
+            ImGui.EndTooltip();
         }
-
-        ImGui.Checkbox("Change reincarnation count", ref bReincarnationCount);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("The number of battles required before you reincarnate");
+        
+        // Campaign Deck Cost Management
+        
+        ImGui.Text("[Campaign / Fast] DC Rules : ");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize(RuleList[1]).X + ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetFrameHeight()); // "Remove post-game" ; largest
+        ImGui.Combo("##DCRuleCombo", ref CurrentRule, RuleList, RuleList.Length);
+        if (ImGui.IsItemHovered()) // Only affects Combo - having that on Text and Padding as well would hamper code readability
+        {
+            ImGui.SetTooltip("Change Deck Cost campaign requirements");
+        }
+        
+        // Reincarnation (only counts Campaign Duels from memory ; move to [Deck] if it happens to count Custom Duels)
+        
+        ImGui.Checkbox("[Campaign] Change Reincarnation count", ref bReincarnationCount);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change number of Duels required before you can Reincarnate");
         if (bReincarnationCount)
         {
             ImGui.SliderInt("##changeReincarnationCount", ref reincarnationCount, 1, 100);
         }
+        
+        ImGui.Checkbox("[Campaign] Keep Reincarnated cards", ref bKeepReincarnatedCard);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Don't lose the card you Reincarnate");
+        }
+        
+        // Insert any other 1P Campaign mechanic patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
+    
+    void DrawSlotsPatches() 
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("GY Slots Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        ImGui.Checkbox("[Slots] Remove Slot RNG", ref bRemoveSlotRng);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text(
+                "Slots usually wait a random number of frames after pressing the button to stop\n" +
+                "This removes the random number of frames to wait");
+            ImGui.TextColored(new GuiColour(Color.Red).value, "Warning : This may in rare scenarios cause a card in the slots to become unobtainable");
+            ImGui.EndTooltip();
+        }
+        
+        // Insert any other Graveyard Slot Machine patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
 
-
-        ImGui.Checkbox("Change terrain buff amount", ref bTerrainBuff);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("How much bonus ATK and DEF cards get on favourable Terrain");
+    void DrawDuelPatches()
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("Duel Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        // Before Duel
+        
+        ImGui.Checkbox("[Duel] Change LP cap", ref bChangeLpCap);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Exceed the 9999 LP Cap");
+        }
+        if (bChangeLpCap)
+        {
+            ImGui.InputInt("##lpCap", ref lpCap, 100, 1000);
+            lpCap = Math.Clamp(lpCap, 1000, 32000);
+        }
+        
+        ImGui.Checkbox("[Duel] Side to go first", ref bSideToGoFirst);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Which team gets to play cards first");
+        }
+        if (bSideToGoFirst)
+        {
+            if (ImGui.ListBox("##SideToGoFirst", ref currentSideToGoFirst, sideStrings, 2))
+            {
+                currentSideToGoFirst = Math.Clamp(currentSideToGoFirst, 0, 1);
+            }
+        }
+        
+        // Duel Mechanics
+        
+        ImGui.Checkbox("[Duel] Allow Spell Fusion", ref bUnlockFusions);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Allows fusions between any 2 card types as long as they are not power-ups");
+        }
+        
+        ImGui.Checkbox("[Duel] Change Terrain buff amount", ref bTerrainBuff);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("How much bonus ATK and DEF cards get on favourable Terrain");
+        }
         if (bTerrainBuff)
         {
             terrainBuffAmount = Math.Clamp(terrainBuffAmount, 0, 9999);
             ImGui.InputInt("##terrainBuff", ref terrainBuffAmount, 100);
         }
-
-
-        ImGui.Checkbox("Change deck leader recovery amount", ref bDeckLeaderRecovery);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Changes the amount that the deck leader ability LP Recovery gives at the end of a turn");
-        if (bDeckLeaderRecovery)
+        
+        ImGui.Checkbox("[Duel] Exodia from Hand", ref bExodiaFromHand);
+        if (ImGui.IsItemHovered())
         {
-            leaderRecovery = Math.Clamp(leaderRecovery, 50, 9999);
-            ImGui.InputInt("##leaderRecovery", ref leaderRecovery, 50);
+            ImGui.SetTooltip("Exodia's win condition works from Hand, not on the Field");
         }
         
-
-        ImGui.Checkbox("Remove card limit in deck ", ref bMaxCardLimitInDeck);
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Changes the max limit of cards in the deck");
-        }
-
-
-        if (bMaxCardLimitInDeck)
-        {
-            maxCardLimitInDeck = Math.Clamp(maxCardLimitInDeck, 1, 9);
-            ImGui.SliderInt("##MaxCardLimit", ref maxCardLimitInDeck, 1, 9);
-        }
-
-        //ImGui.Checkbox("Change Default Zoom", ref bChangeDefaultZoom);
-        //if (ImGui.IsItemHovered())
-        //{
-        //    ImGui.SetTooltip("Changes default zoom level of the camera");
-        //}
-        //if (bChangeDefaultZoom)
-        //{
-        //    if (ImGui.SliderInt("##DefaultZoomLevel", ref defaultZoom, 200, 500))
-        //    {
-        //        defaultZoom = Math.Clamp(defaultZoom, 200, 500);
-        //    }
-        //}
-        ImGui.EndChild();
-    }
-
-    void DrawBoolPatches(Vector2 windowSize)
-    {
-        ImGui.BeginChild("LeftHalfPanel", new Vector2(windowSize.X / 2f, ImGui.GetContentRegionAvail().Y),
-            ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Text("On/Off patches");
-        ImGui.Separator();
-        if (ImGui.Checkbox("Fast intro", ref bFastIntro))
-        {
-            bUserToggledFastIntro = !bUserToggledFastIntro;
-        }
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Skips unneeded cutscenes when starting a new campaign\nRemoves the tutorial to allow space for new mods");
-
-        ImGui.Checkbox("Remove AI double tap", ref bAiDoubleTap);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("The AI no longer path and double selects cards it does not intend to move");
-
-        ImGui.Checkbox("Emulator camera fix", ref bCameraFix);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Prevents the camera from reaching number that creates a rounding error in the emulator");
-
-        ImGui.Checkbox("Expanded zoom", ref bExpandedZoom);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Increases the min and max zoom distance");
-
-        ImGui.Checkbox("Allow fusions with non equip cards", ref bUnlockFusions);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Allows fusions between any 2 cards types as long as they are not power ups");
-
-        ImGui.Checkbox("Remove Exp loss", ref bRemoveExpLoss);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Cards no longer lose any exp ever");
-
-        ImGui.Checkbox("Remove slot rng", ref bRemoveSlotRng);
+        // Option Management
+        
+        ImGui.Checkbox("[Duel] Hold Cross(X) during battles to invert \"Monster Battle\" setting", ref bInvertMonsterBattleWithButtonPress);
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
+            ImGui.Text("Patch by Blayr !");
             ImGui.Text(
-                "Slots usually wait a random number of frames after pressing the button to stop\nThis removes the random number of frames to wait");
-            ImGui.TextColored(new GuiColour(Color.Red).value, "Warning this in rare scenarios may cause a card in the slots to become unobtainable");
-            ImGui.EndTooltip();
-        }
-
-        ImGui.Checkbox("All custom duels", ref bAllCustomDuels);
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.BeginTooltip();
-            ImGui.Text("Allows you to vs all Deck masters in the custom duel pre campaign completion");
-            ImGui.Text("Allows you to vs all Duelists in the custom duel post campaign completion");
-            ImGui.EndTooltip();
-        }
-
-        ImGui.Checkbox("Keep reincarnated cards", ref bKeepReincarnatedCard);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Dont lose the card you reincarnate");
-
-        ImGui.Checkbox("Toon leaders land change to toon", ref bToonLeaderLandChange);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(
-                "If a deck leader that has the Terrain Change leader ability is strong on toon\nit will create toon for its ability instead");
-
-        if (ImGui.Combo("DC rule changes", ref CurrentRule, RuleList, RuleList.Length))
-        {
-        }
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Change DC requirements");
-
-
-
-        ImGui.Checkbox("All kinds can get extra slots ability", ref bAllKindsExtraSlots);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Fixes the hardcoded issue of only allowing specific Kinds to properly use the Extra Slots Ability ");
-
-        ImGui.Checkbox("New game sandbox mode", ref bSandBoxMode);
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.BeginTooltip();
-            ImGui.Text("Unlocks all duels at all times");
-            ImGui.TextColored(new GuiColour(Color.Orange).value, "NOTE: This only works when pressing continue.\nTo work with a new game:\nCreate a new game save and then press continue from the menu screen.");
-            ImGui.EndTooltip();
-        }
-        ImGui.Checkbox("Exodia From Hand", ref bExodiaFromHand);
-        if (ImGui.IsItemHovered())
-        {
-           ImGui.SetTooltip("Exodia's win condition works from hand not on field");
-        }
-
-        ImGui.Checkbox("Hold Cross(X) to invert \"Monster Battle\" setting during battle", ref bInvertMonsterBattleWithButtonPress);
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.BeginTooltip();
-            ImGui.Text("By Blayr!");
-            ImGui.Text(
-                "Holding the Cross(X) button during a monster's attack will invert the " + 
-                "\"Monster Battle\" setting (Display vs Abbreviate) for that battle only."
+                "Holding the Cross (X) button during a monster's attack inverts the \"Monster Battle\" setting\n" +
+                "(Display vs. Abbreviate) for that battle only."
             );
             ImGui.TextColored(new GuiColour(Color.Orange).value,
                 "NOTE: This makes it easy to skip or show the battle animation on the fly, during either player's turn.\n" +
                 "Checks both controllers, so either local player can trigger it during multiplayer.");
             ImGui.EndTooltip();
         }
+        
+        // Insert any other Duel mechanic patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
 
-
-        ImGui.Separator();
+    void DrawAIPatches()
+    {
+        ImGui.PushFont(HeadFont);
         ImGui.Text("AI Patches");
-        ImGui.Checkbox("Fix Dark Hole Usage", ref bFixDarkHole);
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        // General AI patches which affect both Campaign and Custom
+        // Base AI mechanics
+        
+        ImGui.Checkbox("[General / Fast] Remove AI double tap", ref bAiDoubleTap);
         if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("AI no longer wastes time selecting cards it does not intend to Move");
+        }
+        
+        ImGui.Checkbox("[General] Correctly calculate Max Attack", ref bFixGetMaxApList);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Several bug fixes that caused garbage data to be calculated");
+        }
+        
+        // Card interaction
+        
+        ImGui.Checkbox("[General / Fast] Stop AI from reviving Equips", ref bDontReviveEquips);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Because the AI does not use equips on the board properly");
+        }
+        
+        ImGui.Checkbox("[General] Fix Dark Hole Usage", ref bFixDarkHole);
+        if (ImGui.IsItemHovered())
+        {
             ImGui.SetTooltip("Fixes bug that defaults its usage to true");
-
-        ImGui.Checkbox("Improved Feather Duster Usage", ref bMaiFeatherDuster);
+        }
+        
+        // DMK fixes
+        
+        ImGui.Checkbox("[General] DMK Revive Graveyard fix", ref bDmkFixRevive);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Will use HFD if it can destroy an opponents spell card and it only destroys 2 or less of her cards");
+        {
+            ImGui.SetTooltip("Fixes an issue where DMK could only Revive from one Graveyard");
+        }
+        
+        // Custom Campaign patches for specific AI
+        // AI fixes for Yorkists
+        
+        ImGui.Checkbox("[Campaign] Stop Pegasus from fusing", ref bStopPegasusFusion);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Pegasus often fuses away strong Effect or TOON monsters");
+        }
+        
+        // AI fixes for Lancastrians, in order
+        
+        ImGui.Checkbox("[Campaign] Make Tea use Insect Imitation", ref bTeaInsectImitation);
+        
+        ImGui.Checkbox("[Campaign] Improved Mai Feather Duster Usage", ref bMaiFeatherDuster);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Will use HFD if it can destroy an opponent Spell and only destroys 2 or less of her cards");
+        }
+        
+        ImGui.Checkbox("[Campaign] Heavy Storm Mako rework", ref bMakoHeavyStorm);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Will use Heavy Storm when the player has more Spells than Mako");
+        }
+        
+        ImGui.Checkbox("[Campaign / Fast] Give Joey Revive Mission for Copycat", ref bGiveJoeyReviveMission);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with Copycat");
+        }
+        
+        ImGui.Checkbox("[Campaign] Fix Yugi Raigeki use", ref bYugiRaigeki);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Fixes a bug where Yugi swaps the comparison of cards when checking for Raigeki");
+        }
+        
+        // Insert any other AI patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
 
-        ImGui.Checkbox("Correctly calculate Max Attack", ref bFixGetMaxApList);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Several bug fixes that caused garbage data to be calculated");
-
-        ImGui.Checkbox("Heavy storm rework", ref bMakoHeavyStorm);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Will use heavy storm when the player has more spells than mako ");
-
-        ImGui.Checkbox("DMK will select from correct graveyard", ref bDmkFixRevive);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes an issue where DMK could only revive from one graveyard");
-
-        ImGui.Checkbox("Stop Pegasus from fusing", ref bStopPegasusFusion);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Because pegasus often fuses away his strong effect monsters or monsters that are good on toon ");
-
-        ImGui.Checkbox("Stop AI from reviving Equips", ref bDontReviveEquips);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Because the AI does not use equips on the board properly");
-
-        ImGui.Checkbox("Give Joey Revive Mission for copycat", ref bGiveJoeyReviveMission);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug that stopped Joey from interacting with copycat");
-        ImGui.Checkbox("Fix Yugi Raigeki use", ref bYugiRaigeki);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Fixes a bug where Yugi swaps the comparison of cards when checking to using raigeki");
-
-        ImGui.Checkbox("Make Tea use insect imitation", ref bTeaInsectImitation);
-
-        bFastIntro = IsUsingFastIntroMods();
-        ImGui.EndChild();
+    void DrawDeckPatches()
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("Deck Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        ImGui.Checkbox("[Deck] Customize Card Limitation", ref bMaxCardLimitInDeck);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text("Changes the amount of cards with the same name allowed in a Deck");
+            ImGui.TextColored(new GuiColour(Color.Red).value, "Warning : Exceeding this limit in the Deck Editor can cause bugs.");
+            ImGui.EndTooltip();
+        }
+        if (bMaxCardLimitInDeck)
+        {
+            maxCardLimitInDeck = Math.Clamp(maxCardLimitInDeck, 1, 9);
+            ImGui.SliderInt("##MaxCardLimit", ref maxCardLimitInDeck, 1, 9);
+        }
+        
+        // Insert any other Deck patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
+    
+    void DrawLeaderPatches() 
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("Leader Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        // Fixes for original game hardcode and bugs
+        
+        ImGui.Checkbox("[Leader / Slots] Extra Slots Ability Fix", ref bAllKindsExtraSlots);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("The original game ignores Leader Abilities and hardcodes which Types have Extra Slots\n" +
+                             "Fixes this issue so all Types properly use the Extra Slots Ability");
+        }
+        
+        // Leader mechanics
+        
+        ImGui.Checkbox("[Leader] Remove Exp loss", ref bRemoveExpLoss);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Cards no longer lose any EXP ever");
+        }
+        
+        // Leader Skill customization
+        
+        ImGui.Checkbox("[Leader] Customize 'LP Recovery' Leader Ability", ref bDeckLeaderRecovery);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Change the amount of LP recovered at the end of the turn");
+        }
+        if (bDeckLeaderRecovery)
+        {
+            leaderRecovery = Math.Clamp(leaderRecovery, 50, 9999);
+            ImGui.InputInt("##leaderRecovery", ref leaderRecovery, 50);
+        }
+        
+        ImGui.Checkbox("[Leader / Fast] TOON Leaders change Terrain to TOON", ref bToonLeaderLandChange);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("If a Deck Leader with the Terrain Change Leader Ability is \n" +
+                             "strong on TOON, its Ability will create TOON Terrain instead");
+        }
+        
+        // Insert any other Leader Skill patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
+    
+    void DrawCameraPatches() 
+    {
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("Camera Patches");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        // Emulator fixes
+        
+        ImGui.Checkbox("[Camera] Emulator Camera Fix 1", ref bCameraFix);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Prevents the camera from reaching number that creates a rounding error in the emulator");
+        }
+        
+        // Camera Customization
+        
+        ImGui.Checkbox("[Camera] Expanded zoom", ref bExpandedZoom);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Increases the min and max zoom distance");
+        }
+        
+        // Insert any other Camera patch
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
+    }
+    
+    void DrawWIPPatches() 
+    {
+        // Debug section for unreleased Patches and tests
+        ImGui.PushFont(HeadFont);;
+        ImGui.Text("[ALPHA] Patch Tests");
+        ImGui.Separator();
+        ImGui.PopFont();
+        
+        ImGui.Checkbox("[Camera] Change Default Zoom", ref bChangeDefaultZoom);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Changes default zoom level of the camera");
+        }
+        if (bChangeDefaultZoom)
+        {
+            if (ImGui.SliderInt("##DefaultZoomLevel", ref defaultZoom, 200, 500))
+            {
+                defaultZoom = Math.Clamp(defaultZoom, 200, 500);
+            }
+        }
+        
+        // Handles separation so Render() keeps clean
+        ImGui.Dummy(GMPPad);
     }
 
 

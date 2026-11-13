@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -64,23 +65,26 @@ public class RandomiserWindow : IImGuiWindow
     [JsonInclude] int maxToonTiles = 49;
 
     [JsonInclude] int monsterCount = 25;
-    [JsonInclude] int spellCount = 5;
+    [JsonInclude] int magicCount = 5;
     [JsonInclude] int trapCount = 5;
     [JsonInclude] int equipCount = 3;
     [JsonInclude] int ritualCount = 2;
     [JsonInclude] int randomEffectChance = 15;
+    [JsonInclude] int randomMagicChance = 15;
     [JsonInclude] int maxRandomRank = 12;
     [JsonInclude] int maxLeaderAbilities = 16;
     [JsonInclude] int weakLeaderAbilityChance = 30;
     [JsonInclude] int strongLeaderAbilityChance = 30;
     [JsonInclude] int OPLeaderAbilityChance = 30;
-    [JsonInclude] int bannedDcLimit = 99;
+    [JsonInclude] int bannedDcLimit = 255;
     [JsonInclude] int bannedLevelLimit = 12;
-    [JsonInclude] int bannedDefLimit = 8000;
-    [JsonInclude] int bannedAtkLimit = 8000;
+    [JsonInclude] int bannedDefLimit = 4000;
+    [JsonInclude] int bannedAtkLimit = 4000;
 
     [JsonInclude] int EquipPercentChance = 10;
     [JsonInclude] int slotChance = 50;
+    [JsonInclude] int rareChance = 10;
+    [JsonInclude] int reincChance = 50;
 
     //Default delta Random Values
     [JsonInclude] bool randomSPRange;
@@ -124,7 +128,7 @@ public class RandomiserWindow : IImGuiWindow
     int? bannedCardToRemove = null;
     string SearchSortField = "ID";
     bool SearchAscending = true;
-    EnemyEditorWindow _enemyEditorWindow;
+    GeneralEditorWindow _generalEditorWindow;
 
     Dictionary<int, DeckLeaderRank> leaderRanksOriginal = new Dictionary<int, DeckLeaderRank>();
     public ImGuiModalPopup modalPopup = new ImGuiModalPopup();
@@ -165,11 +169,15 @@ public class RandomiserWindow : IImGuiWindow
 
     int[] recommendedExpValues = new int[12] { 100, 200, 300, 400, 600, 800, 1000, 1400, 1800, 2400, 3400, 5000 };
 
-    public RandomiserWindow(EnemyEditorWindow enemyEditorWindow)
+    // Ready Notice Colors
+    Vector4 ModifierColor = new Vector4(0.00f, 0.80f, 0.00f, 1.00f);
+    Vector4 WarningColor = new Vector4(1.00f, 0.50f, 0.00f, 1.00f);
+    
+    public RandomiserWindow(GeneralEditorWindow generalEditorWindow)
     {
         EditorWindow.OnIsoLoaded += FilterAndSort;
         EditorWindow.OnIsoLoaded += LoadLeaderRanks;
-        _enemyEditorWindow = enemyEditorWindow;
+        _generalEditorWindow = generalEditorWindow;
 
         CreateLeaderAbilityTooltips();
 
@@ -224,11 +232,19 @@ public class RandomiserWindow : IImGuiWindow
             return;
         }
 
-        ImGui.TextColored(new GuiColour(Color.Firebrick).value,
-            @"Using the randomiser makes all the AI's DMK if you do not randomise the AI, as this is the most versatile and least likely to brick
-Secondly Deck Cost will be meaningless when randomiser, this will make all battle available regardless of DC");
+        Vector2 RDMPad = new Vector2(6, 0);
+        
+        ImGui.PushStyleColor(ImGuiCol.Text, new GuiColour(Color.Orange).value);
+        ImGui.TextWrapped(
+            "Using the Randomiser turns all AI into DMK unless you randomise AI, " +
+            "as DMK is the most versatile and least likely to brick.\n" +
+            "It also makes Deck Cost meaningless, as it removes DC rules on all battles.");
+        ImGui.PopStyleColor();
+        
         ImGui.Separator();
-        ImGui.Text("Press this button after selecting your settings");
+        
+        ImGui.Text("Press [Randomise] after selecting your settings. You also can input a (32-bit unsigned) custom Seed.");
+        
         if (ImGui.Button("Randomise"))
         {
             if (_seed == 0)
@@ -257,7 +273,7 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             RandomiseMaps();
             ChangeAllAi();
             RandomiseMusic();
-            _enemyEditorWindow.DeckEditorWindow.UpdateDeckData();
+            _generalEditorWindow.DeckEditorWindow.UpdateDeckData();
             ChangeDuelResources();
             SetRecommendedExpValues();
             RandomiseTerrainStatValues();
@@ -295,9 +311,12 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             File.WriteAllText($"Logs/Changelog_{_seed}.txt", changeLog.ToReadableFormat());
         }
         ImGui.SameLine();
-        ImGui.Checkbox("Hide randomise confirmation", ref ignoreConfirmation);
+        ImGui.Dummy(RDMPad);
+        ImGui.SameLine();
+        ImGui.Text("Seed :");
+        ImGui.SameLine();
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("2147483647 ").X);
-        if (ImGui.InputInt("Randomiser seed", ref _seed, 0, 0, ImGuiInputTextFlags.CharsDecimal))
+        if (ImGui.InputInt("##RandomiserSeed", ref _seed, 0, 0, ImGuiInputTextFlags.CharsDecimal))
         {
             _seed = Math.Clamp(_seed, 0, int.MaxValue);
         }
@@ -306,83 +325,91 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
         {
             _seed = 0;
         }
+        ImGui.SameLine();
+        ImGui.Dummy(RDMPad);
+        ImGui.SameLine();
+        ImGui.Checkbox("Hide randomise confirmation", ref ignoreConfirmation);
+
 
         modalPopup.Draw();
         ImGui.Separator();
-        ImGui.BeginChild("LeftHalfPanel", ImGui.GetContentRegionAvail(), ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize);
-        ImGui.Checkbox("Round all random values", ref bRoundValuesTo50);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("All generated values should be divisible by 50");
-        ImGui.Checkbox("Randomise decks", ref randomiseDecks);
+
+
+        if (ImGui.BeginChild("LeftHalfPanel", ImGui.GetContentRegionAvail(),
+                ImGuiChildFlags.Border | ImGuiChildFlags.AlwaysAutoResize))
+        {
+        }
+
+        ImGui.PushStyleColor(ImGuiCol.Text, ModifierColor);
+        ImGui.Checkbox("Round all Stat values", ref bRoundValuesTo50);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("All random ATK/DEF values should be divisible by 50\n" +
+                                                    "Includes Card Properties, Terrain buffs and Powerup data");
+        ImGui.PopStyleColor();
+        
+        ImGui.Checkbox("Randomise Decks", ref randomiseDecks);
         if (randomiseDecks)
         {
             ImGui.Indent();
-            ImGui.Checkbox("Randomise starting decks", ref randomiseStartingDecks);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the leaders and cards in the starter decks");
-            ImGui.Checkbox("Randomise enemy decks", ref randomiseOpponentDecks);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomise the leaders and cards in enemy decks");
+            ImGui.Checkbox("Randomise Starter Decks", ref randomiseStartingDecks);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomise Leaders and Cards in Starter Decks");
+            ImGui.Checkbox("Randomise Enemy Decks", ref randomiseOpponentDecks);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomise Leaders and Cards in Enemy Decks");
             if (randomiseOpponentDecks)
             {
-
                 ImGui.Indent();
                 ImGui.Checkbox("Strong boss enemies", ref strongBossDeck);
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Boss enemies pull from a selected pool for stronger cards\nBosses are Yugi,Seto,MFL both sides ");
+                    ImGui.SetTooltip("Boss enemies pull from a selected pool for stronger cards\n" +
+                                     "Bosses are Yugi, Seto, and MFL (both sides)");
                 ImGui.Unindent();
             }
-            ImGui.Checkbox("Balanced deck", ref balancedRandom);
+            ImGui.Checkbox("Balanced Decks", ref balancedRandom);
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("you will always have X monsters X power ups X spells X traps and X rituals\n Must add up to 40 cards");
+                ImGui.SetTooltip("Guarantee set amounts of Monster and Spell Cards in Decks. (Decks must add up to 40 Cards.)");
             if (balancedRandom)
             {
-                if (!balancedDeckCorrectAmount)
-                {
-                    ImGui.TextColored(new GuiColour(Color.Firebrick).value, "Error not 40 cards in deck");
-                }
                 ImGui.Indent();
                 if (ImGui.SliderInt("Monsters", ref monsterCount, 0, 40))
                 {
                 }
-                if (ImGui.SliderInt("Spells", ref spellCount, 0, 40))
+                if (ImGui.SliderInt("Magic Spells", ref magicCount, 0, 40))
                 {
                 }
-                if (ImGui.SliderInt("Traps", ref trapCount, 0, 40))
+                if (ImGui.SliderInt("Power-Ups", ref equipCount, 0, 20))
                 {
                 }
-                if (ImGui.SliderInt("PowerUps", ref equipCount, 0, 12))
+                if (ImGui.SliderInt("Traps", ref trapCount, 0, 20))
                 {
                 }
-                if (ImGui.SliderInt("Rituals", ref ritualCount, 0, 12))
+                if (ImGui.SliderInt("Rituals", ref ritualCount, 0, 10))
                 {
                 }
-                int totalCount = monsterCount + spellCount + trapCount + equipCount + ritualCount;
-                if (totalCount != 40)
+                int totalCount = monsterCount + magicCount + equipCount + trapCount + ritualCount;
+                balancedDeckCorrectAmount = (totalCount == 40);
+                if (!balancedDeckCorrectAmount)
                 {
-                    balancedDeckCorrectAmount = false;
-                }
-                else
-                {
-                    balancedDeckCorrectAmount = true;
+                    ImGui.TextColored(new GuiColour(Color.Red).value, "Error : Decks do not add up to 40 Cards.");
                 }
                 ImGui.Unindent();
             }
-            ImGui.Checkbox("No OP creatures in starter decks", ref lowPowerLevelRandom);
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Starter decks can no start with cards with a variety of options");
+            ImGui.Checkbox("Limit Starter Deck power level", ref lowPowerLevelRandom);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Disallow cards beyond specified ATK, DEF, Level or DC");
             if (lowPowerLevelRandom)
             {
                 ImGui.Indent();
-                if (ImGui.InputInt("Max attack", ref bannedAtkLimit, 100, 1000))
+                if (ImGui.InputInt("Max ATK", ref bannedAtkLimit, 100, 1000))
                 {
                     bannedAtkLimit = Math.Clamp(bannedAtkLimit, 0, 9999);
                 }
-                if (ImGui.InputInt("Max defense", ref bannedDefLimit, 100, 1000))
+                if (ImGui.InputInt("Max DEF", ref bannedDefLimit, 100, 1000))
                 {
                     bannedDefLimit = Math.Clamp(bannedDefLimit, 0, 9999);
                 }
-                if (ImGui.SliderInt("Max SP", ref bannedLevelLimit, 0, 12))
+                if (ImGui.SliderInt("Max SP", ref bannedLevelLimit, 1, 12))
                 {
                 }
 
-                if (ImGui.SliderInt("Max DC", ref bannedDcLimit, 0, 99))
+                if (ImGui.SliderInt("Max DC", ref bannedDcLimit, 0, 255))
                 {
                 }
                 ImGui.Unindent();
@@ -390,29 +417,41 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             ImGui.Unindent();
         }
 
-        ImGui.Checkbox("Randomise card acquisition", ref randomiseCardAcquisition);
+        ImGui.Checkbox("Randomise Card Availability", ref randomiseCardAcquisition);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Randomises how cards can be acquired\nIf it has no valid way to get the card it will default to Rare");
+            ImGui.SetTooltip("Randomises how cards can be acquired\n" +
+                             "If a card has no valid way to get, it will default to Slot Rare");
 
         if (randomiseCardAcquisition)
         {
             ImGui.Indent();
-            if (ImGui.Checkbox("Randomise slots", ref randomiseSlots))
+            if (ImGui.Checkbox("Randomise Graveyard Slots", ref randomiseSlots))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether the card will appear in the slots");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether cards appear in the Slots");
             if (randomiseSlots)
             {
-                ImGui.SliderInt("Chance", ref slotChance, 0, 100);
+                ImGui.SliderInt("% Chance (Graveyard Slots)", ref slotChance, 0, 100);
             }
-            if (ImGui.Checkbox("Randomise rare drop", ref randomiseRareDrop))
+            
+            if (ImGui.Checkbox("Randomise Slot Rare", ref randomiseRareDrop))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether the card as 3 in row");
-            if (ImGui.Checkbox("Randomise reincarnation", ref randomiseReincarnation))
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether cards appear as Three-in-a-Row Specials");
+            if (randomiseRareDrop)
+            {
+                ImGui.SliderInt("% Chance (Slot Rare)", ref rareChance, 0, 100);
+            }
+            
+            if (ImGui.Checkbox("Randomise Reincarnation", ref randomiseReincarnation))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether the card will appear as a reincarnation reward");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether cards appear in Reincarnation pools");
+            if (randomiseReincarnation)
+            {
+                ImGui.SliderInt("% Chance (Reincarnation)", ref reincChance, 0, 100);
+            }
+            
             ImGui.Unindent();
         }
 
@@ -424,44 +463,46 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
         if (bDuelResources)
         {
             ImGui.Indent();
-            ImGui.Checkbox("Same random value for all duels", ref bSameResourceValues);
+            ImGui.PushStyleColor(ImGuiCol.Text, ModifierColor);
+            ImGui.Checkbox("Same random value for all Duels", ref bSameResourceValues);
             ImGui.Checkbox("Same random value for each side", ref bSameValuesPerSide);
-
+            ImGui.PopStyleColor();
+            
             //-----
-            ImGui.Checkbox("Randomise starting summoning power", ref bRandomiseStartingSp);
+            ImGui.Checkbox("Randomise Initial Summoning Power", ref bRandomiseStartingSp);
 
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip(@"Changes how much SP at the start of a duel");
+                ImGui.SetTooltip("Changes the amount of SP at the start of a Duel");
             }
 
             if (bRandomiseStartingSp)
             {
                 ImGui.Indent();
-                ImGui.SliderInt("min starting sp", ref minStartingSp, 0, 12);
-                ImGui.SliderInt("max starting sp", ref maxStartingSp, 0, 12);
+                ImGui.SliderInt("Min. Initial SP", ref minStartingSp, 0, 12);
+                ImGui.SliderInt("Max. Initial SP", ref maxStartingSp, 0, 12);
                 ImGui.Unindent();
             }
 
             //-----
-            ImGui.Checkbox("Randomise summoning power recovery", ref bRandomiseSpRecovery);
+            ImGui.Checkbox("Randomise Summoning Power Recharge", ref bRandomiseSpRecovery);
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip(@"Changes how much SP regained every turn");
+                ImGui.SetTooltip("Changes the amount of SP regained every turn");
             }
             if (bRandomiseSpRecovery)
             {
                 ImGui.Indent();
-                ImGui.SliderInt("min sp recovery", ref minSpRecovery, 1, 12);
-                ImGui.SliderInt("max sp recovery", ref maxSpRecovery, 1, 12);
+                ImGui.SliderInt("Min. SP Recharge", ref minSpRecovery, 1, 12);
+                ImGui.SliderInt("Max. SP Recharge", ref maxSpRecovery, 1, 12);
                 ImGui.Unindent();
             }
 
             //-----
-            ImGui.Checkbox("Randomise starting health", ref bRandomiseHealth);
+            ImGui.Checkbox("Randomise Initial LP", ref bRandomiseHealth);
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip(@"Change starting health (Rounded to nearest 100 always)");
+                ImGui.SetTooltip(@"Change LP at Duel Start. (Always rounds to nearest 100.)");
             }
 
             if (bRandomiseHealth)
@@ -475,8 +516,8 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
                     }
                 }
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(@"increases the potential cap to 32k");
-                if (ImGui.InputInt("max starting lp", ref maxStartingLP, 100, 500, ImGuiInputTextFlags.CharsDecimal))
+                    ImGui.SetTooltip(@"Increases LP Cap up to 32000");
+                if (ImGui.InputInt("Max. Starting LP", ref maxStartingLP, 100, 500, ImGuiInputTextFlags.CharsDecimal))
                 {
                     if (bBreakDefaultLpCap)
                     {
@@ -494,28 +535,28 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             ImGui.Unindent();
 
         }
-        ImGui.Checkbox("Randomise maps", ref randomiseMaps);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises which map is assigned to which duelist");
+        
+        ImGui.Checkbox("Randomise Maps", ref randomiseMaps);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises which Map is assigned to which Duelist");
         if (randomiseMaps)
         {
         }
-        ImGui.Checkbox("Random hidden card location", ref randomiseHiddenCardLocation);
-        ImGui.Checkbox("Random hidden card", ref randomiseHiddenCardValue);
-        ImGui.Checkbox("Randomise map tiles", ref randomiseMapsTiles);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises tiles on existing maps");
+        
+        ImGui.Checkbox("Randomise Map Tiles", ref randomiseMapsTiles);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises Terrain on existing Maps");
         if (randomiseMapsTiles)
         {
             ImGui.Indent();
-            if (ImGui.SliderInt("Max crush tiles", ref maxCrushTiles, 0, 49))
+            if (ImGui.SliderInt("Max CRUSH tiles", ref maxCrushTiles, 0, 49))
             {
             }
-            if (ImGui.SliderInt("Max labyrinth tiles", ref maxLabTiles, 0, 49))
+            if (ImGui.SliderInt("Max LABYRINTH tiles", ref maxLabTiles, 0, 49))
             {
             }
-            if (ImGui.SliderInt("Max toon tiles", ref maxToonTiles, 0, 49))
+            if (ImGui.SliderInt("Max TOON tiles", ref maxToonTiles, 0, 49))
             {
             }
-            if (ImGui.Checkbox("Swap terrain types", ref swapTiles))
+            if (ImGui.Checkbox("Swap Terrain types", ref swapTiles))
             {
             }
             if (ImGui.IsItemHovered())
@@ -523,54 +564,64 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
                     "If enabled all tiles of a certain type are replaced with another type rather than being true random\nE.g all sea is replace with mountains");
             ImGui.Unindent();
         }
-        ImGui.Checkbox("Randomise enemy leader ranks", ref randomiseOpponentLeaderRanks);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the leader ranks of your opponents");
+        
+        // Moving Treasure modding below Map
+        ImGui.Checkbox("Randomise Treasure location", ref randomiseHiddenCardLocation);
+        ImGui.Checkbox("Randomise Treasure rewards", ref randomiseHiddenCardValue);
+        
+        ImGui.Checkbox("Randomise Enemy Leader Ranks", ref randomiseOpponentLeaderRanks);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the Leader Ranks of your opponents");
 
-        ImGui.Checkbox("Randomise starting leader ranks", ref randomiseLeaderRanks);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the leader ranks of your starter options");
+        ImGui.Checkbox("Randomise Starter Leader Ranks", ref randomiseLeaderRanks);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the Leader Ranks of your starter options");
         if (randomiseLeaderRanks)
         {
             ImGui.Indent();
-            if (ImGui.SliderInt("Max possible rank", ref maxRandomRank, 0, 12))
+            if (ImGui.SliderInt("Max random Rank", ref maxRandomRank, 0, 12))
             {
             }
             ImGui.Unindent();
         }
 
-        ImGui.Checkbox("Randomise leader abilities", ref randomiseLeaderAbilities);
+        ImGui.Checkbox("Randomise Leader Abilities", ref randomiseLeaderAbilities);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(
-                "Randomises the leader abilities a card can have.\nEach monster will roll once for each valid leader ability it can get\nThe level at which they get the ability is also randomised");
+                "Randomise the Leader Abilities a card can have\n" +
+                "Each monster will roll once for each valid Leader Ability it can get\n" +
+                "Ranks at which they unlock Abilities also randomise");
         if (randomiseLeaderAbilities)
         {
             ImGui.Indent();
-            if (ImGui.SliderInt("Max number of abilities ", ref maxLeaderAbilities, 0, 10))
+            if (ImGui.SliderInt("Max number of abilities ", ref maxLeaderAbilities, 0, 16))
             {
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("The max amount of leader abilities a unit get it");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("The max amount of Leader Abilities a card can get");
 
-            if (ImGui.SliderInt("Weak leader ability % chance", ref weakLeaderAbilityChance, 0, 100))
+            if (ImGui.SliderInt("% Chance (Weak Pool)", ref weakLeaderAbilityChance, 0, 100))
             {
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip(weakLeaderAbilitiesTooltip);
 
-            if (ImGui.SliderInt("Strong leader ability % chance", ref strongLeaderAbilityChance, 0, 100))
+            if (ImGui.SliderInt("% Chance (Strong Pool)", ref strongLeaderAbilityChance, 0, 100))
             {
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip($"{strongLeaderAbilitiesTooltip}");
 
-            if (ImGui.SliderInt("OP leader ability % chance", ref OPLeaderAbilityChance, 0, 100))
+            if (ImGui.SliderInt("% Chance (Strongest Pool)", ref OPLeaderAbilityChance, 0, 100))
             {
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip(opLeaderAbilitiesTooltip);
             ImGui.Unindent();
         }
-        ImGui.Checkbox("Randomise card ATK-DEF", ref randomiseCardATKDEF);
+        ImGui.Checkbox("Randomise Card ATK/DEF", ref randomiseCardATKDEF);
         if (randomiseCardATKDEF)
         {
             ImGui.Indent();
+            ImGui.PushStyleColor(ImGuiCol.Text, WarningColor);
             ImGui.Text("You can only pick one");
-            if (ImGui.Checkbox("Randomise ATK-DEF in range", ref randomAtkDefRange))
+            ImGui.PopStyleColor();
+            
+            if (ImGui.Checkbox("Randomise ATK/DEF in Range", ref randomAtkDefRange))
             {
                 randomAtkDefCap = false;
             }
@@ -578,29 +629,30 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             if (randomAtkDefRange)
             {
                 ImGui.Indent();
-                if (ImGui.InputInt("Max Attack Range ", ref attackDelta, 100, 1000))
+                if (ImGui.InputInt("ATK Range", ref attackDelta, 100, 1000))
                 {
                     attackDelta = Math.Clamp(attackDelta, 0, 9999);
                 }
-                if (ImGui.InputInt("Max defence range", ref defenseDelta, 100, 1000))
+                if (ImGui.InputInt("DEF Range", ref defenseDelta, 100, 1000))
                 {
                     defenseDelta = Math.Clamp(defenseDelta, 0, 9999);
                 }
                 ImGui.Unindent();
             }
-            if (ImGui.Checkbox("Randomise ATK-DEF with cap", ref randomAtkDefCap))
+            
+            if (ImGui.Checkbox("Randomise ATK/DEF with Cap", ref randomAtkDefCap))
             {
                 randomAtkDefRange = false;
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("completely random values that cant go past X value");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Completely random values that can't go past X value");
             if (randomAtkDefCap)
             {
                 ImGui.Indent();
-                if (ImGui.InputInt("Max attack cap ", ref attackCap, 50, 100))
+                if (ImGui.InputInt("ATK Limit", ref attackCap, 50, 100))
                 {
                     attackCap = Math.Clamp(attackCap, 0, 8000);
                 }
-                if (ImGui.InputInt("Max defence cap", ref defenseCap, 50, 100))
+                if (ImGui.InputInt("DEF Limit", ref defenseCap, 50, 100))
                 {
                     defenseCap = Math.Clamp(defenseCap, 0, 8000);
                 }
@@ -609,12 +661,14 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             ImGui.Unindent();
         }
 
-        ImGui.Checkbox("Randomise card summoning power", ref randomiseSummoningPower);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("You can only pick one");
+        ImGui.Checkbox("Randomise Card Summoning Power", ref randomiseSummoningPower);
         if (randomiseSummoningPower)
         {
-
             ImGui.Indent();
+            ImGui.PushStyleColor(ImGuiCol.Text, WarningColor);
+            ImGui.Text("You can only pick one");
+            ImGui.PopStyleColor();
+            
             if (ImGui.Checkbox("Randomise SP in range", ref randomSPRange))
             {
                 randomSPCap = false;
@@ -625,7 +679,7 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             if (randomSPRange)
             {
                 ImGui.Indent();
-                if (ImGui.SliderInt("Max summoning power difference", ref levelDelta, 0, 12))
+                if (ImGui.SliderInt("Max SP difference", ref levelDelta, 0, 12))
                 {
                 }
                 ImGui.Unindent();
@@ -635,11 +689,11 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
                 randomSPRange = false;
                 SpBasedOnPower = false;
             }
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("completely random values that cant go past X Cost/Summoning Power");
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Completely random values that can't go past X Cost/Summoning Power");
             if (randomSPCap)
             {
                 ImGui.Indent();
-                if (ImGui.SliderInt("Max summoning power difference", ref levelCap, 0, 12))
+                if (ImGui.SliderInt("Card SP Limit", ref levelCap, 0, 12))
                 {
                 }
                 ImGui.Unindent();
@@ -667,25 +721,25 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
             ImGui.Unindent();
         }
 
-        ImGui.Checkbox("Randomise card attribute", ref randomiseAttributes);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Gives monsters a random Attribute, Fire, Earth, Water..");
-        ImGui.Checkbox("Randomise card kind", ref randomiseKinds);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises monsters to other monster kinds");
+        ImGui.Checkbox("Randomise Monster Attributes", ref randomiseAttributes);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Gives Monsters a random Attribute : Fire, Earth, Water..");
+        ImGui.Checkbox("Randomise Monster Types", ref randomiseKinds);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises Monsters to other Monster Types");
 
-        ImGui.Checkbox("Randomise valid power-ups", ref randomiseEquip);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises what equips will work ");
+        ImGui.Checkbox("Randomise valid Power-ups", ref randomiseEquip);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises what equips will work");
         if (randomiseEquip)
         {
-            ImGui.SliderInt("Roll chance per power up", ref EquipPercentChance, 0, 100);
+            ImGui.SliderInt("% Chance (for each Power-up)", ref EquipPercentChance, 0, 100);
             {
             }
         }
-        ImGui.Checkbox("Randomise power-up values", ref randomisePowerUpValues);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Gives power increase power ups a random value within a range of x of its original value");
+        ImGui.Checkbox("Randomise Power-up values", ref randomisePowerUpValues);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Gives Power-ups with ATK/DEF increase a random value within a range of X of its original value");
         if (randomisePowerUpValues)
         {
             ImGui.Indent();
-            if (ImGui.InputInt("Max equip difference", ref powerUpDelta, 100, 1000))
+            if (ImGui.InputInt("Max Difference", ref powerUpDelta, 100, 1000))
             {
                 powerUpDelta = Math.Clamp(powerUpDelta, 0, 9999);
             }
@@ -693,23 +747,26 @@ Secondly Deck Cost will be meaningless when randomiser, this will make all battl
         }
 
         ImGui.Checkbox("Ban specific cards", ref banSpecificCards);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("If banned these card cannot be randomised into by you or opponents");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Banned cards cannot be randomised into by you or opponents");
         if (banSpecificCards)
         {
             ImGui.Indent();
-
+            ImGui.PushStyleColor(ImGuiCol.Text, ModifierColor);
             if (ImGui.Checkbox("Ban for player only", ref banForPlayerOnly))
             {
                 banForEnemyOnly = false;
             }
-
+            ImGui.SameLine();
             if (ImGui.Checkbox("Ban for enemy only", ref banForEnemyOnly))
             {
                 banForPlayerOnly = false;
             }
-
+            ImGui.SameLine();
             ImGui.Checkbox("Bosses can have banned cards", ref bossesBypassBan);
+            ImGui.PopStyleColor();
+            
             RenderCardSearch();
+            
             ImGui.Text("Banned Cards");
             ImGui.SameLine();
             if (ImGui.Button("Clear"))
@@ -774,27 +831,36 @@ SD:   5000");
 
 
         ImGui.Separator();
-        ImGui.TextColored(new GuiColour(Color.Firebrick).value, "Use a fresh ISO everytime when using these\notherwise strings become incorrect");
+        ImGui.TextColored(new GuiColour(Color.Red).value, "Use a fresh ISO everytime when using these,\n" +
+                                                                "otherwise strings become incorrect");
         ImGui.Separator();
 
-        ImGui.Checkbox("Randomise monster effects", ref randomiseMonsterEffects);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(@"Will give monsters a X/100 chance top be assigned a random monster effect. ");
+        ImGui.Checkbox("Randomise Monster Effects", ref randomiseMonsterEffects);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(@"Gives Monsters a % chance to get assigned a random monster effect. ");
         if (randomiseMonsterEffects)
         {
-            ImGui.SliderInt("Effect chance", ref randomEffectChance, 1, 100);
+            ImGui.SliderInt("% Chance (Random Monster Effect)", ref randomEffectChance, 1, 100);
         }
-        ImGui.Checkbox("Randomise magic effects", ref randomiseMagicEffects);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the effect of a spell with another spell or monster flip effect");
-        ImGui.Checkbox("Randomise strong on toon", ref randomiseStrongOnToon);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randoms whether a monster should be strong on too");
+        
+        ImGui.Checkbox("Randomise Magic Effects", ref randomiseMagicEffects);
+        // Flip Effects are still in progress
+        //if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the effect of a Magic Spell with another Magic or Flip Monster Effect");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises the effect of a Magic Spell with another Magic effect");
+
+        if (randomiseMagicEffects)
+        {
+            ImGui.SliderInt("% Chance (Random Magic Effect)", ref randomMagicChance, 1, 100);
+        }
+        
+        ImGui.Checkbox("Randomise Strong on TOON", ref randomiseStrongOnToon);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Randomises whether Monsters are strong on TOON");
         if (randomiseStrongOnToon)
         {
-            ImGui.SliderInt("Strong on toon chance", ref strongOnToonChance, 0, 100);
+            ImGui.SliderInt("% Chance (Strong on TOON)", ref strongOnToonChance, 0, 100);
         }
 
         ImGui.Checkbox("Randomise enemy background music tracks", ref randomiseMusic);
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Not recommended because it forces fast intro mod to work");
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Not recommended because it forces Fast Intro mod to work");
         ImGui.EndChild();
         ImGui.PopFont();
     }
@@ -1199,7 +1265,7 @@ SD:   5000");
                 for (var deckIndex = 0; deckIndex < Deck.DeckList.Count; deckIndex++)
                 {
                     int currentMonsterCount = 0;
-                    int currentSpellCount = 0;
+                    int currentMagicCount = 0;
                     int currentEquipCount = 0;
                     int currentTrapCount = 0;
                     int currentRitualCount = 0;
@@ -1253,10 +1319,10 @@ SD:   5000");
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", true, deckIndex);
                                     currentMonsterCount++;
                                 }
-                                else if (currentSpellCount < spellCount)
+                                else if (currentMagicCount < magicCount)
                                 {
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", true, deckIndex);
-                                    currentSpellCount++;
+                                    currentMagicCount++;
                                 }
                                 else if (currentEquipCount < equipCount)
                                 {
@@ -1284,10 +1350,10 @@ SD:   5000");
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "monster", false, deckIndex);
                                     currentMonsterCount++;
                                 }
-                                else if (currentSpellCount < spellCount)
+                                else if (currentMagicCount < magicCount)
                                 {
                                     FillDeckWithType(CurrentDeckCardCount, deck, deckSlot, "spell", false, deckIndex);
-                                    currentSpellCount++;
+                                    currentMagicCount++;
                                 }
                                 else if (currentEquipCount < equipCount)
                                 {
@@ -2302,12 +2368,12 @@ SD:   5000");
                 }
                 if (randomiseRareDrop)
                 {
-                    cardConstant.IsRareDrop = GetRandomBool();
+                    cardConstant.IsRareDrop = RandomBoolIn100(rareChance);
                     cardChanges.Acquisition.IsRareDrop = cardConstant.IsRareDrop;
                 }
                 if (randomiseReincarnation)
                 {
-                    cardConstant.AppearsInReincarnation = GetRandomBool();
+                    cardConstant.AppearsInReincarnation = RandomBoolIn100(reincChance);
                     cardChanges.Acquisition.AppearsInReincarnation = cardConstant.AppearsInReincarnation;
                 }
                 if (!cardConstant.AppearsInSlotReels && !cardConstant.AppearsInReincarnation && !cardConstant.IsRareDrop)
@@ -2453,7 +2519,7 @@ SD:   5000");
 
             }
 
-            else if (cardConstant.CardKind.isMagic() && randomiseMagicEffects)
+            else if (cardConstant.CardKind.isMagic() && randomiseMagicEffects && RandomBoolIn100(randomMagicChance))
             {
                 //TODO add monster flip effects (manually copy out the flip data and save into the magic effect data, you cant do effect id ==)
                 cardConstant.EffectId = (ushort)GetRandomValue(0, 69);
@@ -2510,7 +2576,6 @@ SD:   5000");
 
     bool GetRandomBool()
     {
-
         return GetRandomValue(0, 2) == 1;
     }
 
@@ -2696,14 +2761,24 @@ SD:   5000");
         {
             FilterAndSort();
         }
+        
+        // Get Card Search outside the ListBox so it doesn't scroll away
+        ImGui.Text("Card Search");
+        if (ImGui.InputText("##CardSearch", ref cardSearch, 32))
+        {
+            FilterAndSort();
+        }
+        
         ImGui.SetNextItemWidth(ImGui.CalcTextSize("Winged Dragon, Guardian of the Fortress #1 Remove").X);
         if (ImGui.BeginListBox("##Cards"))
         {
+            /*
             ImGui.Text("Card Search");
             if (ImGui.InputText("##CardSearch", ref cardSearch, 32))
             {
                 FilterAndSort();
             }
+            */
 
             foreach (var filteredName in bannedCardFilteredList)
             {
@@ -2893,12 +2968,13 @@ SD:   5000");
         if (root.TryGetProperty("maxToonTiles", out e)) maxToonTiles = e.GetInt32();
 
         if (root.TryGetProperty("monsterCount", out e)) monsterCount = e.GetInt32();
-        if (root.TryGetProperty("spellCount", out e)) spellCount = e.GetInt32();
+        if (root.TryGetProperty("magicCount", out e)) magicCount = e.GetInt32();
         if (root.TryGetProperty("trapCount", out e)) trapCount = e.GetInt32();
         if (root.TryGetProperty("equipCount", out e)) equipCount = e.GetInt32();
         if (root.TryGetProperty("ritualCount", out e)) ritualCount = e.GetInt32();
 
         if (root.TryGetProperty("randomEffectChance", out e)) randomEffectChance = e.GetInt32();
+        if (root.TryGetProperty("randomMagicChance", out e)) randomMagicChance = e.GetInt32();
         if (root.TryGetProperty("maxRandomRank", out e)) maxRandomRank = e.GetInt32();
         if (root.TryGetProperty("maxLeaderAbilities", out e)) maxLeaderAbilities = e.GetInt32();
         if (root.TryGetProperty("weakLeaderAbilityChance", out e)) weakLeaderAbilityChance = e.GetInt32();
@@ -2912,6 +2988,8 @@ SD:   5000");
 
         if (root.TryGetProperty("EquipPercentChance", out e)) EquipPercentChance = e.GetInt32();
         if (root.TryGetProperty("slotChance", out e)) slotChance = e.GetInt32();
+        if (root.TryGetProperty("rareChance", out e)) rareChance = e.GetInt32();
+        if (root.TryGetProperty("reincChance", out e)) reincChance = e.GetInt32();
 
         if (root.TryGetProperty("powerUpDelta", out e)) powerUpDelta = e.GetInt32();
         if (root.TryGetProperty("defenseDelta", out e)) defenseDelta = e.GetInt32();

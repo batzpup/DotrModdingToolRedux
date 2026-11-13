@@ -30,10 +30,21 @@ class Program
         };
         Raylib.SetTraceLogLevel(TraceLogLevel.None);
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
-        int screenWidth = 1920;
-        int screenHeight = 1080;
 
-        Raylib.InitWindow(screenWidth, screenHeight, "Dotr Modding Tools");
+        /* Scaling the window on the monitor size for compatibility ;
+           Raylib does not properly call window size before InitWindow. */
+        Raylib.InitWindow(0, 0, "DotR Modding Tool Redux");
+        int monitorWidth = Raylib.GetMonitorWidth(Raylib.GetCurrentMonitor());
+        int monitorHeight = Raylib.GetMonitorHeight(Raylib.GetCurrentMonitor());
+        int screenWidth  = monitorWidth * 2 / 3;   // 1920x1080 > 1280x720
+        int screenHeight = monitorHeight * 2 / 3;
+        int screenXPos = monitorWidth * 1 / 6;     // Monitor screen center
+        int screenYPos = monitorHeight * 1 / 6;
+        Raylib.SetWindowSize(screenWidth, screenHeight);
+        Raylib.SetWindowPosition(screenXPos, screenYPos);
+        // Scaling minimum size as a bonus.
+        Raylib.SetWindowMinSize(screenWidth / 2, screenHeight / 2);
+        
         Raylib.SetExitKey(KeyboardKey.Null);
         Image iconImage = ImageHelper.LoadImageRaylib("Images.redRoseLeader.png");
         Raylib.SetWindowIcon(iconImage);
@@ -43,7 +54,7 @@ class Program
         rlImGui.Setup(true);
         FontManager.LoadFonts();
         rlImGui.ReloadFonts();
-        Raylib.MaximizeWindow();
+        //Raylib.MaximizeWindow();
         GlobalImages.Instance.LoadAllImages();
 
         
@@ -69,18 +80,18 @@ class Program
             }
             if (Raylib.IsKeyPressed(KeyboardKey.Enter) && (Raylib.IsKeyDown(KeyboardKey.LeftAlt) || Raylib.IsKeyDown(KeyboardKey.RightAlt)))
             {
-                int display = Raylib.GetCurrentMonitor();
                 if (Raylib.IsWindowFullscreen())
                 {
-                   Raylib.SetWindowSize(screenWidth, screenHeight);
-                    //Raylib.SetWindowSize(1920, 1080); 
+                    //Undo Full Screen mode, THEN Restore Size
+                    Raylib.ToggleFullscreen();
+                    Raylib.SetWindowSize(screenWidth, screenHeight);
                 }
                 else
                 {
-                    Raylib.SetWindowSize(Raylib.GetMonitorWidth(display), Raylib.GetMonitorHeight(display));
-                  // Raylib.SetWindowSize(1920, 1080);
+                    //Max Screen Size, then go Full Screen mode
+                    Raylib.SetWindowSize(monitorWidth, monitorHeight);
+                    Raylib.ToggleFullscreen();
                 }
-                Raylib.ToggleFullscreen();
             }
 
 

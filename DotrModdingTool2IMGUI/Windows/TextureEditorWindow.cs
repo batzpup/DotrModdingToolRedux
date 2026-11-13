@@ -187,7 +187,11 @@ public class TextureEditorWindow : IImGuiWindow
 
     public void Render()
     {
-        if (!DataAccess.Instance.IsIsoLoaded) return;
+        if (!DataAccess.Instance.IsIsoLoaded)
+        {
+            ImGui.Text($"Please load ISO file");
+            return;
+        }
 
         ref int currentIndex = ref GetCurrentIndex();
         if (paintCanvas == null)
